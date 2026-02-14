@@ -1,10 +1,13 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-const UPLOAD_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes for LLM processing
+const UPLOAD_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes (scanned PDFs + OCR/vision can be slow)
 
 function getErrorMessage(err) {
   if (err instanceof TypeError && err.message === "Failed to fetch") {
     return `Cannot reach the backend at ${API_BASE}. Is it running? Check the URL and CORS.`;
+  }
+  if (err.name === "AbortError") {
+    return "Request took too long and was cancelled. Try a smaller PDF or try again.";
   }
   return err.message || "Request failed";
 }
@@ -23,7 +26,8 @@ export async function processPdf(file) {
     });
   } catch (e) {
     clearTimeout(timeoutId);
-    throw new Error(getErrorMessage(e));
+    const message = getErrorMessage(e);
+    throw new Error(message);
   }
   clearTimeout(timeoutId);
   if (!res.ok) {

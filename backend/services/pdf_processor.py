@@ -33,6 +33,8 @@ TESSERACT_PSM = 3
 GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 VISION_MAX_PIXELS_LONG_SIDE = 2000  # resize to stay under 4MB base64
 VISION_JPEG_QUALITY = 85
+# For scanned PDFs with this many pages or fewer, skip OCR and use vision only (OCR is very slow on camera scans)
+VISION_ONLY_MAX_PAGES = 5
 
 
 def extract_text_from_pdf(file_content: bytes, filename: str = "statement.pdf") -> str:
@@ -161,15 +163,16 @@ def _preprocess_image_for_ocr(img: Image.Image) -> Image.Image:
     return img
 
 
-def _pdf_to_images(pdf_bytes: bytes) -> list[Image.Image]:
-    """Convert PDF to list of PIL images at OCR_DPI."""
+def _pdf_to_images(pdf_bytes: bytes, dpi: int | None = None) -> list[Image.Image]:
+    """Convert PDF to list of PIL images. dpi defaults to OCR_DPI; use lower (e.g. 150) for vision-only to speed up."""
+    use_dpi = dpi if dpi is not None else OCR_DPI
     tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
             tmp.write(pdf_bytes)
             tmp.flush()
             tmp_path = tmp.name
-        return convert_from_path(tmp_path, dpi=OCR_DPI)
+        return convert_from_path(tmp_path, dpi=use_dpi)
     except Exception as e:
         err_msg = str(e).strip()
         if "poppler" in err_msg.lower() or "page count" in err_msg.lower():
@@ -261,12 +264,22 @@ def _extract_text_vision(images: list[Image.Image]) -> str:
 
 
 def _extract_text_scanned(pdf_bytes: bytes) -> str:
-    """Get images from PDF, run OCR and optionally AI vision; return the best result."""
+    """Get images from PDF. For few pages use vision only (faster); else OCR + vision and pick best."""
     t0 = time.perf_counter()
-    images = _pdf_to_images(pdf_bytes)
-    logger.info("extract_text_scanned: PDF -> %d images (%.2f s)", len(images), time.perf_counter() - t0)
+    num_pages = _count_pages(io.BytesIO(pdf_bytes))
+    vision_only = num_pages <= VISION_ONLY_MAX_PAGES
+    # Lower DPI for vision-only path: faster PDF→images and smaller payloads
+    dpi = 150 if vision_only else OCR_DPI
+    images = _pdf_to_images(pdf_bytes, dpi=dpi)
+    logger.info("extract_text_scanned: PDF -> %d images, dpi=%d (%.2f s)", len(images), dpi, time.perf_counter() - t0)
     if not images:
         return ""
+    if vision_only:
+        # Skip OCR (very slow on camera scans); vision is faster and often better for 1–5 pages
+        logger.info("extract_text_scanned: vision-only path (%d pages)", len(images))
+        vision_text = _extract_text_vision(images)
+        logger.info("extract_text_scanned: vision done, len=%d (%.2f s total)", len(vision_text), time.perf_counter() - t0)
+        return vision_text.strip() if vision_text else ""
     ocr_text = ""
     try:
         t1 = time.perf_counter()
@@ -284,7 +297,6 @@ def _extract_text_scanned(pdf_bytes: bytes) -> str:
     vision_text = _extract_text_vision(images)
     if vision_text:
         logger.info("extract_text_scanned: vision done, len=%d (%.2f s)", len(vision_text), time.perf_counter() - t2)
-    # Use vision result if it has more content than OCR (often better for camera scans)
     if vision_text and len(vision_text.strip()) > len(ocr_text.strip()):
         logger.info("extract_text_scanned: using vision result (%.2f s total)", time.perf_counter() - t0)
         return vision_text.strip()
