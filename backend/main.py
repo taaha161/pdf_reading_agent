@@ -41,28 +41,43 @@ app.add_middleware(
 )
 
 
+def _cors_headers(origin: str) -> dict:
+    """CORS headers to attach when origin is allowed (same as the extension would allow)."""
+    return {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Max-Age": "86400",
+    }
+
+
 class PreflightMiddleware(BaseHTTPMiddleware):
-    """Ensure OPTIONS (preflight) requests get 200 with CORS headers so the browser allows the actual request."""
+    """Respond to OPTIONS (preflight) with 200 and CORS headers."""
 
     async def dispatch(self, request: Request, call_next):
         if request.method != "OPTIONS":
             return await call_next(request)
         origin = request.headers.get("origin", "")
         if origin and origin in _origins_list:
-            return Response(
-                status_code=200,
-                headers={
-                    "Access-Control-Allow-Origin": origin,
-                    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                    "Access-Control-Allow-Headers": "*",
-                    "Access-Control-Allow-Credentials": "true",
-                    "Access-Control-Max-Age": "86400",
-                },
-            )
+            return Response(status_code=200, headers=_cors_headers(origin))
         return await call_next(request)
 
 
+class AddCorsToResponseMiddleware(BaseHTTPMiddleware):
+    """Add CORS headers to every response when request Origin is in allowed list (so browser never blocks)."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        origin = request.headers.get("origin", "")
+        if origin and origin in _origins_list:
+            for key, value in _cors_headers(origin).items():
+                response.headers[key] = value
+        return response
+
+
 app.add_middleware(PreflightMiddleware)
+app.add_middleware(AddCorsToResponseMiddleware)
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 ALLOWED_CONTENT_TYPE = "application/pdf"
