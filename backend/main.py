@@ -7,7 +7,7 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
@@ -102,6 +102,17 @@ def _summary_by_category(transactions: list[dict]) -> list[tuple[str, float]]:
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.options("/api/process-pdf")
+@app.options("/api/chat")
+@app.options("/api/jobs/{job_id}/csv")
+async def preflight_api(request: Request, job_id: str = ""):
+    """Respond to CORS preflight (OPTIONS) with 200 and allowed headers so browser allows the actual request."""
+    origin = request.headers.get("origin", "")
+    if origin and origin in _origins_list:
+        return Response(status_code=200, headers=_cors_headers(origin))
+    return Response(status_code=204)
 
 
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
