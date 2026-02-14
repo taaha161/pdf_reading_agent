@@ -4,6 +4,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -17,7 +20,7 @@ from store import create_job_id, get_job, set_job
 
 app = FastAPI(title="PDF Bank Statement Processor")
 
-# CORS: set ALLOWED_ORIGINS on Render to your frontend URL, e.g. https://pdf-reading-agent.vercel.app
+# CORS: only allow origins listed in ALLOWED_ORIGINS (comma-separated, no trailing slashes)
 _origins_raw = os.environ.get("ALLOWED_ORIGINS", "").strip()
 if _origins_raw:
     _origins_list = [o.strip().rstrip("/") for o in _origins_raw.split(",") if o.strip()]
@@ -36,6 +39,30 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+
+class PreflightMiddleware(BaseHTTPMiddleware):
+    """Ensure OPTIONS (preflight) requests get 200 with CORS headers so the browser allows the actual request."""
+
+    async def dispatch(self, request: Request, call_next):
+        if request.method != "OPTIONS":
+            return await call_next(request)
+        origin = request.headers.get("origin", "")
+        if origin and origin in _origins_list:
+            return Response(
+                status_code=200,
+                headers={
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Max-Age": "86400",
+                },
+            )
+        return await call_next(request)
+
+
+app.add_middleware(PreflightMiddleware)
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 ALLOWED_CONTENT_TYPE = "application/pdf"
