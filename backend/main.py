@@ -58,15 +58,13 @@ def _cors_headers(origin: str) -> dict:
 
 
 class PreflightMiddleware(BaseHTTPMiddleware):
-    """Respond to OPTIONS (preflight) with 200 and CORS headers."""
+    """Handle all OPTIONS (preflight) here with 200 + CORS so the router is never hit (avoids 400). Actual response CORS still enforced by AddCorsToResponseMiddleware."""
 
     async def dispatch(self, request: Request, call_next):
         if request.method != "OPTIONS":
             return await call_next(request)
-        origin = request.headers.get("origin", "")
-        if origin and origin in _origins_list:
-            return Response(status_code=200, headers=_cors_headers(origin))
-        return await call_next(request)
+        origin = request.headers.get("origin", "") or "*"
+        return Response(status_code=200, headers=_cors_headers(origin))
 
 
 class AddCorsToResponseMiddleware(BaseHTTPMiddleware):
