@@ -1,10 +1,14 @@
 """Extract text from PDF: direct text extraction or OCR for scanned pages; optional AI vision."""
 import base64
 import io
+import logging
 import os
 import tempfile
+import time
 
 import pdfplumber
+
+logger = logging.getLogger("pdf_processor")
 from pypdf import PdfReader
 from pdf2image import convert_from_path
 import pytesseract
@@ -36,20 +40,28 @@ def extract_text_from_pdf(file_content: bytes, filename: str = "statement.pdf") 
     Load PDF, try text extraction first (pdfplumber, then pypdf fallback).
     If too little text per page, use OCR. Returns raw text string.
     """
+    t0 = time.perf_counter()
+    logger.info("extract_text_from_pdf: start, filename=%s, size=%d bytes", filename, len(file_content))
     stream = io.BytesIO(file_content)
     text = _extract_text_direct(stream)
     stream.seek(0)
     pages = _count_pages(stream)
+    logger.info("extract_text_from_pdf: pdfplumber text len=%d, pages=%d (%.2f s)", len(text), pages, time.perf_counter() - t0)
     if pages == 0:
         return ""
     # If pdfplumber got little or no text, try pypdf (handles some PDFs better)
     if not text or len(text.strip()) < 50:
         stream.seek(0)
+        t1 = time.perf_counter()
         text = _extract_text_pypdf(stream)
+        logger.info("extract_text_from_pdf: pypdf fallback, len=%d (%.2f s)", len(text), time.perf_counter() - t1)
     avg_chars = len(text) / pages if pages else 0
     if avg_chars < MIN_TEXT_PER_PAGE:
         # Scanned or image-only PDF: OCR + optional AI vision (use best result)
+        logger.info("extract_text_from_pdf: low text per page (%.0f), using scanned path (OCR + optional vision)", avg_chars)
         text = _extract_text_scanned(file_content)
+    else:
+        logger.info("extract_text_from_pdf: using direct text, total len=%d (%.2f s)", len(text), time.perf_counter() - t0)
     return text or ""
 
 
@@ -204,12 +216,15 @@ def _extract_text_vision(images: list[Image.Image]) -> str:
     """Use Groq vision model to extract text from each page image. Requires GROQ_API_KEY."""
     api_key = os.environ.get("GROQ_API_KEY", "").strip()
     if not api_key:
+        logger.info("extract_text_vision: skipped (no GROQ_API_KEY)")
         return ""
     try:
         from groq import Groq
     except ImportError:
+        logger.info("extract_text_vision: skipped (groq not installed)")
         return ""
     client = Groq(api_key=api_key)
+    logger.info("extract_text_vision: calling Groq for %d page(s)", len(images))
     prompt = (
         "Extract all text from this bank statement or financial document image. "
         "Return the raw text exactly as you see it: dates, descriptions, amounts, debits, credits, "
@@ -218,6 +233,7 @@ def _extract_text_vision(images: list[Image.Image]) -> str:
     parts = []
     for i, img in enumerate(images):
         try:
+            t_page = time.perf_counter()
             b64 = _image_to_base64_jpeg(img)
             url = f"data:image/jpeg;base64,{b64}"
             completion = client.chat.completions.create(
@@ -237,19 +253,25 @@ def _extract_text_vision(images: list[Image.Image]) -> str:
             content = (completion.choices[0].message.content or "").strip()
             if content:
                 parts.append(content)
-        except Exception:
+            logger.info("extract_text_vision: page %d/%d done (%.2f s)", i + 1, len(images), time.perf_counter() - t_page)
+        except Exception as e:
+            logger.warning("extract_text_vision: page %d failed: %s", i + 1, e)
             continue
     return "\n\n".join(parts)
 
 
 def _extract_text_scanned(pdf_bytes: bytes) -> str:
     """Get images from PDF, run OCR and optionally AI vision; return the best result."""
+    t0 = time.perf_counter()
     images = _pdf_to_images(pdf_bytes)
+    logger.info("extract_text_scanned: PDF -> %d images (%.2f s)", len(images), time.perf_counter() - t0)
     if not images:
         return ""
     ocr_text = ""
     try:
+        t1 = time.perf_counter()
         ocr_text = _extract_text_ocr_from_images(images)
+        logger.info("extract_text_scanned: OCR done, len=%d (%.2f s)", len(ocr_text), time.perf_counter() - t1)
     except Exception as e:
         err_msg = str(e).strip()
         if "tesseract" in err_msg.lower() or "pytesseract" in err_msg.lower():
@@ -258,8 +280,13 @@ def _extract_text_scanned(pdf_bytes: bytes) -> str:
                 "Install it (e.g. brew install tesseract on macOS) and ensure it is on PATH."
             ) from e
         raise
+    t2 = time.perf_counter()
     vision_text = _extract_text_vision(images)
+    if vision_text:
+        logger.info("extract_text_scanned: vision done, len=%d (%.2f s)", len(vision_text), time.perf_counter() - t2)
     # Use vision result if it has more content than OCR (often better for camera scans)
     if vision_text and len(vision_text.strip()) > len(ocr_text.strip()):
+        logger.info("extract_text_scanned: using vision result (%.2f s total)", time.perf_counter() - t0)
         return vision_text.strip()
+    logger.info("extract_text_scanned: using OCR result (%.2f s total)", time.perf_counter() - t0)
     return ocr_text or ""

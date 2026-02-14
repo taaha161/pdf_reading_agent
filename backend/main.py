@@ -1,7 +1,12 @@
+import logging
 import os
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logger = logging.getLogger("pdf_processor_app")
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -117,19 +122,24 @@ async def preflight_api(request: Request, job_id: str = ""):
 
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
 async def process_pdf(file: UploadFile = File(...)):
+    t0 = time.perf_counter()
+    logger.info("process-pdf: request started, filename=%s", file.filename or "statement.pdf")
     try:
         if file.content_type and file.content_type != ALLOWED_CONTENT_TYPE:
             raise HTTPException(400, "File must be a PDF")
         content = await file.read()
+        logger.info("process-pdf: file read, size=%d bytes (%.2f s)", len(content), time.perf_counter() - t0)
         if len(content) > MAX_FILE_SIZE:
             raise HTTPException(400, "File too large")
         if not content:
             raise HTTPException(400, "Empty file")
 
+        t1 = time.perf_counter()
         try:
             raw_text = extract_text_from_pdf(content, file.filename or "statement.pdf")
         except Exception as e:
             raise HTTPException(422, f"PDF parsing failed: {str(e)}")
+        logger.info("process-pdf: PDF text extraction done, len=%d chars (%.2f s)", len(raw_text), time.perf_counter() - t1)
         if not raw_text.strip():
             raise HTTPException(
                 422,
@@ -137,15 +147,18 @@ async def process_pdf(file: UploadFile = File(...)):
                 "For scanned PDFs, install poppler and Tesseract (see README)."
             )
 
+        t2 = time.perf_counter()
         try:
             transactions = extract_and_categorize(raw_text)
         except Exception as e:
             raise HTTPException(500, f"Failed to process statement with AI: {str(e)}")
+        logger.info("process-pdf: AI extraction + categorization done, transactions=%d (%.2f s)", len(transactions), time.perf_counter() - t2)
+
         csv_content = transactions_to_csv(transactions)
         job_id = create_job_id()
         set_job(job_id, transactions, csv_content)
-
         summary = _summary_by_category(transactions)
+        logger.info("process-pdf: finished successfully, job_id=%s, total=%.2f s", job_id, time.perf_counter() - t0)
 
         return ProcessPdfResponse(
             job_id=job_id,
@@ -173,11 +186,13 @@ def download_csv(job_id: str):
 
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(body: ChatRequest):
+    t0 = time.perf_counter()
     job = get_job(body.job_id)
     if not job:
         raise HTTPException(404, "Job not found")
     try:
         reply = get_reply(job, body.message)
+        logger.info("chat: job_id=%s, reply len=%d (%.2f s)", body.job_id, len(reply), time.perf_counter() - t0)
     except Exception as e:
         raise HTTPException(500, f"Chat failed: {str(e)}")
     return ChatResponse(reply=reply)

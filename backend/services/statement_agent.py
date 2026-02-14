@@ -1,10 +1,14 @@
 """LangChain agent: extract transactions from statement text and categorize them."""
 import json
+import logging
 import os
 import re
+import time
 from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
+
+logger = logging.getLogger("statement_agent")
 from langchain_core.output_parsers import StrOutputParser
 
 # Prefer Groq (free tier); fallback to Ollama if GROQ_API_KEY not set
@@ -78,7 +82,9 @@ def extract_and_categorize(raw_text: str) -> list[dict[str, Any]]:
     if not raw_text or not raw_text.strip():
         return []
 
+    t0 = time.perf_counter()
     llm = _get_llm()
+    logger.info("extract_and_categorize: start, text len=%d", len(raw_text))
 
     extract_prompt = ChatPromptTemplate.from_messages(
         [
@@ -95,7 +101,10 @@ def extract_and_categorize(raw_text: str) -> list[dict[str, Any]]:
         ]
     )
     chain = extract_prompt | llm | StrOutputParser()
+    t1 = time.perf_counter()
+    logger.info("extract_and_categorize: calling LLM for transaction extraction...")
     out = chain.invoke({"text": raw_text[:12000]})  # cap length
+    logger.info("extract_and_categorize: extraction LLM done (%.2f s)", time.perf_counter() - t1)
     json_str = _extract_json_block(out)
     try:
         transactions = json.loads(json_str)
@@ -118,6 +127,7 @@ def extract_and_categorize(raw_text: str) -> list[dict[str, Any]]:
             "category": "",  # filled below
         })
     transactions = normalized
+    logger.info("extract_and_categorize: extracted %d transactions, starting categorization...", len(transactions))
 
     # Categorize using full context (description and all fields) per transaction
     categories_str = ", ".join(CATEGORIES)
@@ -142,7 +152,10 @@ def extract_and_categorize(raw_text: str) -> list[dict[str, Any]]:
         ]
     )
     cat_chain = cat_prompt | llm | StrOutputParser()
+    t2 = time.perf_counter()
+    logger.info("extract_and_categorize: calling LLM for categorization...")
     cat_out = cat_chain.invoke({"transactions_context": transactions_context})
+    logger.info("extract_and_categorize: categorization LLM done (%.2f s)", time.perf_counter() - t2)
     cat_json_str = _extract_json_block(cat_out)
     try:
         categorized = json.loads(cat_json_str)
@@ -177,4 +190,5 @@ def extract_and_categorize(raw_text: str) -> list[dict[str, Any]]:
                     transactions[j]["category"] = cat
                     break
 
+    logger.info("extract_and_categorize: done, %d transactions (%.2f s total)", len(transactions), time.perf_counter() - t0)
     return transactions

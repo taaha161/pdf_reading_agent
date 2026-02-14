@@ -32,6 +32,47 @@
   color: inherit;
 }
 
+.loader-steps {
+  list-style: none;
+  margin: 1rem 0 0 0;
+  padding: 0;
+  text-align: left;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.loader-steps li {
+  padding: 0.25rem 0;
+  padding-left: 1.25rem;
+  position: relative;
+  opacity: 0.5;
+}
+
+.loader-steps li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(100, 108, 255, 0.35);
+}
+
+.loader-steps li.active {
+  opacity: 1;
+  font-weight: 500;
+}
+
+.loader-steps li.active::before {
+  background: #646cff;
+  box-shadow: 0 0 8px rgba(100, 108, 255, 0.6);
+}
+
+.loader-steps li.done::before {
+  background: rgba(100, 108, 255, 0.6);
+}
+
 .loader-hint {
   margin: 0.35rem 0 0 0;
   font-size: 0.875rem;
