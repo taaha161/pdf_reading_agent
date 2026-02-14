@@ -17,10 +17,10 @@ from store import create_job_id, get_job, set_job
 
 app = FastAPI(title="PDF Bank Statement Processor")
 
-# CORS: use ALLOWED_ORIGINS env (comma-separated) in production, e.g. https://your-app.vercel.app
-_origins = os.environ.get("ALLOWED_ORIGINS", "").strip()
-if _origins:
-    _origins_list = [o.strip() for o in _origins.split(",") if o.strip()]
+# CORS: set ALLOWED_ORIGINS on Render to your frontend URL, e.g. https://pdf-reading-agent.vercel.app
+_origins_raw = os.environ.get("ALLOWED_ORIGINS", "").strip()
+if _origins_raw:
+    _origins_list = [o.strip().rstrip("/") for o in _origins_raw.split(",") if o.strip()]
 else:
     _origins_list = [
         "http://localhost:5173",
@@ -34,6 +34,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
