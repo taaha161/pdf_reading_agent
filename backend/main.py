@@ -109,15 +109,26 @@ def health():
     return {"status": "ok"}
 
 
-@app.options("/api/process-pdf")
-@app.options("/api/chat")
-@app.options("/api/jobs/{job_id}/csv")
-async def preflight_api(request: Request, job_id: str = ""):
-    """Respond to CORS preflight (OPTIONS) with 200 and allowed headers so browser allows the actual request."""
+async def _preflight_response(request: Request):
     origin = request.headers.get("origin", "")
     if origin and origin in _origins_list:
         return Response(status_code=200, headers=_cors_headers(origin))
     return Response(status_code=204)
+
+
+@app.options("/api/process-pdf")
+async def preflight_process_pdf(request: Request):
+    return await _preflight_response(request)
+
+
+@app.options("/api/chat")
+async def preflight_chat(request: Request):
+    return await _preflight_response(request)
+
+
+@app.options("/api/jobs/{job_id}/csv")
+async def preflight_csv(request: Request, job_id: str):
+    return await _preflight_response(request)
 
 
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
