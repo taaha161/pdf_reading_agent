@@ -1,0 +1,48 @@
+.results-section {
+  margin-top: 1.5rem;
+}
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.results-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.download-btn {
+  padding: 0.5rem 1rem;
+  background: #646cff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.download-btn:hover {
+  background: #535bf2;
+}
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.results-table th,
+.results-table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.results-table th {
+  background: rgba(100, 108, 255, 0.15);
+  font-weight: 600;
+}
+.results-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}

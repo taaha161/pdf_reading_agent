@@ -1,0 +1,31 @@
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+.app-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+.app-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+}
+.app-header p {
+  margin: 0;
+  opacity: 0.85;
+  font-size: 1rem;
+}
+.app-main {
+  width: 100%;
+}
+.status {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+}
+.status.loading {
+  color: #646cff;
+}
+.status.error {
+  color: #f66;
+}

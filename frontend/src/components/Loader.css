@@ -1,0 +1,49 @@
+.loader-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  margin: 1.5rem 0;
+  border: 1px dashed rgba(100, 108, 255, 0.4);
+  border-radius: 12px;
+  background: rgba(100, 108, 255, 0.06);
+}
+
+.loader-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(100, 108, 255, 0.25);
+  border-top-color: #646cff;
+  border-radius: 50%;
+  animation: loader-spin 0.9s linear infinite;
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loader-message {
+  margin: 1rem 0 0 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: inherit;
+}
+
+.loader-hint {
+  margin: 0.35rem 0 0 0;
+  font-size: 0.875rem;
+  opacity: 0.85;
+}
+
+.loader-filename {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
