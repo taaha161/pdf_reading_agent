@@ -24,15 +24,17 @@ except ImportError:
 # Chars per page below this → treat as scanned and use OCR
 MIN_TEXT_PER_PAGE = 100
 
-# OCR: higher DPI helps camera-scanned / low-quality pages
-OCR_DPI = 300
+# OCR: higher DPI helps camera-scanned / hand-scanned / low-quality pages
+OCR_DPI = 350
 # Tesseract PSM 3 = fully automatic page segmentation (good for documents)
 TESSERACT_PSM = 3
 
 # Vision: Groq model for image-based extraction (max 5 images per request, 4MB base64 per image)
 GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-VISION_MAX_PIXELS_LONG_SIDE = 2000  # resize to stay under 4MB base64
-VISION_JPEG_QUALITY = 85
+VISION_MAX_PIXELS_LONG_SIDE = 2400  # higher res for hand-scanned so small text isn't lost
+VISION_JPEG_QUALITY = 88
+# DPI for PDF->image when using vision (higher = more detail, less omission)
+VISION_DPI = 200
 # For scanned PDFs with this many pages or fewer, skip OCR and use vision only (OCR is very slow on camera scans)
 VISION_ONLY_MAX_PAGES = 5
 
@@ -152,14 +154,14 @@ def _preprocess_image_for_ocr(img: Image.Image) -> Image.Image:
     img = _deskew_image(img)
     if img.mode != "L":
         img = img.convert("L")
-    # Boost contrast (helps shadows/uneven lighting from camera)
+    # Boost contrast (helps shadows/uneven lighting and faint hand-scanned text)
     enhancer = ImageEnhance.Contrast(img)
-    img = enhancer.enhance(2.0)
+    img = enhancer.enhance(2.2)
     enhancer = ImageEnhance.Sharpness(img)
-    img = enhancer.enhance(1.5)
-    # Upscale small images so Tesseract has enough resolution
+    img = enhancer.enhance(1.6)
+    # Upscale small images so Tesseract has enough resolution (hand-scanned often benefits from more pixels)
     w, h = img.size
-    min_side = 1200
+    min_side = 1500
     if min(w, h) < min_side and min(w, h) > 0:
         scale = min_side / min(w, h)
         new_size = (int(w * scale), int(h * scale))
@@ -233,13 +235,13 @@ def _extract_text_vision(images: list[Image.Image]) -> str:
     client = Groq(api_key=api_key)
     logger.info("extract_text_vision: calling Groq for %d page(s)", len(images))
     prompt = (
-        "Extract all text from this bank statement or financial document image. "
-        "Include: dates, descriptions, debit/credit amounts, account numbers, headers, and any other visible text. "
-        "Preserve the order and layout. "
-        "IMPORTANT: In transaction tables, include ONLY rows that are actual transactions (each has a date, description, and an amount that is a debit or credit). "
-        "Do NOT include running balance columns or rows that show only a balance figure (e.g. 'Balance 1,234.56' or a column that repeats the balance after each transaction). "
-        "If there is a 'Balance' column, omit it from each transaction row; only keep date, description, and amount. "
-        "Do not add commentary."
+        "Extract ALL text from this bank statement or financial document image with complete accuracy. "
+        "Do not omit or skip any line. Include every date, every description, every debit/credit amount, account numbers, headers, and any other visible text. "
+        "Preserve the exact order and layout. If a line is partially legible, include what you can read. "
+        "In transaction tables: include every row that is an actual transaction (date, description, debit or credit amount). "
+        "Do NOT include as transaction rows: Opening Balance, Closing Balance, Balance B/F, Balance C/F, or running balance-only rows. "
+        "If there is a 'Balance' column, do not include it in each transaction row; keep date, description, and amount. "
+        "Output only the extracted text, no commentary."
     )
     parts = []
     for i, img in enumerate(images):
@@ -259,7 +261,7 @@ def _extract_text_vision(images: list[Image.Image]) -> str:
                     }
                 ],
                 temperature=0,
-                max_tokens=4096,
+                max_tokens=8192,
             )
             content = (completion.choices[0].message.content or "").strip()
             if content:
@@ -281,7 +283,7 @@ def _extract_text_scanned(pdf_bytes: bytes, scanned_method: str | None = None) -
         vision_only = num_pages <= VISION_ONLY_MAX_PAGES
     else:
         vision_only = force_vision
-    dpi = 150 if vision_only or force_vision else OCR_DPI
+    dpi = VISION_DPI if vision_only or force_vision else OCR_DPI
     images = _pdf_to_images(pdf_bytes, dpi=dpi)
     logger.info("extract_text_scanned: PDF -> %d images, dpi=%d, force_ocr=%s force_vision=%s (%.2f s)", len(images), dpi, force_ocr, force_vision, time.perf_counter() - t0)
     if not images:

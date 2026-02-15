@@ -45,11 +45,16 @@ Use the FULL description and all transaction details to choose the category:
 Read the entire description and any reference/memo text to infer the merchant or purpose, then categorize.
 """
 
+# Max chars of statement text to send to extraction LLM in one go (raise if table still misses later months)
+EXTRACTION_TEXT_CAP = 100000
+EXTRACTION_CHUNK_OVERLAP = 3000  # overlap when chunking so we don't cut a transaction in half
+
 
 def _get_llm():
     api_key = os.environ.get("GROQ_API_KEY")
     if api_key and _GROQ_AVAILABLE:
-        return ChatGroq(model="llama-3.1-8b-instant", api_key=api_key, temperature=0)
+        # max_tokens=8192 so extraction/categorization can return full transaction list (default can truncate at ~Apr)
+        return ChatGroq(model="llama-3.1-8b-instant", api_key=api_key, temperature=0, max_tokens=8192)
     return ChatOllama(model="llama3.2", temperature=0)
 
 
@@ -74,6 +79,95 @@ def _extract_json_block(text: str) -> str:
     return text
 
 
+def _extract_first_json_array(text: str) -> str:
+    """Extract the first complete JSON array by bracket matching (handles 'Extra data' when LLM appends text)."""
+    start = text.find("[")
+    if start == -1:
+        return ""
+    depth = 0
+    in_string = False
+    escape = False
+    quote = None
+    for i in range(start, len(text)):
+        c = text[i]
+        if escape:
+            escape = False
+            continue
+        if c == "\\" and in_string:
+            escape = True
+            continue
+        if in_string:
+            if c == quote:
+                in_string = False
+            continue
+        if c in ('"', "'"):
+            in_string = True
+            quote = c
+            continue
+        if c == "[":
+            depth += 1
+        elif c == "]":
+            depth -= 1
+            if depth == 0:
+                return text[start : i + 1]
+    return text[start:]
+
+
+def _extract_first_json_object(text: str, start_pos: int = 0) -> tuple[str, int] | None:
+    """Extract the first complete JSON object {...} starting at start_pos. Returns (substring, end_index) or None."""
+    start = text.find("{", start_pos)
+    if start == -1:
+        return None
+    depth = 0
+    in_string = False
+    escape = False
+    quote = None
+    for i in range(start, len(text)):
+        c = text[i]
+        if escape:
+            escape = False
+            continue
+        if c == "\\" and in_string:
+            escape = True
+            continue
+        if in_string:
+            if c == quote:
+                in_string = False
+            continue
+        if c in ('"', "'"):
+            in_string = True
+            quote = c
+            continue
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                return (text[start : i + 1], i + 1)
+    return None
+
+
+def _parse_transaction_objects_from_text(text: str) -> list[dict]:
+    """When full JSON array parse fails, extract individual {...} objects and parse; return list of transaction-like dicts."""
+    result = []
+    pos = 0
+    while True:
+        obj = _extract_first_json_object(text, pos)
+        if obj is None:
+            break
+        sub, next_pos = obj
+        pos = next_pos
+        try:
+            d = json.loads(sub)
+            if not isinstance(d, dict):
+                continue
+            if "amount" in d or ("date" in d and "description" in d):
+                result.append(d)
+        except json.JSONDecodeError:
+            continue
+    return result
+
+
 def extract_and_categorize(raw_text: str) -> list[dict[str, Any]]:
     """
     Extract transactions from raw statement text, then assign categories.
@@ -96,8 +190,8 @@ def extract_and_categorize(raw_text: str) -> list[dict[str, Any]]:
                 "Preserve the FULL description exactly as shown: include merchant name, location, reference numbers, "
                 "memo lines, and any other text that appears for that transaction. Do not shorten or summarize descriptions. "
                 "IMPORTANT: Extract ONLY actual transactions (rows that have a date, a description, and a debit or credit amount). "
-                "Do NOT include: running balance lines; rows that are only a balance figure; header rows; summary/total lines that are just a balance; "
-                "or any line where the only 'amount' is a running balance (e.g. 'Balance 1,234.56' after each transaction). "
+                "Do NOT include: Opening Balance, Closing Balance, Balance B/F, Balance C/F, running balance lines; "
+                "rows that are only a balance figure; header rows; summary/total lines that are just a balance. "
                 "If no transactions are found, return [].",
             ),
             ("human", "{text}"),
@@ -105,14 +199,83 @@ def extract_and_categorize(raw_text: str) -> list[dict[str, Any]]:
     )
     chain = extract_prompt | llm | StrOutputParser()
     t1 = time.perf_counter()
-    logger.info("extract_and_categorize: calling LLM for transaction extraction...")
-    out = chain.invoke({"text": raw_text[:12000]})  # cap length
-    logger.info("extract_and_categorize: extraction LLM done (%.2f s)", time.perf_counter() - t1)
-    json_str = _extract_json_block(out)
-    try:
-        transactions = json.loads(json_str)
-    except json.JSONDecodeError:
+    text_trimmed = raw_text.strip()
+    # Chunk long statements so we don't truncate (e.g. table showed only till March when last tx was June)
+    if len(text_trimmed) <= EXTRACTION_TEXT_CAP:
+        chunks = [text_trimmed]
+    else:
+        chunks = []
+        start = 0
+        while start < len(text_trimmed):
+            end = start + EXTRACTION_TEXT_CAP
+            chunks.append(text_trimmed[start:end])
+            if end >= len(text_trimmed):
+                break
+            start = end - EXTRACTION_CHUNK_OVERLAP
+        logger.info("extract_and_categorize: text len=%d, splitting into %d chunks", len(text_trimmed), len(chunks))
+    all_transactions = []
+    for chunk_idx, text_input in enumerate(chunks):
+        logger.info("extract_and_categorize: calling LLM for transaction extraction (chunk %d/%d, len=%d)...", chunk_idx + 1, len(chunks), len(text_input))
+        out = chain.invoke({"text": text_input})
+        logger.info("extract_and_categorize: extraction LLM done (%.2f s)", time.perf_counter() - t1)
+        json_str = _extract_json_block(out)
+        try:
+            chunk_tx = json.loads(json_str)
+        except json.JSONDecodeError:
+            chunk_tx = []
+        if isinstance(chunk_tx, list):
+            all_transactions.extend(chunk_tx)
+        t1 = time.perf_counter()
+    # Dedupe by (date, description, amount) in case overlap created duplicates
+    seen = set()
+    transactions = []
+    for t in all_transactions:
+        if not isinstance(t, dict):
+            continue
+        key = (str(t.get("date", "")), str(t.get("description", "")), str(t.get("amount", "")))
+        if key in seen:
+            continue
+        seen.add(key)
+        transactions.append(t)
+    if len(chunks) > 1 and all_transactions:
+        logger.info("extract_and_categorize: merged %d chunks -> %d unique transactions", len(chunks), len(transactions))
+
+    if not transactions or not isinstance(transactions, list):
         transactions = []
+
+    # Fallback: if we got 0 transactions but there's substantial text (e.g. from vision), try a simpler direct prompt
+    if len(transactions) == 0 and len(text_trimmed) > 400:
+        logger.info("extract_and_categorize: 0 transactions, trying fallback extraction (text len=%d)", len(text_trimmed))
+        fallback_prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "You extract bank transactions from text. Return ONLY a JSON array. Each element is an object with: "
+                    '"date", "description", "amount", "type" (use "debit" or "credit"). '
+                    "Do NOT include: Opening Balance, Closing Balance, Balance B/F, Balance C/F, or any balance-only row. "
+                    "Find every actual transaction (date, description, money amount). Output nothing but the JSON array.",
+                ),
+                ("human", "{text}"),
+            ]
+        )
+        fallback_chain = fallback_prompt | llm | StrOutputParser()
+        fallback_input = text_trimmed[:EXTRACTION_TEXT_CAP]
+        try:
+            fallback_out = fallback_chain.invoke({"text": fallback_input})
+            fallback_json = _extract_first_json_array(fallback_out)
+            if not fallback_json:
+                fallback_json = _extract_json_block(fallback_out)
+            fallback_list = json.loads(fallback_json)
+            if isinstance(fallback_list, list) and len(fallback_list) > 0:
+                transactions = fallback_list
+                logger.info("extract_and_categorize: fallback extracted %d transactions", len(transactions))
+        except json.JSONDecodeError:
+            objs = _parse_transaction_objects_from_text(fallback_out)
+            if objs:
+                transactions = objs
+                logger.info("extract_and_categorize: fallback parsed %d transactions from objects", len(transactions))
+        except Exception as e:
+            logger.warning("extract_and_categorize: fallback extraction failed: %s", e)
 
     if not transactions or not isinstance(transactions, list):
         return []
