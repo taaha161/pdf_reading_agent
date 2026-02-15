@@ -12,9 +12,11 @@ function getErrorMessage(err) {
   return err.message || "Request failed";
 }
 
-export async function processPdf(file) {
+export async function processPdf(file, options = {}) {
   const form = new FormData();
   form.append("file", file);
+  const scannedMethod = options.scannedMethod === "ocr" ? "ocr" : "vision";
+  form.append("scanned_method", scannedMethod);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
   let res;

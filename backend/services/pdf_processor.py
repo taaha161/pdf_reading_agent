@@ -37,13 +37,18 @@ VISION_JPEG_QUALITY = 85
 VISION_ONLY_MAX_PAGES = 5
 
 
-def extract_text_from_pdf(file_content: bytes, filename: str = "statement.pdf") -> str:
+def extract_text_from_pdf(
+    file_content: bytes,
+    filename: str = "statement.pdf",
+    scanned_method: str | None = None,
+) -> str:
     """
     Load PDF, try text extraction first (pdfplumber, then pypdf fallback).
-    If too little text per page, use OCR. Returns raw text string.
+    If too little text per page, use scanned path. scanned_method: "ocr" | "vision" | None (auto).
+    Returns raw text string.
     """
     t0 = time.perf_counter()
-    logger.info("extract_text_from_pdf: start, filename=%s, size=%d bytes", filename, len(file_content))
+    logger.info("extract_text_from_pdf: start, filename=%s, size=%d bytes, scanned_method=%s", filename, len(file_content), scanned_method or "auto")
     stream = io.BytesIO(file_content)
     text = _extract_text_direct(stream)
     stream.seek(0)
@@ -59,9 +64,8 @@ def extract_text_from_pdf(file_content: bytes, filename: str = "statement.pdf") 
         logger.info("extract_text_from_pdf: pypdf fallback, len=%d (%.2f s)", len(text), time.perf_counter() - t1)
     avg_chars = len(text) / pages if pages else 0
     if avg_chars < MIN_TEXT_PER_PAGE:
-        # Scanned or image-only PDF: OCR + optional AI vision (use best result)
-        logger.info("extract_text_from_pdf: low text per page (%.0f), using scanned path (OCR + optional vision)", avg_chars)
-        text = _extract_text_scanned(file_content)
+        logger.info("extract_text_from_pdf: low text per page (%.0f), using scanned path", avg_chars)
+        text = _extract_text_scanned(file_content, scanned_method=scanned_method)
     else:
         logger.info("extract_text_from_pdf: using direct text, total len=%d (%.2f s)", len(text), time.perf_counter() - t0)
     return text or ""
@@ -230,8 +234,12 @@ def _extract_text_vision(images: list[Image.Image]) -> str:
     logger.info("extract_text_vision: calling Groq for %d page(s)", len(images))
     prompt = (
         "Extract all text from this bank statement or financial document image. "
-        "Return the raw text exactly as you see it: dates, descriptions, amounts, debits, credits, "
-        "account numbers, and any other visible text. Preserve the order and layout. Do not add commentary."
+        "Include: dates, descriptions, debit/credit amounts, account numbers, headers, and any other visible text. "
+        "Preserve the order and layout. "
+        "IMPORTANT: In transaction tables, include ONLY rows that are actual transactions (each has a date, description, and an amount that is a debit or credit). "
+        "Do NOT include running balance columns or rows that show only a balance figure (e.g. 'Balance 1,234.56' or a column that repeats the balance after each transaction). "
+        "If there is a 'Balance' column, omit it from each transaction row; only keep date, description, and amount. "
+        "Do not add commentary."
     )
     parts = []
     for i, img in enumerate(images):
@@ -263,23 +271,41 @@ def _extract_text_vision(images: list[Image.Image]) -> str:
     return "\n\n".join(parts)
 
 
-def _extract_text_scanned(pdf_bytes: bytes) -> str:
-    """Get images from PDF. For few pages use vision only (faster); else OCR + vision and pick best."""
+def _extract_text_scanned(pdf_bytes: bytes, scanned_method: str | None = None) -> str:
+    """Get images from PDF. scanned_method: "ocr" | "vision" | None (auto). When "ocr" use only OCR; when "vision" use only AI vision; when None use auto (vision-only for few pages, else OCR+vision and pick best)."""
     t0 = time.perf_counter()
     num_pages = _count_pages(io.BytesIO(pdf_bytes))
-    vision_only = num_pages <= VISION_ONLY_MAX_PAGES
-    # Lower DPI for vision-only path: faster PDF→images and smaller payloads
-    dpi = 150 if vision_only else OCR_DPI
+    force_ocr = (scanned_method or "").strip().lower() == "ocr"
+    force_vision = (scanned_method or "").strip().lower() == "vision"
+    if not force_ocr and not force_vision:
+        vision_only = num_pages <= VISION_ONLY_MAX_PAGES
+    else:
+        vision_only = force_vision
+    dpi = 150 if vision_only or force_vision else OCR_DPI
     images = _pdf_to_images(pdf_bytes, dpi=dpi)
-    logger.info("extract_text_scanned: PDF -> %d images, dpi=%d (%.2f s)", len(images), dpi, time.perf_counter() - t0)
+    logger.info("extract_text_scanned: PDF -> %d images, dpi=%d, force_ocr=%s force_vision=%s (%.2f s)", len(images), dpi, force_ocr, force_vision, time.perf_counter() - t0)
     if not images:
         return ""
-    if vision_only:
-        # Skip OCR (very slow on camera scans); vision is faster and often better for 1–5 pages
-        logger.info("extract_text_scanned: vision-only path (%d pages)", len(images))
+    if force_vision or (vision_only and not force_ocr):
+        logger.info("extract_text_scanned: vision path (%d pages)", len(images))
         vision_text = _extract_text_vision(images)
         logger.info("extract_text_scanned: vision done, len=%d (%.2f s total)", len(vision_text), time.perf_counter() - t0)
         return vision_text.strip() if vision_text else ""
+    if force_ocr:
+        logger.info("extract_text_scanned: OCR-only path (%d pages)", len(images))
+        try:
+            ocr_text = _extract_text_ocr_from_images(images)
+            logger.info("extract_text_scanned: OCR done, len=%d (%.2f s total)", len(ocr_text), time.perf_counter() - t0)
+            return ocr_text or ""
+        except Exception as e:
+            err_msg = str(e).strip()
+            if "tesseract" in err_msg.lower() or "pytesseract" in err_msg.lower():
+                raise RuntimeError(
+                    "OCR failed: Tesseract is required for scanned PDFs. "
+                    "Install it (e.g. brew install tesseract on macOS) and ensure it is on PATH."
+                ) from e
+            raise
+    # Auto: run both, pick best
     ocr_text = ""
     try:
         t1 = time.perf_counter()

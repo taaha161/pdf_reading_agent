@@ -95,6 +95,9 @@ def extract_and_categorize(raw_text: str) -> list[dict[str, Any]]:
                 '"date" (string), "description" (string), "amount" (string, e.g. 123.45), "type" (string: "credit" or "debit"). '
                 "Preserve the FULL description exactly as shown: include merchant name, location, reference numbers, "
                 "memo lines, and any other text that appears for that transaction. Do not shorten or summarize descriptions. "
+                "IMPORTANT: Extract ONLY actual transactions (rows that have a date, a description, and a debit or credit amount). "
+                "Do NOT include: running balance lines; rows that are only a balance figure; header rows; summary/total lines that are just a balance; "
+                "or any line where the only 'amount' is a running balance (e.g. 'Balance 1,234.56' after each transaction). "
                 "If no transactions are found, return [].",
             ),
             ("human", "{text}"),

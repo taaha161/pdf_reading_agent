@@ -7,6 +7,8 @@ import ChatPanel from "./components/ChatPanel";
 import { processPdf } from "./api/client";
 import "./App.css";
 
+const SCANNED_METHOD = { OCR: "ocr", VISION: "vision" };
+
 function App() {
   const [jobId, setJobId] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -15,6 +17,7 @@ function App() {
   const [loadingFile, setLoadingFile] = useState(null);
   const [error, setError] = useState(null);
   const [downloadError, setDownloadError] = useState(null);
+  const [scannedMethod, setScannedMethod] = useState(SCANNED_METHOD.VISION);
 
   const handleUpload = async (file) => {
     setError(null);
@@ -22,7 +25,7 @@ function App() {
     setLoading(true);
     setLoadingFile({ name: file.name, size: file.size });
     try {
-      const data = await processPdf(file);
+      const data = await processPdf(file, { scannedMethod });
       setJobId(data.job_id);
       setTransactions(data.transactions || []);
       setSummaryByCategory(data.summary_by_category || []);
@@ -45,6 +48,33 @@ function App() {
       </header>
 
       <main className="app-main">
+        <div className="scanned-method-toggle">
+          <span className="scanned-method-label">For scanned PDFs use:</span>
+          <div className="scanned-method-options">
+            <label className={scannedMethod === SCANNED_METHOD.OCR ? "active" : ""}>
+              <input
+                type="radio"
+                name="scanned_method"
+                value={SCANNED_METHOD.OCR}
+                checked={scannedMethod === SCANNED_METHOD.OCR}
+                onChange={() => setScannedMethod(SCANNED_METHOD.OCR)}
+                disabled={loading}
+              />
+              OCR
+            </label>
+            <label className={scannedMethod === SCANNED_METHOD.VISION ? "active" : ""}>
+              <input
+                type="radio"
+                name="scanned_method"
+                value={SCANNED_METHOD.VISION}
+                checked={scannedMethod === SCANNED_METHOD.VISION}
+                onChange={() => setScannedMethod(SCANNED_METHOD.VISION)}
+                disabled={loading}
+              />
+              AI image capture
+            </label>
+          </div>
+        </div>
         <FileUpload onUpload={handleUpload} disabled={loading} />
         {loading && (
           <Loader

@@ -12,7 +12,7 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
@@ -133,9 +133,17 @@ async def preflight_csv(request: Request, job_id: str):
 
 
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
-async def process_pdf(file: UploadFile = File(...)):
+async def process_pdf(
+    file: UploadFile = File(...),
+    scanned_method: str = Form("vision"),
+):
     t0 = time.perf_counter()
-    logger.info("process-pdf: request started, filename=%s", file.filename or "statement.pdf")
+    # Normalize: only "ocr" or "vision" (for scanned PDFs)
+    if scanned_method and scanned_method.strip().lower() == "ocr":
+        scanned_method_val = "ocr"
+    else:
+        scanned_method_val = "vision"
+    logger.info("process-pdf: request started, filename=%s, scanned_method=%s", file.filename or "statement.pdf", scanned_method_val)
     try:
         if file.content_type and file.content_type != ALLOWED_CONTENT_TYPE:
             raise HTTPException(400, "File must be a PDF")
@@ -148,7 +156,7 @@ async def process_pdf(file: UploadFile = File(...)):
 
         t1 = time.perf_counter()
         try:
-            raw_text = extract_text_from_pdf(content, file.filename or "statement.pdf")
+            raw_text = extract_text_from_pdf(content, file.filename or "statement.pdf", scanned_method=scanned_method_val)
         except Exception as e:
             raise HTTPException(422, f"PDF parsing failed: {str(e)}")
         logger.info("process-pdf: PDF text extraction done, len=%d chars (%.2f s)", len(raw_text), time.perf_counter() - t1)
