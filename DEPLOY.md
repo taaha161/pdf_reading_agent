@@ -22,7 +22,7 @@ Free tiers for both. Backend runs in Docker with OCR support (poppler, tesseract
    - **Name**: e.g. `pdf-statement-api`
 
 5. **Environment variables** (Add in Render dashboard):
-   - `GROQ_API_KEY` = your Groq API key (required for AI and vision)
+   - `GOOGLE_GEMINI_API_KEY` = your Google Gemini API key (required for AI extraction, categorization, chat, and scanned-PDF vision)
    - `ALLOWED_ORIGINS` = your frontend URL (see step 2 below). After deploying the frontend, set this to e.g. `https://your-app.vercel.app` (no trailing slash). You can add multiple origins separated by commas.
 
 6. Deploy. Note the backend URL, e.g. `https://pdf-statement-api.onrender.com`.
@@ -67,7 +67,7 @@ Share the **Vercel URL** with your client. They open that link and use the app; 
 2. **Backend**
    - New Service from repo, **Root Directory** = `backend`.
    - Use **Dockerfile** (Railway will detect `backend/Dockerfile` if you set root to `backend`).
-   - Add env: `GROQ_API_KEY`, `ALLOWED_ORIGINS` = your frontend URL (you can set after deploying frontend).
+   - Add env: `GOOGLE_GEMINI_API_KEY`, `ALLOWED_ORIGINS` = your frontend URL (you can set after deploying frontend).
 
 3. **Frontend**
    - New Service from same repo, **Root Directory** = `frontend`.
@@ -94,7 +94,7 @@ If you prefer one URL and one deployment:
 
 ## Checklist before sharing with client
 
-- [ ] **GROQ_API_KEY** set on the backend (required for extraction and chat).
+- [ ] **GOOGLE_GEMINI_API_KEY** set on the backend (required for extraction, categorization, chat, and scanned-PDF vision). If unset, Ollama is used for text/chat where available; vision is skipped.
 - [ ] **ALLOWED_ORIGINS** on the backend includes the exact frontend URL (no trailing slash).
 - [ ] **VITE_API_URL** on the frontend build is the backend URL (no trailing slash).
 - [ ] If using Render free tier, tell the client the first load after idle may be slow (wake-up).
@@ -105,7 +105,7 @@ If you prefer one URL and one deployment:
 
 | Variable          | Where     | Purpose |
 |-------------------|-----------|--------|
-| `GROQ_API_KEY`    | Backend   | Groq API key for LLM and vision. |
+| `GOOGLE_GEMINI_API_KEY` | Backend   | Google Gemini API key for extraction, categorization, chat, and scanned-PDF vision. If unset, Ollama is used for text/chat. |
 | `ALLOWED_ORIGINS` | Backend   | Comma-separated frontend origins for CORS, e.g. `https://app.vercel.app`. |
 | `VITE_API_URL`    | Frontend  | Backend API URL, e.g. `https://api.render.com`. Set at **build** time. |
 | `PORT`            | Backend   | Set by Render/Railway; no need to set yourself. |

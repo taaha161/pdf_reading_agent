@@ -8,7 +8,7 @@ The **frontend** is deployed to GitHub Pages. The **backend** (FastAPI) cannot r
 
 Deploy the API to a host that runs Python/Docker (e.g. [Render](https://render.com)):
 
-- **Render**: New → Web Service, connect your repo, **Root Directory** = `backend`, **Environment** = Docker. Add env vars: `GROQ_API_KEY`, and later `ALLOWED_ORIGINS` (your GitHub Pages URL).
+- **Render**: New → Web Service, connect your repo, **Root Directory** = `backend`, **Environment** = Docker. Add env vars: `GOOGLE_GEMINI_API_KEY`, and later `ALLOWED_ORIGINS` (your GitHub Pages URL).
 - See [DEPLOY.md](../DEPLOY.md) for full backend steps.
 
 Note the backend URL, e.g. `https://pdf-statement-api.onrender.com`.

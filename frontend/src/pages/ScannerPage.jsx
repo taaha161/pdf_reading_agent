@@ -9,40 +9,44 @@ import ChatPanel from "../components/ChatPanel";
 import { processPdf } from "../api/client";
 import "./ScannerPage.css";
 
-const SCANNED_METHOD = { OCR: "ocr", VISION: "vision" };
-
 export default function ScannerPage() {
   const [jobId, setJobId] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [summaryByCategory, setSummaryByCategory] = useState([]);
+  const [currency, setCurrency] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingFile, setLoadingFile] = useState(null);
   const [error, setError] = useState(null);
   const [downloadError, setDownloadError] = useState(null);
-  const [scannedMethod, setScannedMethod] = useState(SCANNED_METHOD.VISION);
 
   const handleUpload = async (file) => {
     setError(null);
     setDownloadError(null);
+    setJobId(null);
+    setTransactions([]);
+    setSummaryByCategory([]);
+    setCurrency(null);
     setLoading(true);
     setLoadingFile({ name: file.name, size: file.size });
     try {
-      const data = await processPdf(file, { scannedMethod });
+      const data = await processPdf(file);
       setJobId(data.job_id);
       setTransactions(data.transactions || []);
       setSummaryByCategory(data.summary_by_category || []);
+      setCurrency(data.currency ?? null);
     } catch (e) {
       setError(e.message || "Upload failed");
       setJobId(null);
       setTransactions([]);
       setSummaryByCategory([]);
+      setCurrency(null);
     } finally {
       setLoading(false);
       setLoadingFile(null);
     }
   };
 
-  const hasResults = summaryByCategory?.length > 0 || transactions?.length > 0;
+  const hasResults = !!jobId;
 
   return (
     <div className="scanner-page">
@@ -58,33 +62,6 @@ export default function ScannerPage() {
 
       <main className="scanner-main">
         <div className="scanner-upload-card">
-          <div className="scanned-method-toggle">
-            <span className="scanned-method-label">For scanned PDFs use:</span>
-            <div className="scanned-method-options" role="group" aria-label="Scanned PDF method">
-              <label className={scannedMethod === SCANNED_METHOD.OCR ? "active" : ""}>
-                <input
-                  type="radio"
-                  name="scanned_method"
-                  value={SCANNED_METHOD.OCR}
-                  checked={scannedMethod === SCANNED_METHOD.OCR}
-                  onChange={() => setScannedMethod(SCANNED_METHOD.OCR)}
-                  disabled={loading}
-                />
-                OCR
-              </label>
-              <label className={scannedMethod === SCANNED_METHOD.VISION ? "active" : ""}>
-                <input
-                  type="radio"
-                  name="scanned_method"
-                  value={SCANNED_METHOD.VISION}
-                  checked={scannedMethod === SCANNED_METHOD.VISION}
-                  onChange={() => setScannedMethod(SCANNED_METHOD.VISION)}
-                  disabled={loading}
-                />
-                AI image capture
-              </label>
-            </div>
-          </div>
           <FileUpload onUpload={handleUpload} disabled={loading} />
         </div>
 
@@ -105,7 +82,7 @@ export default function ScannerPage() {
         {hasResults && (
           <div className="scanner-results">
             <div className="scanner-results-tables">
-              <SummaryTable summaryByCategory={summaryByCategory} />
+              <SummaryTable summaryByCategory={summaryByCategory} currency={currency} />
               <ResultsTable
                 transactions={transactions}
                 jobId={jobId}
@@ -113,7 +90,7 @@ export default function ScannerPage() {
               />
             </div>
             <aside className="scanner-results-chat">
-              <ChatPanel jobId={jobId} disabled={!jobId} />
+              <ChatPanel key={jobId} jobId={jobId} disabled={!jobId} />
             </aside>
           </div>
         )}

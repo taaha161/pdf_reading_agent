@@ -6,17 +6,21 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 try:
-    from langchain_groq import ChatGroq
-    _GROQ_AVAILABLE = True
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    _GEMINI_AVAILABLE = True
 except ImportError:
-    _GROQ_AVAILABLE = False
+    _GEMINI_AVAILABLE = False
 from langchain_community.chat_models import ChatOllama
 
 
 def _get_llm():
-    api_key = os.environ.get("GROQ_API_KEY")
-    if api_key and _GROQ_AVAILABLE:
-        return ChatGroq(model="llama-3.1-8b-instant", api_key=api_key, temperature=0)
+    api_key = os.environ.get("GOOGLE_GEMINI_API_KEY")
+    if api_key and _GEMINI_AVAILABLE:
+        return ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash",
+            google_api_key=api_key,
+            temperature=0,
+        )
     return ChatOllama(model="llama3.2", temperature=0)
 
 

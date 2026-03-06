@@ -20,6 +20,8 @@ class ProcessPdfResponse(BaseModel):
     transactions: list[Transaction]
     summary_by_category: list[CategorySummary]
     csv_url: str
+    markdown_url: str
+    currency: Optional[str] = None  # Inferred from statement (e.g. USD, PKR); None if unknown
 
 
 class ChatRequest(BaseModel):

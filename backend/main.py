@@ -94,25 +94,41 @@ MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 ALLOWED_CONTENT_TYPE = "application/pdf"
 
 
+def _parse_amount(amount_str: str) -> float:
+    """Parse amount string (may contain commas or leading minus) to float. Returns magnitude."""
+    raw = str(amount_str or "0").replace(",", "").strip()
+    try:
+        return float(raw) if raw else 0.0
+    except (ValueError, TypeError):
+        return 0.0
+
+
 def _summary_by_category(transactions: list[dict]) -> list[tuple[str, float]]:
-    """Group transactions by category and sum amounts (debit positive, credit negative)."""
+    """Group by category; total = sum of debit amounts only (outflow) per category. Credits are not subtracted so each row shows total spent/outflow in that category."""
     totals: dict[str, float] = {}
     for t in transactions:
-        try:
-            raw = str(t.get("amount", "0")).replace(",", "").strip()
-            val = float(raw) if raw else 0.0
-        except (ValueError, TypeError):
-            val = 0.0
-        if str(t.get("type", "")).lower() == "credit":
-            val = -val
+        magnitude = abs(_parse_amount(t.get("amount")))
+        is_debit = str(t.get("type", "")).lower() == "debit"
+        if not is_debit:
+            magnitude = 0.0  # Only count debits (outflows) in the summary total
         cat = str(t.get("category", "")).strip() or "Other"
-        totals[cat] = totals.get(cat, 0) + val
-    return sorted(totals.items(), key=lambda x: -abs(x[1]))
+        totals[cat] = totals.get(cat, 0) + magnitude
+    return sorted(totals.items(), key=lambda x: -x[1])
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    out = {"status": "ok"}
+    api_key = os.environ.get("DATALAB_API_KEY", "").strip()
+    if api_key:
+        base = os.environ.get("DATALAB_BASE_URL", "https://www.datalab.to").rstrip("/")
+        try:
+            import httpx
+            r = httpx.get(f"{base}/api/v1/health", headers={"X-API-Key": api_key}, timeout=5.0)
+            out["datalab"] = "ok" if r.status_code == 200 and (r.json() or {}).get("status") == "ok" else "error"
+        except Exception:
+            out["datalab"] = "error"
+    return out
 
 
 async def _preflight_response(request: Request):
@@ -174,14 +190,14 @@ async def process_pdf(
 
         t2 = time.perf_counter()
         try:
-            transactions = extract_and_categorize(raw_text)
+            transactions, currency = extract_and_categorize(raw_text)
         except Exception as e:
             raise HTTPException(500, f"Failed to process statement with AI: {str(e)}")
-        logger.info("process-pdf: AI extraction + categorization done, transactions=%d (%.2f s)", len(transactions), time.perf_counter() - t2)
+        logger.info("process-pdf: AI extraction + categorization done, transactions=%d, currency=%s (%.2f s)", len(transactions), currency or "none", time.perf_counter() - t2)
 
         csv_content = transactions_to_csv(transactions)
         job_id = create_job_id()
-        set_job(job_id, transactions, csv_content)
+        set_job(job_id, transactions, csv_content, raw_text, currency)
         summary = _summary_by_category(transactions)
         logger.info("process-pdf: finished successfully, job_id=%s, total=%.2f s", job_id, time.perf_counter() - t0)
 
@@ -190,6 +206,8 @@ async def process_pdf(
             transactions=[Transaction(**t) for t in transactions],
             summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
             csv_url=f"/api/jobs/{job_id}/csv",
+            markdown_url=f"/api/jobs/{job_id}/markdown",
+            currency=currency,
         )
     except HTTPException:
         raise
@@ -206,6 +224,20 @@ def download_csv(job_id: str):
         content=job["csv_content"],
         media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="statement.csv"'},
+    )
+
+
+@app.get("/api/jobs/{job_id}/markdown")
+def download_markdown(job_id: str):
+    """Download the raw extracted text (e.g. Datalab markdown) for the job."""
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    raw_text = job.get("raw_text", "")
+    return Response(
+        content=raw_text,
+        media_type="text/markdown",
+        headers={"Content-Disposition": 'attachment; filename="datalab-extract.md"'},
     )
 
 
