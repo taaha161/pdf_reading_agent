@@ -22,6 +22,19 @@
   color: var(--color-primary-hover);
 }
 
+.scanner-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.scanner-logo {
+  width: 48px;
+  height: auto;
+  object-fit: contain;
+}
+
 .scanner-title {
   font-family: var(--font-heading);
   font-size: 1.75rem;

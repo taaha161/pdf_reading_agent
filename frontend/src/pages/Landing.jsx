@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import logo from "../assets/pdf_to_excel_logo.png";
 import "./Landing.css";
 
 export default function Landing() {
@@ -7,6 +8,7 @@ export default function Landing() {
   return (
     <div className="landing">
       <header className="landing-header">
+        <img src={logo} alt="Bank Statement PDF to Excel Converter" className="landing-logo" />
         <h1 className="landing-title">Bank statements, sorted.</h1>
         <p className="landing-subtitle">
           Upload a PDF statement. We itemize, categorize, and let you validate with AI—then export to CSV.

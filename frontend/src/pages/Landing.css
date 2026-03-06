@@ -13,6 +13,14 @@
   margin-bottom: 4rem;
 }
 
+.landing-logo {
+  display: block;
+  width: min(280px, 70vw);
+  height: auto;
+  margin: 0 auto 1.5rem;
+  object-fit: contain;
+}
+
 .landing-title {
   font-family: var(--font-heading);
   font-size: clamp(2.25rem, 5vw, 3.25rem);

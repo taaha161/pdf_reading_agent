@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import logo from "../assets/pdf_to_excel_logo.png";
 import FileUpload from "../components/FileUpload";
 import Loader from "../components/Loader";
 import SummaryTable from "../components/SummaryTable";
@@ -49,7 +50,10 @@ export default function ScannerPage() {
         <Link to="/" className="scanner-back">
           ← Back to home
         </Link>
-        <h1 className="scanner-title">Bank Statement Processor</h1>
+        <div className="scanner-brand">
+          <img src={logo} alt="" className="scanner-logo" aria-hidden />
+          <h1 className="scanner-title">Bank Statement Processor</h1>
+        </div>
       </header>
 
       <main className="scanner-main">
