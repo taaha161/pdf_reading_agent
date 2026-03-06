@@ -12,11 +12,9 @@ function getErrorMessage(err) {
   return err.message || "Request failed";
 }
 
-export async function processPdf(file, options = {}) {
+export async function processPdf(file) {
   const form = new FormData();
   form.append("file", file);
-  const scannedMethod = options.scannedMethod === "ocr" ? "ocr" : "vision";
-  form.append("scanned_method", scannedMethod);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
   let res;
@@ -48,6 +46,18 @@ export async function downloadCsv(jobId) {
   const a = document.createElement("a");
   a.href = url;
   a.download = "statement.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadMarkdown(jobId) {
+  const res = await fetch(`${API_BASE}/api/jobs/${jobId}/markdown`);
+  if (!res.ok) throw new Error("Failed to download markdown");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "datalab-extract.md";
   a.click();
   URL.revokeObjectURL(url);
 }

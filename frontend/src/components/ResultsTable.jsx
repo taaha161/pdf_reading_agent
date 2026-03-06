@@ -1,12 +1,20 @@
-import { downloadCsv } from "../api/client";
+import { downloadCsv, downloadMarkdown } from "../api/client";
 import "./ResultsTable.css";
 
 export default function ResultsTable({ transactions, jobId, onDownloadError }) {
-  if (!transactions?.length) return null;
+  if (!jobId) return null;
 
-  const handleDownload = async () => {
+  const handleDownloadCsv = async () => {
     try {
       await downloadCsv(jobId);
+    } catch (e) {
+      onDownloadError?.(e.message);
+    }
+  };
+
+  const handleDownloadMarkdown = async () => {
+    try {
+      await downloadMarkdown(jobId);
     } catch (e) {
       onDownloadError?.(e.message);
     }
@@ -16,10 +24,18 @@ export default function ResultsTable({ transactions, jobId, onDownloadError }) {
     <section className="results-section">
       <div className="results-header">
         <h2>Transactions</h2>
-        <button type="button" onClick={handleDownload} className="download-btn">
-          Download CSV
-        </button>
+        <div className="results-header-actions">
+          <button type="button" onClick={handleDownloadMarkdown} className="download-btn download-btn-secondary">
+            Download markdown
+          </button>
+          {transactions?.length > 0 && (
+            <button type="button" onClick={handleDownloadCsv} className="download-btn">
+              Download CSV
+            </button>
+          )}
+        </div>
       </div>
+      {transactions?.length > 0 ? (
       <div className="table-wrap">
         <table className="results-table">
           <thead>
@@ -44,6 +60,9 @@ export default function ResultsTable({ transactions, jobId, onDownloadError }) {
           </tbody>
         </table>
       </div>
+      ) : (
+        <p className="results-empty">No transactions extracted. Download the markdown to check if the PDF was converted correctly.</p>
+      )}
     </section>
   );
 }

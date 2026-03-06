@@ -4,7 +4,7 @@ Upload bank statement PDFs (digital or scanned), get itemized and categorized tr
 
 ## Stack
 
-- **Backend**: Python 3.11+, FastAPI, LangChain (Groq or Ollama), pdfplumber, pdf2image, pytesseract
+- **Backend**: Python 3.11+, FastAPI, LangChain (Gemini or Ollama), pdfplumber, pdf2image, pytesseract
 - **Frontend**: React, Vite
 
 ## Setup
@@ -20,9 +20,9 @@ Upload bank statement PDFs (digital or scanned), get itemized and categorized tr
    pip install -r requirements.txt
    ```
 
-2. **LLM**: Use either Groq (free tier) or Ollama (local).
-   - **Groq**: Get an API key from [console.groq.com](https://console.groq.com), then set `GROQ_API_KEY` in your environment or a `.env` file (see `backend/.env.example`).
-   - **Ollama**: Install [Ollama](https://ollama.ai) and run `ollama pull llama3.2`. No API key needed; the app will use Ollama if `GROQ_API_KEY` is not set.
+2. **LLM**: Use either Google Gemini or Ollama (local).
+   - **Gemini**: Get an API key from [Google AI Studio](https://ai.google.dev/gemini-api/docs/api-key), then set `GOOGLE_GEMINI_API_KEY` in your environment or a `.env` file (see `backend/.env.example`).
+   - **Ollama**: Install [Ollama](https://ollama.ai) and run `ollama pull llama3.2`. No API key needed; the app will use Ollama if `GOOGLE_GEMINI_API_KEY` is not set.
 
 3. **OCR (for scanned PDFs)**:
    - **Tesseract**: Install [Tesseract](https://github.com/tesseract-ocr/tesseract) and ensure it’s on your PATH.
@@ -67,7 +67,7 @@ Upload bank statement PDFs (digital or scanned), get itemized and categorized tr
 
 ## Environment
 
-See `backend/.env.example`. Main variable: `GROQ_API_KEY` (optional; if unset, Ollama is used).
+See `backend/.env.example`. Main variable: `GOOGLE_GEMINI_API_KEY` (optional; if unset, Ollama is used for text/chat).
 
 ## Deploy (Backend + Frontend)
 

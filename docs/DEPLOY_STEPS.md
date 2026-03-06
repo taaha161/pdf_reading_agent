@@ -7,7 +7,7 @@ Use **Render** for the backend (FastAPI + OCR) and **Vercel** for the frontend (
 ## Prerequisites
 
 - Code pushed to a **GitHub** repository
-- A **Groq** API key from [console.groq.com](https://console.groq.com) (for AI and vision)
+- A **Google Gemini** API key from [Google AI Studio](https://ai.google.dev/gemini-api/docs/api-key) (for AI extraction, categorization, chat, and scanned-PDF vision)
 
 ---
 
@@ -31,8 +31,8 @@ Use **Render** for the backend (FastAPI + OCR) and **Vercel** for the frontend (
 
 5. **Add environment variables**  
    In **Environment Variables** → **Add Environment Variable**:
-   - **Key**: `GROQ_API_KEY`  
-     **Value**: paste your Groq API key  
+   - **Key**: `GOOGLE_GEMINI_API_KEY`  
+     **Value**: paste your Google Gemini API key  
    - **Key**: `ALLOWED_ORIGINS`  
      **Value**: leave empty for now (you’ll set it after deploying the frontend)
 
@@ -101,7 +101,7 @@ Use **Render** for the backend (FastAPI + OCR) and **Vercel** for the frontend (
 ### Quick checklist
 
 - [ ] Backend on Render is **Live** and you have its URL
-- [ ] `GROQ_API_KEY` set on Render
+- [ ] `GOOGLE_GEMINI_API_KEY` set on Render
 - [ ] Frontend on Vercel deployed with `VITE_API_URL` = backend URL
 - [ ] `ALLOWED_ORIGINS` on Render = Vercel URL (and redeployed)
 

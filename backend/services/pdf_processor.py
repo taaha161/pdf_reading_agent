@@ -1,5 +1,4 @@
-"""Extract text from PDF: direct text extraction or OCR for scanned pages; optional AI vision."""
-import base64
+"""Extract text from PDF: Datalab when configured; otherwise direct text or OCR for scanned pages. No AI vision."""
 import io
 import logging
 import os
@@ -29,28 +28,30 @@ OCR_DPI = 350
 # Tesseract PSM 3 = fully automatic page segmentation (good for documents)
 TESSERACT_PSM = 3
 
-# Vision: Groq model for image-based extraction (max 5 images per request, 4MB base64 per image)
-GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-VISION_MAX_PIXELS_LONG_SIDE = 2400  # higher res for hand-scanned so small text isn't lost
-VISION_JPEG_QUALITY = 88
-# DPI for PDF->image when using vision (higher = more detail, less omission)
-VISION_DPI = 200
-# For scanned PDFs with this many pages or fewer, skip OCR and use vision only (OCR is very slow on camera scans)
-VISION_ONLY_MAX_PAGES = 5
-
-
 def extract_text_from_pdf(
     file_content: bytes,
     filename: str = "statement.pdf",
     scanned_method: str | None = None,
 ) -> str:
     """
-    Load PDF, try text extraction first (pdfplumber, then pypdf fallback).
-    If too little text per page, use scanned path. scanned_method: "ocr" | "vision" | None (auto).
+    When DATALAB_API_KEY is set, use only Datalab Convert API (PDF -> markdown).
+    Otherwise: try direct text extraction (pdfplumber, then pypdf); if too little text per page,
+    use scanned path with OCR only. scanned_method: "ocr" | None (auto). No AI vision.
     Returns raw text string.
     """
     t0 = time.perf_counter()
     logger.info("extract_text_from_pdf: start, filename=%s, size=%d bytes, scanned_method=%s", filename, len(file_content), scanned_method or "auto")
+
+    if os.environ.get("DATALAB_API_KEY", "").strip():
+        try:
+            from services.datalab_client import convert_pdf_to_markdown
+            text = convert_pdf_to_markdown(file_content, filename or "statement.pdf")
+            logger.info("extract_text_from_pdf: Datalab done, len=%d (%.2f s)", len(text), time.perf_counter() - t0)
+            return text or ""
+        except Exception as e:
+            logger.warning("extract_text_from_pdf: Datalab failed (%s)", e)
+            return ""
+
     stream = io.BytesIO(file_content)
     text = _extract_text_direct(stream)
     stream.seek(0)
@@ -170,7 +171,7 @@ def _preprocess_image_for_ocr(img: Image.Image) -> Image.Image:
 
 
 def _pdf_to_images(pdf_bytes: bytes, dpi: int | None = None) -> list[Image.Image]:
-    """Convert PDF to list of PIL images. dpi defaults to OCR_DPI; use lower (e.g. 150) for vision-only to speed up."""
+    """Convert PDF to list of PIL images. dpi defaults to OCR_DPI."""
     use_dpi = dpi if dpi is not None else OCR_DPI
     tmp_path = None
     try:
@@ -207,112 +208,17 @@ def _extract_text_ocr_from_images(images: list[Image.Image]) -> str:
     return "\n".join(parts)
 
 
-def _image_to_base64_jpeg(img: Image.Image, max_long_side: int = VISION_MAX_PIXELS_LONG_SIDE) -> str:
-    """Resize if needed and encode as JPEG base64 for vision API (under 4MB)."""
-    w, h = img.size
-    if max(w, h) > max_long_side:
-        ratio = max_long_side / max(w, h)
-        new_size = (int(w * ratio), int(h * ratio))
-        img = img.resize(new_size, Image.Resampling.LANCZOS)
-    if img.mode != "RGB":
-        img = img.convert("RGB")
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=VISION_JPEG_QUALITY, optimize=True)
-    return base64.b64encode(buf.getvalue()).decode("ascii")
-
-
-def _extract_text_vision(images: list[Image.Image]) -> str:
-    """Use Groq vision model to extract text from each page image. Requires GROQ_API_KEY."""
-    api_key = os.environ.get("GROQ_API_KEY", "").strip()
-    if not api_key:
-        logger.info("extract_text_vision: skipped (no GROQ_API_KEY)")
-        return ""
-    try:
-        from groq import Groq
-    except ImportError:
-        logger.info("extract_text_vision: skipped (groq not installed)")
-        return ""
-    client = Groq(api_key=api_key)
-    logger.info("extract_text_vision: calling Groq for %d page(s)", len(images))
-    prompt = (
-        "Extract ALL text from this bank statement or financial document image with complete accuracy. "
-        "Do not omit or skip any line. Include every date, every description, every debit/credit amount, account numbers, headers, and any other visible text. "
-        "Preserve the exact order and layout. If a line is partially legible, include what you can read. "
-        "In transaction tables: include every row that is an actual transaction (date, description, debit or credit amount). "
-        "Do NOT include as transaction rows: Opening Balance, Closing Balance, Balance B/F, Balance C/F, or running balance-only rows. "
-        "If there is a 'Balance' column, do not include it in each transaction row; keep date, description, and amount. "
-        "Output only the extracted text, no commentary."
-    )
-    parts = []
-    for i, img in enumerate(images):
-        try:
-            t_page = time.perf_counter()
-            b64 = _image_to_base64_jpeg(img)
-            url = f"data:image/jpeg;base64,{b64}"
-            completion = client.chat.completions.create(
-                model=GROQ_VISION_MODEL,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {"url": url}},
-                        ],
-                    }
-                ],
-                temperature=0,
-                max_tokens=8192,
-            )
-            content = (completion.choices[0].message.content or "").strip()
-            if content:
-                parts.append(content)
-            logger.info("extract_text_vision: page %d/%d done (%.2f s)", i + 1, len(images), time.perf_counter() - t_page)
-        except Exception as e:
-            logger.warning("extract_text_vision: page %d failed: %s", i + 1, e)
-            continue
-    return "\n\n".join(parts)
-
-
 def _extract_text_scanned(pdf_bytes: bytes, scanned_method: str | None = None) -> str:
-    """Get images from PDF. scanned_method: "ocr" | "vision" | None (auto). When "ocr" use only OCR; when "vision" use only AI vision; when None use auto (vision-only for few pages, else OCR+vision and pick best)."""
+    """Get images from PDF and run OCR only. scanned_method: \"ocr\" | None (auto). No AI vision; Datalab is used when DATALAB_API_KEY is set (see extract_text_from_pdf)."""
     t0 = time.perf_counter()
-    num_pages = _count_pages(io.BytesIO(pdf_bytes))
-    force_ocr = (scanned_method or "").strip().lower() == "ocr"
-    force_vision = (scanned_method or "").strip().lower() == "vision"
-    if not force_ocr and not force_vision:
-        vision_only = num_pages <= VISION_ONLY_MAX_PAGES
-    else:
-        vision_only = force_vision
-    dpi = VISION_DPI if vision_only or force_vision else OCR_DPI
-    images = _pdf_to_images(pdf_bytes, dpi=dpi)
-    logger.info("extract_text_scanned: PDF -> %d images, dpi=%d, force_ocr=%s force_vision=%s (%.2f s)", len(images), dpi, force_ocr, force_vision, time.perf_counter() - t0)
+    images = _pdf_to_images(pdf_bytes, dpi=OCR_DPI)
+    logger.info("extract_text_scanned: PDF -> %d images, dpi=%d (%.2f s)", len(images), OCR_DPI, time.perf_counter() - t0)
     if not images:
         return ""
-    if force_vision or (vision_only and not force_ocr):
-        logger.info("extract_text_scanned: vision path (%d pages)", len(images))
-        vision_text = _extract_text_vision(images)
-        logger.info("extract_text_scanned: vision done, len=%d (%.2f s total)", len(vision_text), time.perf_counter() - t0)
-        return vision_text.strip() if vision_text else ""
-    if force_ocr:
-        logger.info("extract_text_scanned: OCR-only path (%d pages)", len(images))
-        try:
-            ocr_text = _extract_text_ocr_from_images(images)
-            logger.info("extract_text_scanned: OCR done, len=%d (%.2f s total)", len(ocr_text), time.perf_counter() - t0)
-            return ocr_text or ""
-        except Exception as e:
-            err_msg = str(e).strip()
-            if "tesseract" in err_msg.lower() or "pytesseract" in err_msg.lower():
-                raise RuntimeError(
-                    "OCR failed: Tesseract is required for scanned PDFs. "
-                    "Install it (e.g. brew install tesseract on macOS) and ensure it is on PATH."
-                ) from e
-            raise
-    # Auto: run both, pick best
-    ocr_text = ""
     try:
-        t1 = time.perf_counter()
         ocr_text = _extract_text_ocr_from_images(images)
-        logger.info("extract_text_scanned: OCR done, len=%d (%.2f s)", len(ocr_text), time.perf_counter() - t1)
+        logger.info("extract_text_scanned: OCR done, len=%d (%.2f s total)", len(ocr_text), time.perf_counter() - t0)
+        return ocr_text or ""
     except Exception as e:
         err_msg = str(e).strip()
         if "tesseract" in err_msg.lower() or "pytesseract" in err_msg.lower():
@@ -321,12 +227,3 @@ def _extract_text_scanned(pdf_bytes: bytes, scanned_method: str | None = None) -
                 "Install it (e.g. brew install tesseract on macOS) and ensure it is on PATH."
             ) from e
         raise
-    t2 = time.perf_counter()
-    vision_text = _extract_text_vision(images)
-    if vision_text:
-        logger.info("extract_text_scanned: vision done, len=%d (%.2f s)", len(vision_text), time.perf_counter() - t2)
-    if vision_text and len(vision_text.strip()) > len(ocr_text.strip()):
-        logger.info("extract_text_scanned: using vision result (%.2f s total)", time.perf_counter() - t0)
-        return vision_text.strip()
-    logger.info("extract_text_scanned: using OCR result (%.2f s total)", time.perf_counter() - t0)
-    return ocr_text or ""
