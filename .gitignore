@@ -1,2 +1,42 @@
+# Test/sample PDFs
 /dummy_statement.pdf
 /hand_scanned.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# Virtual env
+backend/venv/
+venv/
+.venv/
+env/
+
+# Environment (keep .env.example)
+.env
+.env.local
+*.env.local
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs / cache
+*.log
+.cache/
