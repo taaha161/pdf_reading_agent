@@ -27,6 +27,10 @@ app = FastAPI(title="PDF Bank Statement Processor")
 
 # CORS: allow origins from ALLOWED_ORIGINS (comma-separated); if unset, use defaults. Production frontend is always allowed.
 _VERCEL_ORIGIN = "https://pdf-reading-agent.vercel.app"
+_EXTRA_ORIGINS = (
+    "https://pdftoexcelconverter.io",
+    "https://bankstatementscanner.com",
+)
 _origins_raw = os.environ.get("ALLOWED_ORIGINS", "").strip()
 if _origins_raw:
     _origins_list = [o.strip().rstrip("/") for o in _origins_raw.split(",") if o.strip()]
@@ -37,8 +41,9 @@ else:
         "http://localhost:5174",
         "http://127.0.0.1:5174",
     ]
-if _VERCEL_ORIGIN not in _origins_list:
-    _origins_list.append(_VERCEL_ORIGIN)
+for _origin in (_VERCEL_ORIGIN,) + _EXTRA_ORIGINS:
+    if _origin not in _origins_list:
+        _origins_list.append(_origin)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins_list,
