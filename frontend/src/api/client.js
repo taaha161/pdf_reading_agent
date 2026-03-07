@@ -2,6 +2,19 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const UPLOAD_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes (scanned PDFs + OCR/vision can be slow)
 
+/** Set from AuthProvider so API calls include Bearer token. */
+let authGetToken = null;
+export function setApiAuthToken(getToken) {
+  authGetToken = getToken;
+}
+
+function authHeaders() {
+  const headers = {};
+  const token = typeof authGetToken === "function" ? authGetToken() : null;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
 function getErrorMessage(err) {
   if (err instanceof TypeError && err.message === "Failed to fetch") {
     return `Cannot reach the backend at ${API_BASE}. Is it running? Check the URL and CORS.`;
@@ -21,6 +34,7 @@ export async function processPdf(file) {
   try {
     res = await fetch(`${API_BASE}/api/process-pdf`, {
       method: "POST",
+      headers: authHeaders(),
       body: form,
       signal: controller.signal,
     });
@@ -39,7 +53,7 @@ export async function processPdf(file) {
 }
 
 export async function downloadCsv(jobId) {
-  const res = await fetch(`${API_BASE}/api/jobs/${jobId}/csv`);
+  const res = await fetch(`${API_BASE}/api/jobs/${jobId}/csv`, { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to download CSV");
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
@@ -51,7 +65,7 @@ export async function downloadCsv(jobId) {
 }
 
 export async function downloadMarkdown(jobId) {
-  const res = await fetch(`${API_BASE}/api/jobs/${jobId}/markdown`);
+  const res = await fetch(`${API_BASE}/api/jobs/${jobId}/markdown`, { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to download markdown");
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
@@ -65,7 +79,7 @@ export async function downloadMarkdown(jobId) {
 export async function sendChatMessage(jobId, message) {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ job_id: jobId, message }),
   });
   if (!res.ok) {

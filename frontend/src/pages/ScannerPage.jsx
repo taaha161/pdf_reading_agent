@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/pdf_to_excel_logo.png";
+import { useAuth } from "../contexts/AuthContext";
 import FileUpload from "../components/FileUpload";
 import Loader from "../components/Loader";
 import SummaryTable from "../components/SummaryTable";
@@ -10,6 +11,8 @@ import { processPdf } from "../api/client";
 import "./ScannerPage.css";
 
 export default function ScannerPage() {
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [jobId, setJobId] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [summaryByCategory, setSummaryByCategory] = useState([]);
@@ -58,6 +61,13 @@ export default function ScannerPage() {
           <img src={logo} alt="" className="scanner-logo" aria-hidden />
           <h1 className="scanner-title">Bank Statement Processor</h1>
         </div>
+        <button
+          type="button"
+          className="scanner-logout"
+          onClick={() => { signOut(); navigate("/"); }}
+        >
+          Log out
+        </button>
       </header>
 
       <main className="scanner-main">

@@ -67,7 +67,14 @@ Upload bank statement PDFs (digital or scanned), get itemized and categorized tr
 
 ## Environment
 
-See `backend/.env.example`. Main variable: `GOOGLE_GEMINI_API_KEY` (optional; if unset, Ollama is used for text/chat).
+- **Backend:** See `backend/.env.example`. Main: `GOOGLE_GEMINI_API_KEY` (optional); for auth: `SUPABASE_URL`, `SUPABASE_JWT_SECRET`, `DATABASE_URL`.
+- **Frontend:** See `frontend/.env.example`. `VITE_API_URL`; for auth: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+
+## Auth (Supabase)
+
+The app uses Supabase for sign-in (social, email, phone). Create a project at [supabase.com](https://supabase.com), enable Email and Phone auth and OAuth providers (e.g. Google), then set the env vars above. Run the SQL migrations in `supabase/migrations/` in the Supabase SQL Editor (or via Supabase CLI) to create `jobs`, `profiles`, and `subscription` tables.
+
+**Next steps:** See [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md) for setup, running migrations, optional features (My jobs, profiles, Stripe), and deployment.
 
 ## Deploy (Backend + Frontend)
 

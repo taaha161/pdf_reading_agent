@@ -12,10 +12,11 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
+from auth import get_current_user
 from models.schemas import CategorySummary, ChatRequest, ChatResponse, ProcessPdfResponse, Transaction
 from services.chat_service import get_reply
 from services.csv_export import transactions_to_csv
@@ -153,10 +154,16 @@ async def preflight_csv(request: Request, job_id: str):
     return await _preflight_response(request)
 
 
+@app.options("/api/jobs/{job_id}/markdown")
+async def preflight_markdown(request: Request, job_id: str):
+    return await _preflight_response(request)
+
+
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
 async def process_pdf(
     file: UploadFile = File(...),
     scanned_method: str = Form("vision"),
+    user_id: str = Depends(get_current_user),
 ):
     t0 = time.perf_counter()
     # Normalize: only "ocr" or "vision" (for scanned PDFs)
@@ -197,7 +204,7 @@ async def process_pdf(
 
         csv_content = transactions_to_csv(transactions)
         job_id = create_job_id()
-        set_job(job_id, transactions, csv_content, raw_text, currency)
+        set_job(job_id, user_id, transactions, csv_content, raw_text, currency)
         summary = _summary_by_category(transactions)
         logger.info("process-pdf: finished successfully, job_id=%s, total=%.2f s", job_id, time.perf_counter() - t0)
 
@@ -216,8 +223,8 @@ async def process_pdf(
 
 
 @app.get("/api/jobs/{job_id}/csv")
-def download_csv(job_id: str):
-    job = get_job(job_id)
+def download_csv(job_id: str, user_id: str = Depends(get_current_user)):
+    job = get_job(job_id, user_id)
     if not job:
         raise HTTPException(404, "Job not found")
     return Response(
@@ -228,9 +235,9 @@ def download_csv(job_id: str):
 
 
 @app.get("/api/jobs/{job_id}/markdown")
-def download_markdown(job_id: str):
+def download_markdown(job_id: str, user_id: str = Depends(get_current_user)):
     """Download the raw extracted text (e.g. Datalab markdown) for the job."""
-    job = get_job(job_id)
+    job = get_job(job_id, user_id)
     if not job:
         raise HTTPException(404, "Job not found")
     raw_text = job.get("raw_text", "")
@@ -242,9 +249,9 @@ def download_markdown(job_id: str):
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-def chat(body: ChatRequest):
+def chat(body: ChatRequest, user_id: str = Depends(get_current_user)):
     t0 = time.perf_counter()
-    job = get_job(body.job_id)
+    job = get_job(body.job_id, user_id)
     if not job:
         raise HTTPException(404, "Job not found")
     try:
