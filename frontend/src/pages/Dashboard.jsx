@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import { useAuth } from "../contexts/AuthContext";
-import { listJobs } from "../api/client";
+import { useJobs } from "../contexts/JobsContext";
 import "./Dashboard.css";
 
 function formatDate(isoString) {
@@ -16,30 +16,12 @@ function formatDate(isoString) {
 
 export default function Dashboard() {
   const { user, accessToken } = useAuth();
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { jobs, loading, error, loadJobs, hasFetched } = useJobs();
   const displayName = user?.user_metadata?.full_name?.trim() || user?.email || "";
 
   useEffect(() => {
-    if (!accessToken) return;
-    let cancelled = false;
-    setError(null);
-    setLoading(true);
-    listJobs()
-      .then((data) => {
-        if (!cancelled) setJobs(data.jobs || []);
-      })
-      .catch((e) => {
-        if (!cancelled) {
-          setError(e.status === 401 ? "Please log in again." : e.message || "Failed to load jobs");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [accessToken]);
+    if (accessToken) loadJobs();
+  }, [accessToken, loadJobs]);
 
   return (
     <AppLayout>
@@ -68,7 +50,7 @@ export default function Dashboard() {
           <div className="dashboard-loading">Checking authentication…</div>
         )}
 
-        {accessToken && loading ? (
+        {accessToken && loading && !hasFetched ? (
           <div className="dashboard-loading">Loading jobs…</div>
         ) : jobs.length === 0 ? (
           <div className="dashboard-empty">
