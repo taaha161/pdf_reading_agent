@@ -1,11 +1,10 @@
-"""Verify Supabase JWT and provide get_current_user dependency.
+"""Verify Supabase JWT via JWKS and provide get_current_user dependency.
 
-Supports two verification methods:
-- Legacy: SUPABASE_JWT_SECRET (HS256). Supabase is migrating away from this; rotation is via standby key.
-- Preferred: SUPABASE_URL only — fetch public keys from JWKS (auth/v1/.well-known/jwks.json) and verify
-  with RS256/ES256. No secret needed; works with Supabase's new JWT Signing Keys.
-  JWKS is fetched with httpx to avoid SSL certificate issues on macOS (Python urllib).
+Uses SUPABASE_URL only: fetches public keys from auth/v1/.well-known/jwks.json (JWKS)
+and verifies tokens with RS256/ES256. No JWT secret needed.
+JWKS is fetched with httpx to avoid SSL certificate issues on macOS.
 """
+import logging
 import os
 import time
 from typing import Annotated
@@ -14,11 +13,12 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+logger = logging.getLogger("pdf_processor_app.auth")
+
 _SUPABASE_URL = (os.environ.get("SUPABASE_URL", "").strip()).rstrip("/")
-_SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET", "").strip()
 _HTTP_BEARER = HTTPBearer(auto_error=False)
 
-# Cached JWK set (fetched with httpx to avoid SSL cert issues). (jwk_set, expiry_time).
+# Cached JWK set (fetched with httpx). (jwk_set, expiry_time).
 _jwk_set_cache = None
 _JWKS_CACHE_SECONDS = 300
 
@@ -33,12 +33,13 @@ def _fetch_jwks_via_httpx():
         r = httpx.get(url, timeout=10.0)
         r.raise_for_status()
         return r.json()
-    except Exception:
+    except Exception as e:
+        logger.warning("JWKS fetch failed: %s", e)
         return None
 
 
 def _get_jwk_set():
-    """Return PyJWKSet from cached or freshly fetched JWKS (httpx)."""
+    """Return PyJWKSet from cached or freshly fetched JWKS."""
     global _jwk_set_cache
     now = time.monotonic()
     if _jwk_set_cache is not None and now < _jwk_set_cache[1]:
@@ -51,78 +52,68 @@ def _get_jwk_set():
         jwk_set = PyJWKSet.from_dict(data)
         _jwk_set_cache = (jwk_set, now + _JWKS_CACHE_SECONDS)
         return jwk_set
-    except Exception:
+    except Exception as e:
+        logger.warning("JWKS parse failed: %s", e)
         return None
 
 
 def _decode_supabase_jwt(token: str) -> dict:
-    """Decode and validate Supabase access token; return payload or raise."""
-    # 1) Prefer JWKS (new Supabase signing keys) whenever SUPABASE_URL is set.
-    if _SUPABASE_URL:
-        jwk_set = _get_jwk_set()
-        if jwk_set:
-            try:
-                header = jwt.get_unverified_header(token)
-                kid = header.get("kid")
-                if not kid:
-                    raise jwt.InvalidTokenError("missing kid")
-                py_jwk = jwk_set[kid]
-                payload = jwt.decode(
-                    token,
-                    py_jwk.key,
-                    algorithms=["RS256", "ES256"],
-                    audience="authenticated",
-                    options={"verify_aud": True},
-                )
-                return payload
-            except KeyError:
-                pass  # Key id not in set; fall through to legacy if configured
-            except jwt.ExpiredSignatureError:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired. Log in again.")
-            except jwt.InvalidTokenError:
-                pass  # Fall through to legacy if configured
-        if not _SUPABASE_JWT_SECRET:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Auth unavailable.",
-            )
-
-    # 2) Legacy: symmetric secret (HS256). Used when JWKS didn't verify or only secret is set.
-    if not _SUPABASE_JWT_SECRET:
+    """Decode and validate Supabase access token with JWKS; return payload or raise."""
+    if not _SUPABASE_URL:
+        logger.warning("JWT verify: SUPABASE_URL not set -> 503")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Auth unavailable.",
+        )
+    jwk_set = _get_jwk_set()
+    if not jwk_set:
+        logger.warning("JWT verify: JWKS unavailable (fetch or parse failed) -> 503")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Auth unavailable.",
         )
     try:
+        header = jwt.get_unverified_header(token)
+        kid = header.get("kid")
+        if not kid:
+            logger.info("JWT verify: token missing kid -> 401")
+            raise jwt.InvalidTokenError("missing kid")
+        py_jwk = jwk_set[kid]
         payload = jwt.decode(
             token,
-            _SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
+            py_jwk.key,
+            algorithms=["RS256", "ES256"],
             audience="authenticated",
             options={"verify_aud": True},
         )
+        return payload
+    except KeyError:
+        logger.info("JWT verify: kid %r not in JWKS -> 401", kid)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token.")
     except jwt.ExpiredSignatureError:
+        logger.info("JWT verify: token expired (kid=%r) -> 401", kid)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired. Log in again.")
-    except jwt.InvalidTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token.",
-        )
-    return payload
+    except jwt.InvalidTokenError as e:
+        logger.info("JWT verify: invalid token (kid=%r) -> 401, reason=%s", header.get("kid"), e)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token.")
 
 
 def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_HTTP_BEARER)],
 ) -> str:
-    """Extract Bearer token, verify Supabase JWT, return user id (UUID string)."""
+    """Extract Bearer token, verify Supabase JWT via JWKS, return user id (UUID string)."""
     if not credentials or not credentials.credentials:
+        logger.info("JWT verify: missing or empty Authorization header -> 401")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    payload = _decode_supabase_jwt(credentials.credentials)
+    token = credentials.credentials
+    payload = _decode_supabase_jwt(token)
     sub = payload.get("sub")
     if not sub:
+        logger.info("JWT verify: payload missing sub -> 401")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+    logger.debug("JWT verify: ok sub=%s", sub)
     return str(sub)

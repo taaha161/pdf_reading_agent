@@ -8,10 +8,10 @@ export function setApiAuthToken(getToken) {
   authGetToken = getToken;
 }
 
-function authHeaders() {
+function authHeaders(token) {
   const headers = {};
-  const token = typeof authGetToken === "function" ? authGetToken() : null;
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const t = token !== undefined ? token : (typeof authGetToken === "function" ? authGetToken() : null);
+  if (t) headers.Authorization = `Bearer ${t}`;
   return headers;
 }
 
@@ -52,8 +52,8 @@ export async function processPdf(file) {
   return res.json();
 }
 
-export async function listJobs() {
-  const res = await fetch(`${API_BASE}/api/jobs`, { headers: authHeaders(), credentials: "include" });
+export async function listJobs(token) {
+  const res = await fetch(`${API_BASE}/api/jobs`, { headers: authHeaders(token), credentials: "include" });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     const e = new Error(err.detail || "Failed to load jobs");
