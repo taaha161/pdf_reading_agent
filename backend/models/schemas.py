@@ -31,3 +31,21 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+
+
+class JobListItem(BaseModel):
+    id: str
+    created_at: str
+    transaction_count: int
+    currency: Optional[str] = None
+
+
+class JobListResponse(BaseModel):
+    jobs: list[JobListItem]
+
+
+class JobDetailResponse(BaseModel):
+    job_id: str
+    transactions: list[Transaction]
+    summary_by_category: list[CategorySummary]
+    currency: Optional[str] = None

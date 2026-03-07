@@ -8,7 +8,7 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshSession = useCallback(async () => {
+  const loadSession = useCallback(async () => {
     const { data: { session: s } } = await supabase.auth.getSession();
     setSession(s);
     setUser(s?.user ?? null);
@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    refreshSession();
+    loadSession();
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, s) => {
@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
     return () => subscription.unsubscribe();
-  }, [refreshSession]);
+  }, [loadSession]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();

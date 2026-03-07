@@ -4,8 +4,10 @@ Supports two verification methods:
 - Legacy: SUPABASE_JWT_SECRET (HS256). Supabase is migrating away from this; rotation is via standby key.
 - Preferred: SUPABASE_URL only — fetch public keys from JWKS (auth/v1/.well-known/jwks.json) and verify
   with RS256/ES256. No secret needed; works with Supabase's new JWT Signing Keys.
+  JWKS is fetched with httpx to avoid SSL certificate issues on macOS (Python urllib).
 """
 import os
+import time
 from typing import Annotated
 
 import jwt
@@ -16,57 +18,80 @@ _SUPABASE_URL = (os.environ.get("SUPABASE_URL", "").strip()).rstrip("/")
 _SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET", "").strip()
 _HTTP_BEARER = HTTPBearer(auto_error=False)
 
-# JWKS client for new Supabase JWT Signing Keys (lazy init, cached by PyJWKClient).
-_jwks_client = None
+# Cached JWK set (fetched with httpx to avoid SSL cert issues). (jwk_set, expiry_time).
+_jwk_set_cache = None
+_JWKS_CACHE_SECONDS = 300
 
 
-def _get_jwks_client():
-    global _jwks_client
-    if _jwks_client is None:
-        if not _SUPABASE_URL:
-            return None
-        try:
-            from jwt import PyJWKClient
-            _jwks_client = PyJWKClient(
-                f"{_SUPABASE_URL}/auth/v1/.well-known/jwks.json",
-                cache_jwk_set=True,
-                lifespan=300,
-            )
-        except Exception:
-            return None
-    return _jwks_client
+def _fetch_jwks_via_httpx():
+    """Fetch JWKS from Supabase using httpx (uses certifi; works on macOS)."""
+    if not _SUPABASE_URL:
+        return None
+    try:
+        import httpx
+        url = f"{_SUPABASE_URL}/auth/v1/.well-known/jwks.json"
+        r = httpx.get(url, timeout=10.0)
+        r.raise_for_status()
+        return r.json()
+    except Exception:
+        return None
+
+
+def _get_jwk_set():
+    """Return PyJWKSet from cached or freshly fetched JWKS (httpx)."""
+    global _jwk_set_cache
+    now = time.monotonic()
+    if _jwk_set_cache is not None and now < _jwk_set_cache[1]:
+        return _jwk_set_cache[0]
+    data = _fetch_jwks_via_httpx()
+    if data is None:
+        return None
+    try:
+        from jwt import PyJWKSet
+        jwk_set = PyJWKSet.from_dict(data)
+        _jwk_set_cache = (jwk_set, now + _JWKS_CACHE_SECONDS)
+        return jwk_set
+    except Exception:
+        return None
 
 
 def _decode_supabase_jwt(token: str) -> dict:
     """Decode and validate Supabase access token; return payload or raise."""
-    # 1) Prefer JWKS (new signing keys) if only SUPABASE_URL is set.
-    if _SUPABASE_URL and not _SUPABASE_JWT_SECRET:
-        client = _get_jwks_client()
-        if client:
+    # 1) Prefer JWKS (new Supabase signing keys) whenever SUPABASE_URL is set.
+    if _SUPABASE_URL:
+        jwk_set = _get_jwk_set()
+        if jwk_set:
             try:
-                signing_key = client.get_signing_key_from_jwt(token)
+                header = jwt.get_unverified_header(token)
+                kid = header.get("kid")
+                if not kid:
+                    raise jwt.InvalidTokenError("missing kid")
+                py_jwk = jwk_set[kid]
                 payload = jwt.decode(
                     token,
-                    signing_key.key,
+                    py_jwk.key,
                     algorithms=["RS256", "ES256"],
                     audience="authenticated",
                     options={"verify_aud": True},
                 )
                 return payload
+            except KeyError:
+                pass  # Key id not in set; fall through to legacy if configured
             except jwt.ExpiredSignatureError:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired. Log in again.")
             except jwt.InvalidTokenError:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Auth not configured (SUPABASE_URL required for JWKS verification)",
-        )
+                pass  # Fall through to legacy if configured
+        if not _SUPABASE_JWT_SECRET:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Auth unavailable.",
+            )
 
-    # 2) Legacy: symmetric secret (HS256).
+    # 2) Legacy: symmetric secret (HS256). Used when JWKS didn't verify or only secret is set.
     if not _SUPABASE_JWT_SECRET:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Auth not configured (set SUPABASE_URL for JWKS or SUPABASE_JWT_SECRET for legacy verification)",
+            detail="Auth unavailable.",
         )
     try:
         payload = jwt.decode(
@@ -77,9 +102,12 @@ def _decode_supabase_jwt(token: str) -> dict:
             options={"verify_aud": True},
         )
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired. Log in again.")
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token.",
+        )
     return payload
 
 

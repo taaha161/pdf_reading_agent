@@ -1,0 +1,95 @@
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+}
+
+.app-layout-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.875rem 1.5rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+
+.app-layout-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.app-layout-logo {
+  width: 40px;
+  height: auto;
+  object-fit: contain;
+}
+
+.app-layout-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.app-layout-nav-link {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: color 0.15s, background 0.15s;
+}
+
+.app-layout-nav-link:hover {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.app-layout-nav-link.is-active {
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.app-layout-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-layout-user-name {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-layout-logout {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-md);
+  transition: color 0.15s, background 0.15s;
+}
+
+.app-layout-logout:hover {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.app-layout-main {
+  flex: 1;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 2rem;
+}

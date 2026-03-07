@@ -14,75 +14,115 @@ from starlette.requests import Request
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 
 from auth import get_current_user
-from models.schemas import CategorySummary, ChatRequest, ChatResponse, ProcessPdfResponse, Transaction
+from models.schemas import (
+    CategorySummary,
+    ChatRequest,
+    ChatResponse,
+    JobDetailResponse,
+    JobListItem,
+    JobListResponse,
+    ProcessPdfResponse,
+    Transaction,
+)
 from services.chat_service import get_reply
 from services.csv_export import transactions_to_csv
 from services.pdf_processor import extract_text_from_pdf
 from services.statement_agent import extract_and_categorize
-from store import create_job_id, get_job, set_job
+from store import create_job_id, get_job, list_jobs, set_job
+
+try:
+    import psycopg2
+except ImportError:
+    psycopg2 = None
 
 app = FastAPI(title="PDF Bank Statement Processor")
 
-# CORS: allow origins from ALLOWED_ORIGINS (comma-separated); if unset, use defaults. Production frontend is always allowed.
+
+if psycopg2 is not None:
+    @app.exception_handler(psycopg2.OperationalError)
+    def _handle_db_unavailable(request, exc):
+        """Return 503 when database is unreachable (e.g. DNS/network)."""
+        return JSONResponse(
+            status_code=503,
+        content={"detail": "Database unavailable. Please try again later."},
+        )
+
+# CORS: allow origins from ALLOWED_ORIGINS (comma-separated); if unset, use defaults. Localhost and production are always allowed.
 _VERCEL_ORIGIN = "https://pdf-reading-agent.vercel.app"
 _EXTRA_ORIGINS = (
     "https://pdftoexcelconverter.io",
     "https://bankstatementscanner.com",
 )
+_LOCALHOST_ORIGINS = (
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+)
 _origins_raw = os.environ.get("ALLOWED_ORIGINS", "").strip()
 if _origins_raw:
     _origins_list = [o.strip().rstrip("/") for o in _origins_raw.split(",") if o.strip()]
 else:
-    _origins_list = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-    ]
-for _origin in (_VERCEL_ORIGIN,) + _EXTRA_ORIGINS:
+    _origins_list = []
+# Always merge localhost and production origins so CORS works in dev and prod
+for _origin in _LOCALHOST_ORIGINS + (_VERCEL_ORIGIN,) + _EXTRA_ORIGINS:
     if _origin not in _origins_list:
         _origins_list.append(_origin)
+
+
+def _is_allowed_origin(origin: str) -> bool:
+    if not origin or not origin.strip():
+        return False
+    origin = origin.strip()
+    return origin in _origins_list
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin"],
     expose_headers=["*"],
 )
 
 
+# When credentials=true, browsers require explicit header names (not *).
+_CORS_ALLOW_HEADERS = "Authorization, Content-Type, Accept, X-Requested-With, Origin"
+
 def _cors_headers(origin: str) -> dict:
-    """CORS headers to attach when origin is allowed (same as the extension would allow)."""
+    """CORS headers to attach when origin is allowed."""
     return {
         "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH",
-        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Headers": _CORS_ALLOW_HEADERS,
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Max-Age": "86400",
     }
 
 
 class PreflightMiddleware(BaseHTTPMiddleware):
-    """Handle all OPTIONS (preflight) here with 200 + CORS so the router is never hit (avoids 400). Actual response CORS still enforced by AddCorsToResponseMiddleware."""
+    """Handle all OPTIONS (preflight) with 200 + CORS for allowed origins."""
 
     async def dispatch(self, request: Request, call_next):
         if request.method != "OPTIONS":
             return await call_next(request)
-        origin = request.headers.get("origin", "") or "*"
-        return Response(status_code=200, headers=_cors_headers(origin))
+        origin = request.headers.get("origin", "").strip()
+        if _is_allowed_origin(origin):
+            return Response(status_code=200, headers=_cors_headers(origin))
+        return Response(status_code=204)
 
 
 class AddCorsToResponseMiddleware(BaseHTTPMiddleware):
-    """Add CORS headers to every response when request Origin is in allowed list (so browser never blocks)."""
+    """Add CORS headers to every response when request Origin is allowed."""
 
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
-        origin = request.headers.get("origin", "")
-        if origin and origin in _origins_list:
+        origin = request.headers.get("origin", "").strip()
+        if _is_allowed_origin(origin):
             for key, value in _cors_headers(origin).items():
                 response.headers[key] = value
         return response
@@ -149,6 +189,16 @@ async def preflight_chat(request: Request):
     return await _preflight_response(request)
 
 
+@app.options("/api/jobs")
+async def preflight_jobs_list(request: Request):
+    return await _preflight_response(request)
+
+
+@app.options("/api/jobs/{job_id}")
+async def preflight_job_detail(request: Request, job_id: str):
+    return await _preflight_response(request)
+
+
 @app.options("/api/jobs/{job_id}/csv")
 async def preflight_csv(request: Request, job_id: str):
     return await _preflight_response(request)
@@ -157,6 +207,28 @@ async def preflight_csv(request: Request, job_id: str):
 @app.options("/api/jobs/{job_id}/markdown")
 async def preflight_markdown(request: Request, job_id: str):
     return await _preflight_response(request)
+
+
+@app.get("/api/jobs", response_model=JobListResponse)
+def list_user_jobs(user_id: str = Depends(get_current_user)):
+    """List current user's jobs (newest first)."""
+    jobs = list_jobs(user_id)
+    return JobListResponse(jobs=[JobListItem(**j) for j in jobs])
+
+
+@app.get("/api/jobs/{job_id}", response_model=JobDetailResponse)
+def get_job_detail(job_id: str, user_id: str = Depends(get_current_user)):
+    """Get one job's data for viewing (transactions + summary)."""
+    job = get_job(job_id, user_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    summary = _summary_by_category(job["transactions"])
+    return JobDetailResponse(
+        job_id=job_id,
+        transactions=[Transaction(**t) for t in job["transactions"]],
+        summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+        currency=job.get("currency"),
+    )
 
 
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)

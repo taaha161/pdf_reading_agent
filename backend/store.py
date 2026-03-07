@@ -55,6 +55,31 @@ def set_job(
         )
 
 
+def list_jobs(user_id: str, limit: int = 100) -> list[dict]:
+    """Return list of jobs for user: id, created_at, transaction_count, currency. Newest first."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            SELECT id, created_at, transactions, currency
+            FROM jobs WHERE user_id = %s
+            ORDER BY created_at DESC
+            LIMIT %s
+            """,
+            (user_id, limit),
+        )
+        rows = cur.fetchall()
+    out = []
+    for row in rows:
+        transactions = row["transactions"] if isinstance(row["transactions"], list) else json.loads(row["transactions"] or "[]")
+        out.append({
+            "id": row["id"],
+            "created_at": row["created_at"].isoformat() if hasattr(row["created_at"], "isoformat") else str(row["created_at"]),
+            "transaction_count": len(transactions),
+            "currency": row["currency"],
+        })
+    return out
+
+
 def get_job(job_id: str, user_id: str) -> dict | None:
     """Return job dict with transactions, csv_content (derived), raw_text, currency; or None if not found or not owned by user."""
     with _cursor() as cur:
@@ -68,6 +93,7 @@ def get_job(job_id: str, user_id: str) -> dict | None:
     transactions = row["transactions"] if isinstance(row["transactions"], list) else json.loads(row["transactions"] or "[]")
     csv_content = transactions_to_csv(transactions)
     return {
+        "id": row["id"],
         "transactions": transactions,
         "csv_content": csv_content,
         "raw_text": row["raw_text"] or "",
