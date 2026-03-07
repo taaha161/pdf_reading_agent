@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -15,6 +16,9 @@ from starlette.requests import Request
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from auth import get_current_user
 from models.schemas import (
@@ -38,7 +42,10 @@ try:
 except ImportError:
     psycopg2 = None
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="PDF Bank Statement Processor")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 if psycopg2 is not None:
@@ -128,8 +135,22 @@ class AddCorsToResponseMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to all responses. HSTS only when PRODUCTION=1 or request is HTTPS."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        is_https = getattr(request.url, "scheme", "") == "https"
+        if os.environ.get("PRODUCTION", "").strip().lower() in ("1", "true", "yes") or is_https:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+        return response
+
+
 app.add_middleware(PreflightMiddleware)
 app.add_middleware(AddCorsToResponseMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 ALLOWED_CONTENT_TYPE = "application/pdf"
@@ -195,17 +216,17 @@ async def preflight_jobs_list(request: Request):
 
 
 @app.options("/api/jobs/{job_id}")
-async def preflight_job_detail(request: Request, job_id: str):
+async def preflight_job_detail(request: Request, job_id: uuid.UUID):
     return await _preflight_response(request)
 
 
 @app.options("/api/jobs/{job_id}/csv")
-async def preflight_csv(request: Request, job_id: str):
+async def preflight_csv(request: Request, job_id: uuid.UUID):
     return await _preflight_response(request)
 
 
 @app.options("/api/jobs/{job_id}/markdown")
-async def preflight_markdown(request: Request, job_id: str):
+async def preflight_markdown(request: Request, job_id: uuid.UUID):
     return await _preflight_response(request)
 
 
@@ -217,22 +238,28 @@ def list_user_jobs(user_id: str = Depends(get_current_user)):
 
 
 @app.get("/api/jobs/{job_id}", response_model=JobDetailResponse)
-def get_job_detail(job_id: str, user_id: str = Depends(get_current_user)):
+def get_job_detail(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
     """Get one job's data for viewing (transactions + summary)."""
-    job = get_job(job_id, user_id)
+    job = get_job(str(job_id), user_id)
     if not job:
         raise HTTPException(404, "Job not found")
     summary = _summary_by_category(job["transactions"])
     return JobDetailResponse(
-        job_id=job_id,
+        job_id=str(job_id),
         transactions=[Transaction(**t) for t in job["transactions"]],
         summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
         currency=job.get("currency"),
     )
 
 
+_RATE_LIMIT_PROCESS_PDF = os.environ.get("RATE_LIMIT_PROCESS_PDF", "10/minute")
+_RATE_LIMIT_CHAT = os.environ.get("RATE_LIMIT_CHAT", "30/minute")
+
+
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
+@limiter.limit(_RATE_LIMIT_PROCESS_PDF)
 async def process_pdf(
+    request: Request,
     file: UploadFile = File(...),
     scanned_method: str = Form("vision"),
     user_id: str = Depends(get_current_user),
@@ -295,8 +322,8 @@ async def process_pdf(
 
 
 @app.get("/api/jobs/{job_id}/csv")
-def download_csv(job_id: str, user_id: str = Depends(get_current_user)):
-    job = get_job(job_id, user_id)
+def download_csv(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
+    job = get_job(str(job_id), user_id)
     if not job:
         raise HTTPException(404, "Job not found")
     return Response(
@@ -307,9 +334,9 @@ def download_csv(job_id: str, user_id: str = Depends(get_current_user)):
 
 
 @app.get("/api/jobs/{job_id}/markdown")
-def download_markdown(job_id: str, user_id: str = Depends(get_current_user)):
+def download_markdown(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
     """Download the raw extracted text (e.g. Datalab markdown) for the job."""
-    job = get_job(job_id, user_id)
+    job = get_job(str(job_id), user_id)
     if not job:
         raise HTTPException(404, "Job not found")
     raw_text = job.get("raw_text", "")
@@ -321,9 +348,10 @@ def download_markdown(job_id: str, user_id: str = Depends(get_current_user)):
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-def chat(body: ChatRequest, user_id: str = Depends(get_current_user)):
+@limiter.limit(_RATE_LIMIT_CHAT)
+def chat(request: Request, body: ChatRequest, user_id: str = Depends(get_current_user)):
     t0 = time.perf_counter()
-    job = get_job(body.job_id, user_id)
+    job = get_job(str(body.job_id), user_id)
     if not job:
         raise HTTPException(404, "Job not found")
     try:
