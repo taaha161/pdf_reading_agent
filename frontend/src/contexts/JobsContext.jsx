@@ -24,7 +24,7 @@ export function JobsProvider({ children }) {
     if (!accessToken || hasFetched) return;
     setError(null);
     setLoading(true);
-    listJobs()
+    listJobs(accessToken)
       .then((data) => {
         setJobs(data.jobs || []);
         setHasFetched(true);
