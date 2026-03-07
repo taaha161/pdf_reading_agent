@@ -1,26 +1,45 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import logo from "../assets/pdf_to_excel_logo.png";
-import { useAuth } from "../contexts/AuthContext";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import AppLayout from "../components/AppLayout";
 import FileUpload from "../components/FileUpload";
 import Loader from "../components/Loader";
 import SummaryTable from "../components/SummaryTable";
 import ResultsTable from "../components/ResultsTable";
 import ChatPanel from "../components/ChatPanel";
-import { processPdf } from "../api/client";
+import { processPdf, getJob } from "../api/client";
 import "./ScannerPage.css";
 
 export default function ScannerPage() {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { jobId: routeJobId } = useParams();
   const [jobId, setJobId] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [summaryByCategory, setSummaryByCategory] = useState([]);
   const [currency, setCurrency] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingFile, setLoadingFile] = useState(null);
+  const [loadingJob, setLoadingJob] = useState(!!routeJobId);
   const [error, setError] = useState(null);
   const [downloadError, setDownloadError] = useState(null);
+
+  // Load existing job when opening from dashboard (e.g. /scanner/:jobId)
+  useEffect(() => {
+    if (!routeJobId) return;
+    setError(null);
+    setLoadingJob(true);
+    getJob(routeJobId)
+      .then((data) => {
+        if (data) {
+          setJobId(data.job_id);
+          setTransactions(data.transactions || []);
+          setSummaryByCategory((data.summary_by_category || []).map((s) => ({ category: s.category, total: s.total })));
+          setCurrency(data.currency ?? null);
+        } else {
+          setError("Job not found");
+        }
+      })
+      .catch((e) => setError(e.message || "Failed to load job"))
+      .finally(() => setLoadingJob(false));
+  }, [routeJobId]);
 
   const handleUpload = async (file) => {
     setError(null);
@@ -52,25 +71,14 @@ export default function ScannerPage() {
   const hasResults = !!jobId;
 
   return (
-    <div className="scanner-page">
-      <header className="scanner-header">
-        <Link to="/" className="scanner-back">
-          ← Back to home
-        </Link>
-        <div className="scanner-brand">
-          <img src={logo} alt="" className="scanner-logo" aria-hidden />
-          <h1 className="scanner-title">Bank Statement Processor</h1>
+    <AppLayout>
+      <div className="scanner-page">
+        <div className="scanner-head">
+          <h1 className="scanner-title">Process statement</h1>
+          <p className="scanner-subtitle">Upload a PDF or open a past job from your dashboard.</p>
         </div>
-        <button
-          type="button"
-          className="scanner-logout"
-          onClick={() => { signOut(); navigate("/"); }}
-        >
-          Log out
-        </button>
-      </header>
 
-      <main className="scanner-main">
+        <div className="scanner-main">
         <div className="scanner-upload-card">
           <FileUpload onUpload={handleUpload} disabled={loading} />
         </div>
@@ -80,6 +88,10 @@ export default function ScannerPage() {
             fileName={loadingFile?.name}
             fileSize={loadingFile?.size}
           />
+        )}
+
+        {loadingJob && (
+          <div className="scanner-loading-job">Loading job…</div>
         )}
 
         {(error || downloadError) && (
@@ -104,7 +116,8 @@ export default function ScannerPage() {
             </aside>
           </div>
         )}
-      </main>
-    </div>
+        </div>
+      </div>
+    </AppLayout>
   );
 }

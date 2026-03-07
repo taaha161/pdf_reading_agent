@@ -13,7 +13,14 @@ export default function Landing() {
       <header className="landing-header">
         {isLoggedIn && (
           <div className="landing-user-row">
-            <span className="landing-user-email">{user.email}</span>
+            <span className="landing-user-name">{user.user_metadata?.full_name?.trim() || user.email}</span>
+            <button
+              type="button"
+              className="landing-cta landing-cta-secondary landing-cta-small"
+              onClick={() => navigate("/dashboard")}
+            >
+              Dashboard
+            </button>
             <button
               type="button"
               className="landing-cta landing-cta-secondary landing-cta-small"
@@ -29,15 +36,32 @@ export default function Landing() {
           Upload a PDF statement. We itemize, categorize, and let you validate with AI—then export to CSV.
         </p>
         <div className="landing-cta-row">
-          <button
-            type="button"
-            className="landing-cta"
-            onClick={() => navigate("/scanner")}
-          >
-            Process a statement
-          </button>
-          {!isLoggedIn && (
+          {isLoggedIn ? (
             <>
+              <button
+                type="button"
+                className="landing-cta"
+                onClick={() => navigate("/dashboard")}
+              >
+                Go to dashboard
+              </button>
+              <button
+                type="button"
+                className="landing-cta landing-cta-secondary"
+                onClick={() => navigate("/scanner")}
+              >
+                Process a statement
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="landing-cta"
+                onClick={() => navigate("/signup")}
+              >
+                Sign up
+              </button>
               <span className="landing-cta-sep">or</span>
               <button
                 type="button"
@@ -45,13 +69,6 @@ export default function Landing() {
                 onClick={() => navigate("/login")}
               >
                 Log in
-              </button>
-              <button
-                type="button"
-                className="landing-cta landing-cta-secondary"
-                onClick={() => navigate("/signup")}
-              >
-                Sign up
               </button>
             </>
           )}
@@ -80,9 +97,9 @@ export default function Landing() {
         <button
           type="button"
           className="landing-footer-link"
-          onClick={() => navigate("/scanner")}
+          onClick={() => navigate(isLoggedIn ? "/dashboard" : "/scanner")}
         >
-          Process a statement
+          {isLoggedIn ? "Dashboard" : "Process a statement"}
         </button>
         {!isLoggedIn && (
           <button

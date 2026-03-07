@@ -5,6 +5,7 @@ import { setApiAuthToken } from "./api/client";
 import { useAuth } from "./contexts/AuthContext";
 import Landing from "./pages/Landing";
 import ScannerPage from "./pages/ScannerPage";
+import Dashboard from "./pages/Dashboard";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -23,7 +24,9 @@ function AppContent() {
         <Route path="/signup" element={<AuthPage mode="signup" />} />
         <Route path="/forgot-password" element={<AuthPage mode="forgot" />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/scanner" element={<ProtectedRoute><ScannerPage /></ProtectedRoute>} />
+        <Route path="/scanner/:jobId" element={<ProtectedRoute><ScannerPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Analytics />

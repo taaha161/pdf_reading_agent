@@ -52,6 +52,29 @@ export async function processPdf(file) {
   return res.json();
 }
 
+export async function listJobs() {
+  const res = await fetch(`${API_BASE}/api/jobs`, { headers: authHeaders(), credentials: "include" });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    const e = new Error(err.detail || "Failed to load jobs");
+    e.status = res.status;
+    throw e;
+  }
+  return res.json();
+}
+
+export async function getJob(jobId) {
+  const res = await fetch(`${API_BASE}/api/jobs/${jobId}`, { headers: authHeaders(), credentials: "include" });
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    const e = new Error(err.detail || "Failed to load job");
+    e.status = res.status;
+    throw e;
+  }
+  return res.json();
+}
+
 export async function downloadCsv(jobId) {
   const res = await fetch(`${API_BASE}/api/jobs/${jobId}/csv`, { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to download CSV");

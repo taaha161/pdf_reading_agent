@@ -4,14 +4,24 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import "./AuthPage.css";
 
-const PASSWORD_MIN_LENGTH = 6;
+const PASSWORD_MIN_LENGTH = 8;
+
+/** Strong password: min 8 chars, uppercase, lowercase, number, special char */
+function validatePasswordStrength(password) {
+  if (!password || password.length < PASSWORD_MIN_LENGTH) return { ok: false, message: `At least ${PASSWORD_MIN_LENGTH} characters` };
+  if (!/[A-Z]/.test(password)) return { ok: false, message: "One uppercase letter" };
+  if (!/[a-z]/.test(password)) return { ok: false, message: "One lowercase letter" };
+  if (!/[0-9]/.test(password)) return { ok: false, message: "One number" };
+  if (!/[^A-Za-z0-9]/.test(password)) return { ok: false, message: "One special character (!@#$%^&* etc.)" };
+  return { ok: true };
+}
 
 export default function AuthPage({ mode: initialMode = "login" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const from = location.state?.from?.pathname || "/scanner";
+  const from = location.state?.from?.pathname || "/dashboard";
   const modeFromQuery = searchParams.get("mode"); // e.g. /login?mode=signup
   const mode = modeFromQuery === "signup" || modeFromQuery === "login" || modeFromQuery === "forgot" ? modeFromQuery : initialMode;
 
@@ -33,7 +43,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   // Redirect if already logged in (skip on reset-password; that page handles its own logic)
   useEffect(() => {
     if (user && view !== "reset-password") {
-      navigate("/scanner", { replace: true });
+      navigate("/dashboard", { replace: true });
     }
   }, [user, view, navigate]);
 
@@ -72,12 +82,18 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const handleSignUp = async (e) => {
     e.preventDefault();
     clearMessage();
+    const nameTrimmed = fullName.trim();
+    if (!nameTrimmed) {
+      setError("Name is required so we can recognize you.");
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
-    if (password.length < PASSWORD_MIN_LENGTH) {
-      setError(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
+    const strength = validatePasswordStrength(password);
+    if (!strength.ok) {
+      setError(`Password must have: ${strength.message}`);
       return;
     }
     setLoading(true);
@@ -86,7 +102,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
         email: email.trim(),
         password,
         options: {
-          data: fullName.trim() ? { full_name: fullName.trim() } : undefined,
+          data: { full_name: nameTrimmed },
         },
       });
       if (error) throw error;
@@ -195,13 +211,15 @@ export default function AuthPage({ mode: initialMode = "login" }) {
             </div>
           ) : (
             <form onSubmit={handleSignUp} className="auth-form">
-              <label className="auth-label">Full name (optional)</label>
+              <label className="auth-label">Full name <span className="auth-required">(required)</span></label>
               <input
                 type="text"
                 className="auth-input"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Jane Doe"
+                required
+                minLength={1}
                 autoComplete="name"
               />
               <label className="auth-label">Email</label>
@@ -220,11 +238,12 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                 className="auth-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={`At least ${PASSWORD_MIN_LENGTH} characters`}
+                placeholder="Strong password (see requirements below)"
                 required
                 minLength={PASSWORD_MIN_LENGTH}
                 autoComplete="new-password"
               />
+              <p className="auth-password-hint">Use at least 8 characters with uppercase, lowercase, a number, and a special character.</p>
               <label className="auth-label">Confirm password</label>
               <input
                 type="password"
