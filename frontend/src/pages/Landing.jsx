@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import logo from "../assets/pdf_to_excel_logo.png";
 import { useAuth } from "../contexts/AuthContext";
 import "./Landing.css";
@@ -110,6 +110,8 @@ export default function Landing() {
             Log in
           </button>
         )}
+        <Link to="/privacy-policy" className="landing-footer-link landing-footer-privacy">Privacy Policy</Link>
+        <Link to="/terms-of-service" className="landing-footer-link">Terms of Service</Link>
         <span className="landing-footer-name">Bank Statement Processor</span>
       </footer>
     </div>

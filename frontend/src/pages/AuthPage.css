@@ -202,6 +202,13 @@
   border: 1px solid var(--color-primary-muted);
 }
 
+.auth-terms {
+  margin: 1rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
 .auth-footer {
   margin: 1.5rem 0 0.5rem;
   font-size: 0.9rem;

@@ -279,6 +279,12 @@ export default function AuthPage({ mode: initialMode = "login" }) {
               {message.text}
             </p>
           )}
+          <p className="auth-terms">
+            By signing up you agree to our{" "}
+            <Link to="/terms-of-service" className="auth-link-inline">Terms of Service</Link>
+            {" "}and{" "}
+            <Link to="/privacy-policy" className="auth-link-inline">Privacy Policy</Link>.
+          </p>
           <p className="auth-footer">
             Already have an account? <Link to="/login">Log in</Link>
           </p>
