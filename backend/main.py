@@ -1,94 +1,179 @@
 import logging
 import os
 import time
+import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-logger = logging.getLogger("pdf_processor_app")
 load_dotenv(Path(__file__).resolve().parent / ".env")
+
+_LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").strip().upper()
+logging.basicConfig(
+    level=getattr(logging, _LOG_LEVEL, logging.INFO),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("pdf_processor_app")
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
-from models.schemas import CategorySummary, ChatRequest, ChatResponse, ProcessPdfResponse, Transaction
+from auth import get_current_user
+from models.schemas import (
+    CategorySummary,
+    ChatRequest,
+    ChatResponse,
+    JobDetailResponse,
+    JobListItem,
+    JobListResponse,
+    ProcessPdfResponse,
+    Transaction,
+)
 from services.chat_service import get_reply
 from services.csv_export import transactions_to_csv
 from services.pdf_processor import extract_text_from_pdf
 from services.statement_agent import extract_and_categorize
-from store import create_job_id, get_job, set_job
+from store import create_job_id, get_job, list_jobs, set_job
+
+try:
+    import psycopg2
+except ImportError:
+    psycopg2 = None
+
+_REDIS_URL = os.environ.get("REDIS_URL", "").strip()
+_limiter_kwargs = {"key_func": get_remote_address}
+if _REDIS_URL:
+    _limiter_kwargs["storage_uri"] = _REDIS_URL
+limiter = Limiter(**_limiter_kwargs)
 
 app = FastAPI(title="PDF Bank Statement Processor")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS: allow origins from ALLOWED_ORIGINS (comma-separated); if unset, use defaults. Production frontend is always allowed.
+GENERIC_500_MESSAGE = "Something went wrong. Please try again later."
+
+
+@app.exception_handler(Exception)
+def _handle_uncaught_exception(request: Request, exc: Exception):
+    """Return generic 500 for uncaught errors; preserve HTTPException status and detail (generic detail for 500)."""
+    from fastapi import HTTPException as HTTPEx
+    if isinstance(exc, HTTPEx):
+        detail = GENERIC_500_MESSAGE if exc.status_code == 500 else exc.detail
+        return JSONResponse(status_code=exc.status_code, content={"detail": detail})
+    logger.exception("Uncaught exception: %s", exc)
+    return JSONResponse(status_code=500, content={"detail": GENERIC_500_MESSAGE})
+
+
+if psycopg2 is not None:
+    @app.exception_handler(psycopg2.OperationalError)
+    def _handle_db_unavailable(request, exc):
+        """Return 503 when database is unreachable (e.g. DNS/network)."""
+        return JSONResponse(
+            status_code=503,
+        content={"detail": "Database unavailable. Please try again later."},
+        )
+
+# CORS: allow origins from ALLOWED_ORIGINS (comma-separated); if unset, use defaults. Localhost and production are always allowed.
 _VERCEL_ORIGIN = "https://pdf-reading-agent.vercel.app"
 _EXTRA_ORIGINS = (
     "https://pdftoexcelconverter.io",
     "https://bankstatementscanner.com",
 )
+_LOCALHOST_ORIGINS = (
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+)
 _origins_raw = os.environ.get("ALLOWED_ORIGINS", "").strip()
 if _origins_raw:
     _origins_list = [o.strip().rstrip("/") for o in _origins_raw.split(",") if o.strip()]
 else:
-    _origins_list = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-    ]
-for _origin in (_VERCEL_ORIGIN,) + _EXTRA_ORIGINS:
+    _origins_list = []
+# Always merge localhost and production origins so CORS works in dev and prod
+for _origin in _LOCALHOST_ORIGINS + (_VERCEL_ORIGIN,) + _EXTRA_ORIGINS:
     if _origin not in _origins_list:
         _origins_list.append(_origin)
+
+
+def _is_allowed_origin(origin: str) -> bool:
+    if not origin or not origin.strip():
+        return False
+    origin = origin.strip()
+    return origin in _origins_list
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin"],
     expose_headers=["*"],
 )
 
 
+# When credentials=true, browsers require explicit header names (not *).
+_CORS_ALLOW_HEADERS = "Authorization, Content-Type, Accept, X-Requested-With, Origin"
+
 def _cors_headers(origin: str) -> dict:
-    """CORS headers to attach when origin is allowed (same as the extension would allow)."""
+    """CORS headers to attach when origin is allowed."""
     return {
         "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH",
-        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Headers": _CORS_ALLOW_HEADERS,
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Max-Age": "86400",
     }
 
 
 class PreflightMiddleware(BaseHTTPMiddleware):
-    """Handle all OPTIONS (preflight) here with 200 + CORS so the router is never hit (avoids 400). Actual response CORS still enforced by AddCorsToResponseMiddleware."""
+    """Handle all OPTIONS (preflight) with 200 + CORS for allowed origins."""
 
     async def dispatch(self, request: Request, call_next):
         if request.method != "OPTIONS":
             return await call_next(request)
-        origin = request.headers.get("origin", "") or "*"
-        return Response(status_code=200, headers=_cors_headers(origin))
+        origin = request.headers.get("origin", "").strip()
+        if _is_allowed_origin(origin):
+            return Response(status_code=200, headers=_cors_headers(origin))
+        return Response(status_code=204)
 
 
 class AddCorsToResponseMiddleware(BaseHTTPMiddleware):
-    """Add CORS headers to every response when request Origin is in allowed list (so browser never blocks)."""
+    """Add CORS headers to every response when request Origin is allowed."""
 
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
-        origin = request.headers.get("origin", "")
-        if origin and origin in _origins_list:
+        origin = request.headers.get("origin", "").strip()
+        if _is_allowed_origin(origin):
             for key, value in _cors_headers(origin).items():
                 response.headers[key] = value
         return response
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to all responses. HSTS only when PRODUCTION=1 or request is HTTPS."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        is_https = getattr(request.url, "scheme", "") == "https"
+        if os.environ.get("PRODUCTION", "").strip().lower() in ("1", "true", "yes") or is_https:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+        return response
+
+
 app.add_middleware(PreflightMiddleware)
 app.add_middleware(AddCorsToResponseMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 ALLOWED_CONTENT_TYPE = "application/pdf"
@@ -148,15 +233,59 @@ async def preflight_chat(request: Request):
     return await _preflight_response(request)
 
 
-@app.options("/api/jobs/{job_id}/csv")
-async def preflight_csv(request: Request, job_id: str):
+@app.options("/api/jobs")
+async def preflight_jobs_list(request: Request):
     return await _preflight_response(request)
 
 
+@app.options("/api/jobs/{job_id}")
+async def preflight_job_detail(request: Request, job_id: uuid.UUID):
+    return await _preflight_response(request)
+
+
+@app.options("/api/jobs/{job_id}/csv")
+async def preflight_csv(request: Request, job_id: uuid.UUID):
+    return await _preflight_response(request)
+
+
+@app.options("/api/jobs/{job_id}/markdown")
+async def preflight_markdown(request: Request, job_id: uuid.UUID):
+    return await _preflight_response(request)
+
+
+@app.get("/api/jobs", response_model=JobListResponse)
+def list_user_jobs(user_id: str = Depends(get_current_user)):
+    """List current user's jobs (newest first)."""
+    jobs = list_jobs(user_id)
+    return JobListResponse(jobs=[JobListItem(**j) for j in jobs])
+
+
+@app.get("/api/jobs/{job_id}", response_model=JobDetailResponse)
+def get_job_detail(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
+    """Get one job's data for viewing (transactions + summary)."""
+    job = get_job(str(job_id), user_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    summary = _summary_by_category(job["transactions"])
+    return JobDetailResponse(
+        job_id=str(job_id),
+        transactions=[Transaction(**t) for t in job["transactions"]],
+        summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+        currency=job.get("currency"),
+    )
+
+
+_RATE_LIMIT_PROCESS_PDF = os.environ.get("RATE_LIMIT_PROCESS_PDF", "10/minute")
+_RATE_LIMIT_CHAT = os.environ.get("RATE_LIMIT_CHAT", "30/minute")
+
+
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
+@limiter.limit(_RATE_LIMIT_PROCESS_PDF)
 async def process_pdf(
+    request: Request,
     file: UploadFile = File(...),
     scanned_method: str = Form("vision"),
+    user_id: str = Depends(get_current_user),
 ):
     t0 = time.perf_counter()
     # Normalize: only "ocr" or "vision" (for scanned PDFs)
@@ -192,12 +321,13 @@ async def process_pdf(
         try:
             transactions, currency = extract_and_categorize(raw_text)
         except Exception as e:
-            raise HTTPException(500, f"Failed to process statement with AI: {str(e)}")
+            logger.exception("AI extraction failed: %s", e)
+            raise HTTPException(500, GENERIC_500_MESSAGE)
         logger.info("process-pdf: AI extraction + categorization done, transactions=%d, currency=%s (%.2f s)", len(transactions), currency or "none", time.perf_counter() - t2)
 
         csv_content = transactions_to_csv(transactions)
         job_id = create_job_id()
-        set_job(job_id, transactions, csv_content, raw_text, currency)
+        set_job(job_id, user_id, transactions, csv_content, raw_text, currency)
         summary = _summary_by_category(transactions)
         logger.info("process-pdf: finished successfully, job_id=%s, total=%.2f s", job_id, time.perf_counter() - t0)
 
@@ -212,12 +342,13 @@ async def process_pdf(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(500, f"Server error while processing PDF: {str(e)}")
+        logger.exception("PDF processing error: %s", e)
+        raise HTTPException(500, GENERIC_500_MESSAGE)
 
 
 @app.get("/api/jobs/{job_id}/csv")
-def download_csv(job_id: str):
-    job = get_job(job_id)
+def download_csv(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
+    job = get_job(str(job_id), user_id)
     if not job:
         raise HTTPException(404, "Job not found")
     return Response(
@@ -228,9 +359,9 @@ def download_csv(job_id: str):
 
 
 @app.get("/api/jobs/{job_id}/markdown")
-def download_markdown(job_id: str):
+def download_markdown(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
     """Download the raw extracted text (e.g. Datalab markdown) for the job."""
-    job = get_job(job_id)
+    job = get_job(str(job_id), user_id)
     if not job:
         raise HTTPException(404, "Job not found")
     raw_text = job.get("raw_text", "")
@@ -242,14 +373,16 @@ def download_markdown(job_id: str):
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-def chat(body: ChatRequest):
+@limiter.limit(_RATE_LIMIT_CHAT)
+def chat(request: Request, body: ChatRequest, user_id: str = Depends(get_current_user)):
     t0 = time.perf_counter()
-    job = get_job(body.job_id)
+    job = get_job(str(body.job_id), user_id)
     if not job:
         raise HTTPException(404, "Job not found")
     try:
         reply = get_reply(job, body.message)
         logger.info("chat: job_id=%s, reply len=%d (%.2f s)", body.job_id, len(reply), time.perf_counter() - t0)
     except Exception as e:
-        raise HTTPException(500, f"Chat failed: {str(e)}")
+        logger.exception("Chat failed: %s", e)
+        raise HTTPException(500, GENERIC_500_MESSAGE)
     return ChatResponse(reply=reply)

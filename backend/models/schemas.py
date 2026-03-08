@@ -1,5 +1,7 @@
-from pydantic import BaseModel
+import uuid
 from typing import Optional
+
+from pydantic import BaseModel, Field
 
 
 class Transaction(BaseModel):
@@ -25,9 +27,27 @@ class ProcessPdfResponse(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    job_id: str
-    message: str
+    job_id: uuid.UUID
+    message: str = Field(..., min_length=1, max_length=4000)
 
 
 class ChatResponse(BaseModel):
     reply: str
+
+
+class JobListItem(BaseModel):
+    id: str
+    created_at: str
+    transaction_count: int
+    currency: Optional[str] = None
+
+
+class JobListResponse(BaseModel):
+    jobs: list[JobListItem]
+
+
+class JobDetailResponse(BaseModel):
+    job_id: str
+    transactions: list[Transaction]
+    summary_by_category: list[CategorySummary]
+    currency: Optional[str] = None
