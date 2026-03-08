@@ -33,6 +33,10 @@ Use **Render** for the backend (FastAPI + OCR) and **Vercel** for the frontend (
    In **Environment Variables** → **Add Environment Variable**:
    - **Key**: `GOOGLE_GEMINI_API_KEY`  
      **Value**: paste your Google Gemini API key  
+   - **Key**: `SUPABASE_URL`  
+     **Value**: your Supabase project URL (Project Settings → API). Backend verifies JWTs via JWKS (new signing keys; no legacy secret).
+   - **Key**: `DATABASE_URL`  
+     **Value**: Supabase database connection string (Project Settings → Database; use pooler for serverless)  
    - **Key**: `ALLOWED_ORIGINS`  
      **Value**: leave empty for now (you’ll set it after deploying the frontend)
 
@@ -58,10 +62,14 @@ Use **Render** for the backend (FastAPI + OCR) and **Vercel** for the frontend (
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
 
-4. **Add environment variable**  
+4. **Add environment variables**  
    Under **Environment Variables**:
    - **Key**: `VITE_API_URL`
    - **Value**: the **backend URL** from Part 1 (e.g. `https://pdf-statement-api.onrender.com`) — no trailing slash
+   - **Key**: `VITE_SUPABASE_URL`
+   - **Value**: your Supabase project URL (same as backend)
+   - **Key**: `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - **Value**: your Supabase **Publishable key** (`sb_publishable_...`) from Project Settings → API Keys (not Legacy API Keys)
    - **Environment**: leave all (Production, Preview, Development) checked
 
 5. **Deploy**  
