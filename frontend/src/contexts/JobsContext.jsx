@@ -37,11 +37,23 @@ export function JobsProvider({ children }) {
       });
   }, [accessToken, hasFetched]);
 
+  const refreshJobs = useCallback(() => {
+    if (!accessToken) return;
+    setLoading(true);
+    listJobs(accessToken)
+      .then((data) => setJobs(data.jobs || []))
+      .catch((e) => {
+        setError(e.status === 401 ? "Please log in again." : e.message || "Failed to load jobs");
+      })
+      .finally(() => setLoading(false));
+  }, [accessToken]);
+
   const value = {
     jobs,
     loading,
     error,
     loadJobs,
+    refreshJobs,
     hasFetched,
   };
 

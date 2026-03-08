@@ -40,6 +40,7 @@ class JobListItem(BaseModel):
     created_at: str
     transaction_count: int
     currency: Optional[str] = None
+    has_payload: bool = True  # False when incognito or payload was purged
 
 
 class JobListResponse(BaseModel):
@@ -51,3 +52,8 @@ class JobDetailResponse(BaseModel):
     transactions: list[Transaction]
     summary_by_category: list[CategorySummary]
     currency: Optional[str] = None
+    data_status: Optional[str] = None  # "incognito" | "purged" when no payload
+
+
+class PurgeJobsDataRequest(BaseModel):
+    job_ids: list[str]

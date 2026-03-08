@@ -20,6 +20,8 @@ export default function ScannerPage() {
   const [loadingJob, setLoadingJob] = useState(!!routeJobId);
   const [error, setError] = useState(null);
   const [downloadError, setDownloadError] = useState(null);
+  const [incognitoMode, setIncognitoMode] = useState(false);
+  const [dataStatus, setDataStatus] = useState(null);
 
   // Load existing job when opening from dashboard (e.g. /scanner/:jobId)
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function ScannerPage() {
           setTransactions(data.transactions || []);
           setSummaryByCategory((data.summary_by_category || []).map((s) => ({ category: s.category, total: s.total })));
           setCurrency(data.currency ?? null);
+          setDataStatus(data.data_status ?? null);
         } else {
           setError("Job not found");
         }
@@ -48,17 +51,20 @@ export default function ScannerPage() {
     setTransactions([]);
     setSummaryByCategory([]);
     setCurrency(null);
+    setDataStatus(null);
     setLoading(true);
     setLoadingFile({ name: file.name, size: file.size });
     try {
-      const data = await processPdf(file);
+      const data = await processPdf(file, { incognitoMode });
       setJobId(data.job_id);
       setTransactions(data.transactions || []);
       setSummaryByCategory(data.summary_by_category || []);
       setCurrency(data.currency ?? null);
+      setDataStatus(null);
     } catch (e) {
       setError(e.message || "Upload failed");
       setJobId(null);
+      setDataStatus(null);
       setTransactions([]);
       setSummaryByCategory([]);
       setCurrency(null);
@@ -80,6 +86,16 @@ export default function ScannerPage() {
 
         <div className="scanner-main">
         <div className="scanner-upload-card">
+          <label className="scanner-incognito">
+            <input
+              type="checkbox"
+              checked={incognitoMode}
+              onChange={(e) => setIncognitoMode(e.target.checked)}
+              disabled={loading}
+            />
+            <span>Incognito mode</span>
+          </label>
+          <p className="scanner-incognito-hint">Do not store transaction data, currency, or raw text (job count is still recorded).</p>
           <FileUpload onUpload={handleUpload} disabled={loading} />
         </div>
 
@@ -98,6 +114,14 @@ export default function ScannerPage() {
           <div className="scanner-alerts" role="alert">
             {error && <p className="scanner-alert error">{error}</p>}
             {downloadError && <p className="scanner-alert error">{downloadError}</p>}
+          </div>
+        )}
+
+        {hasResults && dataStatus && (
+          <div className="scanner-data-status" role="status">
+            {dataStatus === "incognito"
+              ? "This job was run in incognito mode. No transaction data, currency, or raw text was stored."
+              : "Data for this job was deleted. Transaction data, currency, and raw text are no longer available."}
           </div>
         )}
 
