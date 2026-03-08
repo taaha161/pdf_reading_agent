@@ -6,6 +6,8 @@ import os
 # Must be set before main is imported so decorators use these limits.
 os.environ.setdefault("RATE_LIMIT_CHAT", "2/minute")
 os.environ.setdefault("RATE_LIMIT_PROCESS_PDF", "2/minute")
+# Use in-memory rate limit storage in tests (no Redis).
+os.environ.pop("REDIS_URL", None)
 
 import pytest
 from fastapi.testclient import TestClient

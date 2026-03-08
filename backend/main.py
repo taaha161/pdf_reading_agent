@@ -6,9 +6,14 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-logger = logging.getLogger("pdf_processor_app")
 load_dotenv(Path(__file__).resolve().parent / ".env")
+
+_LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").strip().upper()
+logging.basicConfig(
+    level=getattr(logging, _LOG_LEVEL, logging.INFO),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("pdf_processor_app")
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -42,10 +47,28 @@ try:
 except ImportError:
     psycopg2 = None
 
-limiter = Limiter(key_func=get_remote_address)
+_REDIS_URL = os.environ.get("REDIS_URL", "").strip()
+_limiter_kwargs = {"key_func": get_remote_address}
+if _REDIS_URL:
+    _limiter_kwargs["storage_uri"] = _REDIS_URL
+limiter = Limiter(**_limiter_kwargs)
+
 app = FastAPI(title="PDF Bank Statement Processor")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+GENERIC_500_MESSAGE = "Something went wrong. Please try again later."
+
+
+@app.exception_handler(Exception)
+def _handle_uncaught_exception(request: Request, exc: Exception):
+    """Return generic 500 for uncaught errors; preserve HTTPException status and detail (generic detail for 500)."""
+    from fastapi import HTTPException as HTTPEx
+    if isinstance(exc, HTTPEx):
+        detail = GENERIC_500_MESSAGE if exc.status_code == 500 else exc.detail
+        return JSONResponse(status_code=exc.status_code, content={"detail": detail})
+    logger.exception("Uncaught exception: %s", exc)
+    return JSONResponse(status_code=500, content={"detail": GENERIC_500_MESSAGE})
 
 
 if psycopg2 is not None:
@@ -298,7 +321,8 @@ async def process_pdf(
         try:
             transactions, currency = extract_and_categorize(raw_text)
         except Exception as e:
-            raise HTTPException(500, f"Failed to process statement with AI: {str(e)}")
+            logger.exception("AI extraction failed: %s", e)
+            raise HTTPException(500, GENERIC_500_MESSAGE)
         logger.info("process-pdf: AI extraction + categorization done, transactions=%d, currency=%s (%.2f s)", len(transactions), currency or "none", time.perf_counter() - t2)
 
         csv_content = transactions_to_csv(transactions)
@@ -318,7 +342,8 @@ async def process_pdf(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(500, f"Server error while processing PDF: {str(e)}")
+        logger.exception("PDF processing error: %s", e)
+        raise HTTPException(500, GENERIC_500_MESSAGE)
 
 
 @app.get("/api/jobs/{job_id}/csv")
@@ -358,5 +383,6 @@ def chat(request: Request, body: ChatRequest, user_id: str = Depends(get_current
         reply = get_reply(job, body.message)
         logger.info("chat: job_id=%s, reply len=%d (%.2f s)", body.job_id, len(reply), time.perf_counter() - t0)
     except Exception as e:
-        raise HTTPException(500, f"Chat failed: {str(e)}")
+        logger.exception("Chat failed: %s", e)
+        raise HTTPException(500, GENERIC_500_MESSAGE)
     return ChatResponse(reply=reply)

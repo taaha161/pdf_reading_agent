@@ -45,6 +45,9 @@ export async function processPdf(file) {
   }
   clearTimeout(timeoutId);
   if (!res.ok) {
+    if (res.status === 429) {
+      throw new Error("Too many requests. Please try again in a minute.");
+    }
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     const msg = Array.isArray(err.detail) ? err.detail.map((d) => d.msg || d).join(", ") : (err.detail || res.statusText);
     throw new Error(msg);
@@ -55,6 +58,9 @@ export async function processPdf(file) {
 export async function listJobs(token) {
   const res = await fetch(`${API_BASE}/api/jobs`, { headers: authHeaders(token), credentials: "include" });
   if (!res.ok) {
+    if (res.status === 429) {
+      throw new Error("Too many requests. Please try again in a minute.");
+    }
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     const e = new Error(err.detail || "Failed to load jobs");
     e.status = res.status;
@@ -67,6 +73,9 @@ export async function getJob(jobId) {
   const res = await fetch(`${API_BASE}/api/jobs/${jobId}`, { headers: authHeaders(), credentials: "include" });
   if (!res.ok) {
     if (res.status === 404) return null;
+    if (res.status === 429) {
+      throw new Error("Too many requests. Please try again in a minute.");
+    }
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     const e = new Error(err.detail || "Failed to load job");
     e.status = res.status;
@@ -77,7 +86,10 @@ export async function getJob(jobId) {
 
 export async function downloadCsv(jobId) {
   const res = await fetch(`${API_BASE}/api/jobs/${jobId}/csv`, { headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to download CSV");
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
+    throw new Error("Failed to download CSV");
+  }
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -89,7 +101,10 @@ export async function downloadCsv(jobId) {
 
 export async function downloadMarkdown(jobId) {
   const res = await fetch(`${API_BASE}/api/jobs/${jobId}/markdown`, { headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to download markdown");
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
+    throw new Error("Failed to download markdown");
+  }
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -106,6 +121,9 @@ export async function sendChatMessage(jobId, message) {
     body: JSON.stringify({ job_id: jobId, message }),
   });
   if (!res.ok) {
+    if (res.status === 429) {
+      throw new Error("Too many requests. Please try again in a minute.");
+    }
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     const msg = Array.isArray(err.detail) ? err.detail.map((d) => d.msg || d).join(", ") : (err.detail || res.statusText);
     throw new Error(msg);

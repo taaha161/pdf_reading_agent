@@ -34,9 +34,7 @@ Use **Render** for the backend (FastAPI + OCR) and **Vercel** for the frontend (
    - **Key**: `GOOGLE_GEMINI_API_KEY`  
      **Value**: paste your Google Gemini API key  
    - **Key**: `SUPABASE_URL`  
-     **Value**: your Supabase project URL (Project Settings → API)  
-   - **Key**: `SUPABASE_JWT_SECRET`
-     **Value**: (optional) your Supabase JWT secret for legacy verification; if omitted, the backend uses JWKS (new signing keys) with `SUPABASE_URL` only
+     **Value**: your Supabase project URL (Project Settings → API). Backend verifies JWTs via JWKS (new signing keys; no legacy secret).
    - **Key**: `DATABASE_URL`  
      **Value**: Supabase database connection string (Project Settings → Database; use pooler for serverless)  
    - **Key**: `ALLOWED_ORIGINS`  
@@ -70,8 +68,8 @@ Use **Render** for the backend (FastAPI + OCR) and **Vercel** for the frontend (
    - **Value**: the **backend URL** from Part 1 (e.g. `https://pdf-statement-api.onrender.com`) — no trailing slash
    - **Key**: `VITE_SUPABASE_URL`
    - **Value**: your Supabase project URL (same as backend)
-   - **Key**: `VITE_SUPABASE_ANON_KEY`
-   - **Value**: your Supabase anon/public key (Project Settings → API)
+   - **Key**: `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - **Value**: your Supabase **Publishable key** (`sb_publishable_...`) from Project Settings → API Keys (not Legacy API Keys)
    - **Environment**: leave all (Production, Preview, Development) checked
 
 5. **Deploy**  

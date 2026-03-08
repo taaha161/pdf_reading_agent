@@ -29,16 +29,13 @@ Alternatively, if you use the Supabase CLI: `supabase db push` (from the project
 
 **Backend** (e.g. `backend/.env`):
 
-- `SUPABASE_URL` — Project Settings → API → Project URL (required for auth).
-- **JWT verification** (choose one):
-  - **Preferred (JWKS):** Set only `SUPABASE_URL`. The backend fetches public keys from `{SUPABASE_URL}/auth/v1/.well-known/jwks.json` and verifies tokens signed with Supabase’s **new JWT Signing Keys** (RS256/ES256). No secret needed; supports key rotation.
-  - **Legacy:** Also set `SUPABASE_JWT_SECRET` (Project Settings → API → JWT Secret) to verify tokens with the legacy HS256 secret. Supabase has migrated to new signing keys; the legacy secret is only for verification and can be rotated via a standby key.
+- `SUPABASE_URL` — Project Settings → API → Project URL (required for auth). The backend uses **JWKS** (`{SUPABASE_URL}/auth/v1/.well-known/jwks.json`) to verify tokens with Supabase’s new JWT signing keys (RS256/ES256). No legacy JWT secret needed.
 - `DATABASE_URL` — Project Settings → Database → Connection string (use the **Connection pooling** URI for serverless; port 6543).
 
 **Frontend** (e.g. `frontend/.env`):
 
-- `VITE_SUPABASE_URL` — same as backend `SUPABASE_URL`  
-- `VITE_SUPABASE_ANON_KEY` — Project Settings → API → anon public key  
+- `VITE_SUPABASE_URL` — same as backend `SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY` — Project Settings → **API Keys** → Publishable key (`sb_publishable_...`). Do not use Legacy API Keys (anon) if they are disabled.  
 
 See [backend/.env.example](../backend/.env.example) and [frontend/.env.example](../frontend/.env.example) for the full list.
 
@@ -58,8 +55,8 @@ See [backend/.env.example](../backend/.env.example) and [frontend/.env.example](
 Before going to production:
 
 - [ ] Supabase project has production redirect URLs and allowed origins set.
-- [ ] Backend env on Render (or your host): `SUPABASE_URL`, optionally `SUPABASE_JWT_SECRET` for legacy JWT verification (else JWKS is used), `DATABASE_URL`, `ALLOWED_ORIGINS` (include your frontend URL).
-- [ ] Frontend env at build time: `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+- [ ] Backend env on Render (or your host): `SUPABASE_URL`, `DATABASE_URL`, `ALLOWED_ORIGINS` (include your frontend URL). JWT verification uses JWKS (no legacy keys).
+- [ ] Frontend env at build time: `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
 - [ ] Migration has been run on the Supabase project used in production.
 - [ ] CORS: frontend origin is in backend `ALLOWED_ORIGINS` and in Supabase Auth URL configuration.
 
@@ -95,30 +92,22 @@ See [DEPLOY_STEPS.md](DEPLOY_STEPS.md) for full deploy instructions.
 
 | Issue | What to check |
 |-------|----------------|
-| 401 on API calls | Frontend is sending `Authorization: Bearer <token>`. Token is from `session.access_token` after Supabase sign-in. Backend has correct `SUPABASE_JWT_SECRET`. |
-| “Auth not configured” (503) | Backend env: `SUPABASE_URL` is set (for JWKS). If using legacy verification, `SUPABASE_JWT_SECRET` must be set. |
+| 401 on API calls | Frontend sends `Authorization: Bearer <token>` from `session.access_token` after Supabase sign-in. Backend verifies via JWKS (`SUPABASE_URL` set). |
+| “Auth not configured” (503) | Backend env: `SUPABASE_URL` must be set so JWKS can be fetched from `{SUPABASE_URL}/auth/v1/.well-known/jwks.json`. |
 | “Job not found” after upload | Backend has `DATABASE_URL` set; migration has been run; `jobs` table exists. Check backend logs for DB errors. |
-| Social login redirect fails | Supabase Auth URL configuration includes the exact redirect URL (scheme + host + path). Frontend and Supabase use the same Supabase project (same URL and anon key). |
+| Social login redirect fails | Supabase Auth URL configuration includes the exact redirect URL (scheme + host + path). Frontend uses same project (same URL and Publishable key). |
 | CORS errors | Frontend origin is in backend `ALLOWED_ORIGINS` and in Supabase Auth redirect URLs. Backend sends correct CORS headers (already configured in the app). |
 
 ---
 
-## 5. Supabase JWT Signing Keys (legacy vs new)
+## 5. Supabase: new API keys and JWT signing
 
-Supabase has migrated from a **legacy JWT secret** to **new JWT Signing Keys**. You may see a notice like:
+Supabase has moved to **new API keys** (Publishable `sb_publishable_...` and Secret `sb_secret_...`) and **new JWT signing keys**. Legacy anon/service_role API keys can be disabled in the dashboard.
 
-- *"Legacy JWT secret has been migrated to new JWT Signing Keys"*
-- *"Changing the legacy JWT secret can only be done by rotating to a standby key and then revoking it"*
-- *"Consider switching to publishable and secret API keys to disable them"*
+**This app is configured for the new approach:**
 
-**What this means for this app:**
-
-- **Backend verification** supports both:
-  - **New (recommended):** Set only `SUPABASE_URL`. The backend uses the [JWKS endpoint](https://supabase.com/docs/guides/auth/signing-keys) (`/auth/v1/.well-known/jwks.json`) to verify tokens with the new signing keys. No JWT secret needed; key rotation is handled automatically.
-  - **Legacy:** If you still set `SUPABASE_JWT_SECRET`, the backend will verify tokens with that secret (HS256). Use this only if you need it during migration; you can remove it once Supabase issues tokens signed with the new keys (or rely on JWKS only).
-- The **anon and service_role keys** are still JWT-based; Supabase’s suggestion to use “publishable and secret API keys” is a separate product direction. For this app we only verify the **user’s access token** (from the frontend) using either JWKS or the legacy secret.
-
-To switch to JWKS-only: set `SUPABASE_URL` and leave `SUPABASE_JWT_SECRET` unset (or remove it). Restart the backend.
+- **Frontend:** Use the **Publishable key** from Project Settings → API Keys (not Legacy API Keys). Set `VITE_SUPABASE_PUBLISHABLE_KEY` in `frontend/.env`.
+- **Backend:** Uses **JWKS only**. Set `SUPABASE_URL`; the backend fetches public keys from [JWKS](https://supabase.com/docs/guides/auth/signing-keys) (`/auth/v1/.well-known/jwks.json`) to verify user access tokens. No legacy JWT secret or anon key is used on the backend.
 
 ---
 
