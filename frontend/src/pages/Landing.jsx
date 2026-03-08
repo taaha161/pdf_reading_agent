@@ -30,7 +30,8 @@ export default function Landing() {
             </button>
           </div>
         )}
-        <img src={logo} alt="Bank Statement PDF to Excel Converter" className="landing-logo" />
+        <img src={logo} alt="Bank Statement Scanner" className="landing-logo" />
+        <p className="landing-app-name">Bank Statement Scanner</p>
         <h1 className="landing-title">Bank statements, sorted.</h1>
         <p className="landing-subtitle">
           Upload a PDF statement. We itemize, categorize, and let you validate with AI—then export to CSV.
@@ -112,7 +113,7 @@ export default function Landing() {
         )}
         <Link to="/privacy-policy" className="landing-footer-link landing-footer-privacy">Privacy Policy</Link>
         <Link to="/terms-of-service" className="landing-footer-link">Terms of Service</Link>
-        <span className="landing-footer-name">Bank Statement Processor</span>
+        <span className="landing-footer-name">Bank Statement Scanner</span>
       </footer>
     </div>
   );

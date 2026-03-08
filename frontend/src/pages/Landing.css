@@ -40,6 +40,15 @@
   object-fit: contain;
 }
 
+.landing-app-name {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.5rem 0;
+  color: var(--color-primary);
+}
+
 .landing-title {
   font-family: var(--font-heading);
   font-size: clamp(2.25rem, 5vw, 3.25rem);
