@@ -23,6 +23,8 @@ Free tiers for both. Backend runs in Docker with OCR support (poppler, tesseract
 
 5. **Environment variables** (Add in Render dashboard):
    - `GOOGLE_GEMINI_API_KEY` = your Google Gemini API key (required for AI extraction, categorization, chat, and scanned-PDF vision)
+   - `SUPABASE_URL` = your Supabase project URL (Project Settings → API)
+   - `DATABASE_URL` = Supabase connection string (Project Settings → Database; use pooler for serverless, port 6543)
    - `ALLOWED_ORIGINS` = your frontend URL (see step 2 below). After deploying the frontend, set this to e.g. `https://your-app.vercel.app` (no trailing slash). You can add multiple origins separated by commas.
 
 6. Deploy. Note the backend URL, e.g. `https://pdf-statement-api.onrender.com`.
@@ -43,6 +45,8 @@ Free tiers for both. Backend runs in Docker with OCR support (poppler, tesseract
 
 4. **Environment variables** (add in Vercel):
    - `VITE_API_URL` = your **backend URL** from step 1, e.g. `https://pdf-statement-api.onrender.com` (no trailing slash)
+   - `VITE_SUPABASE_URL` = your Supabase project URL (same as backend)
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` = Supabase **Publishable key** (`sb_publishable_...`) from Project Settings → API Keys (not Legacy)
 
 5. Deploy. Vercel will give you a URL like `https://your-project.vercel.app`.
 
@@ -55,6 +59,12 @@ Free tiers for both. Backend runs in Docker with OCR support (poppler, tesseract
 2. Redeploy the backend if you changed env vars so CORS uses the new origin.
 
 Share the **Vercel URL** with your client. They open that link and use the app; the frontend talks to the backend automatically.
+
+---
+
+## Option D: GitHub Pages (Frontend only)
+
+The backend must be hosted elsewhere (e.g. Render). In the repo: **Settings → Pages**, set **Source** to **GitHub Actions**. Add a repository secret `VITE_API_URL` (backend URL). Set backend `ALLOWED_ORIGINS` to your GitHub Pages URL (e.g. `https://USERNAME.github.io/REPO_NAME/`). Push to trigger the deploy workflow; see `.github/workflows/deploy-pages.yml` if present.
 
 ---
 
@@ -106,6 +116,10 @@ If you prefer one URL and one deployment:
 | Variable          | Where     | Purpose |
 |-------------------|-----------|--------|
 | `GOOGLE_GEMINI_API_KEY` | Backend   | Google Gemini API key for extraction, categorization, chat, and scanned-PDF vision. If unset, Ollama is used for text/chat. |
+| `SUPABASE_URL`    | Backend   | Supabase project URL for JWT verification (JWKS). |
+| `DATABASE_URL`    | Backend   | Supabase database connection string (use pooler for serverless). |
 | `ALLOWED_ORIGINS` | Backend   | Comma-separated frontend origins for CORS, e.g. `https://app.vercel.app`. |
-| `VITE_API_URL`    | Frontend  | Backend API URL, e.g. `https://api.render.com`. Set at **build** time. |
+| `VITE_API_URL`    | Frontend  | Backend API URL. Set at **build** time. |
+| `VITE_SUPABASE_URL` | Frontend | Supabase project URL (same as backend). |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Frontend | Supabase Publishable key (`sb_publishable_...`). |
 | `PORT`            | Backend   | Set by Render/Railway; no need to set yourself. |
