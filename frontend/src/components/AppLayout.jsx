@@ -17,6 +17,7 @@ export default function AppLayout({ children }) {
         <nav className="app-layout-nav">
           <NavLink to="/dashboard" className={({ isActive }) => "app-layout-nav-link" + (isActive ? " is-active" : "")} end>Dashboard</NavLink>
           <NavLink to="/scanner" className={({ isActive }) => "app-layout-nav-link" + (isActive ? " is-active" : "")}>Process statement</NavLink>
+          <NavLink to="/settings" className={({ isActive }) => "app-layout-nav-link" + (isActive ? " is-active" : "")}>Account</NavLink>
         </nav>
         <div className="app-layout-user">
           <span className="app-layout-user-name" title={user?.email}>{displayName}</span>

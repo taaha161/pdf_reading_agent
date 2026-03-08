@@ -1,0 +1,83 @@
+.account-settings {
+  width: 100%;
+  max-width: 560px;
+}
+
+.account-settings-head {
+  margin-bottom: 2rem;
+}
+
+.account-settings-title {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: var(--color-text);
+}
+
+.account-settings-description {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.account-settings-section {
+  margin-bottom: 2.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.account-settings-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.account-settings-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 1rem 0;
+}
+
+.account-settings-danger .account-settings-section-title {
+  color: var(--color-error, #dc3545);
+}
+
+.account-settings-danger-text {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+}
+
+.account-settings-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+}
+
+.account-settings-checkbox {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.account-settings-delete-btn {
+  background: var(--color-error, #dc3545);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+}
+
+.account-settings-delete-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.account-settings-delete-btn:disabled {
+  opacity: 0.6;
+}

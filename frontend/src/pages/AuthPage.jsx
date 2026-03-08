@@ -251,7 +251,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                 className="auth-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Strong password (see requirements below)"
+               placeholder="At least 8 characters, upper, lower, number, special"
                 required
                 minLength={PASSWORD_MIN_LENGTH}
                 autoComplete="new-password"

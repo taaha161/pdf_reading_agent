@@ -41,7 +41,7 @@ from services.chat_service import get_reply
 from services.csv_export import transactions_to_csv
 from services.pdf_processor import extract_text_from_pdf
 from services.statement_agent import extract_and_categorize
-from store import create_job_id, get_job, list_jobs, purge_job_data, purge_jobs_data, set_job
+from store import create_job_id, delete_user_data, get_job, list_jobs, purge_job_data, purge_jobs_data, set_job
 
 try:
     import psycopg2
@@ -262,6 +262,44 @@ async def preflight_job_data(request: Request, job_id: uuid.UUID):
 @app.options("/api/jobs/data")
 async def preflight_jobs_data(request: Request):
     return await _preflight_response(request)
+
+
+@app.options("/api/account")
+async def preflight_account(request: Request):
+    return await _preflight_response(request)
+
+
+@app.delete("/api/account")
+async def delete_account(user_id: str = Depends(get_current_user)):
+    """Delete current user's app data and Supabase Auth user. Requires SUPABASE_SERVICE_ROLE_KEY."""
+    supabase_url = (os.environ.get("SUPABASE_URL", "").strip()).rstrip("/")
+    service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    if not supabase_url or not service_role_key:
+        raise HTTPException(
+            503,
+            "Account deletion is not configured. Please contact support.",
+        )
+    delete_user_data(user_id)
+    try:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            r = await client.delete(
+                f"{supabase_url}/auth/v1/admin/users/{user_id}",
+                headers={
+                    "Authorization": f"Bearer {service_role_key}",
+                    "apikey": service_role_key,
+                },
+                timeout=10.0,
+            )
+        if r.status_code >= 400:
+            logger.warning("Supabase admin delete user failed: status=%s body=%s", r.status_code, r.text)
+            raise HTTPException(502, "Could not complete account deletion. Please try again or contact support.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Supabase admin delete user error: %s", e)
+        raise HTTPException(502, "Could not complete account deletion. Please try again or contact support.")
+    return Response(status_code=204)
 
 
 @app.get("/api/jobs", response_model=JobListResponse)

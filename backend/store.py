@@ -156,3 +156,9 @@ def purge_jobs_data(job_ids: list[str], user_id: str) -> int:
             (job_ids, user_id),
         )
         return cur.rowcount
+
+
+def delete_user_data(user_id: str) -> None:
+    """Delete all jobs (and their payloads via CASCADE) for the given user."""
+    with _cursor() as cur:
+        cur.execute("DELETE FROM jobs WHERE user_id = %s", (user_id,))

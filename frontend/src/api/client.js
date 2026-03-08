@@ -76,6 +76,24 @@ export async function deleteJobData(jobId) {
   }
 }
 
+export async function deleteAccount() {
+  const res = await fetch(`${API_BASE}/api/account`, {
+    method: "DELETE",
+    headers: authHeaders(),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    if (res.status === 503) {
+      throw new Error("Account deletion is not configured. Please contact support.");
+    }
+    if (res.status === 502) {
+      throw new Error("Could not complete account deletion. Please try again or contact support.");
+    }
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Failed to delete account");
+  }
+}
+
 export async function deleteJobsData(jobIds) {
   const res = await fetch(`${API_BASE}/api/jobs/data`, {
     method: "DELETE",
