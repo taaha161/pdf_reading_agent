@@ -29,9 +29,12 @@ function getErrorMessage(err) {
   return err.message || "Request failed";
 }
 
-export async function processPdf(file) {
+export async function processPdf(file, options = {}) {
   const form = new FormData();
   form.append("file", file);
+  if (options.incognitoMode) {
+    form.append("incognito_mode", "true");
+  }
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
   let res;
@@ -57,6 +60,34 @@ export async function processPdf(file) {
     throw new Error(msg);
   }
   return res.json();
+}
+
+export async function deleteJobData(jobId) {
+  const res = await fetch(`${API_BASE}/api/jobs/${jobId}/data`, {
+    method: "DELETE",
+    headers: authHeaders(),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    if (res.status === 404) throw new Error("Job not found");
+    if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Failed to delete job data");
+  }
+}
+
+export async function deleteJobsData(jobIds) {
+  const res = await fetch(`${API_BASE}/api/jobs/data`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    credentials: "include",
+    body: JSON.stringify({ job_ids: jobIds }),
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Failed to delete job data");
+  }
 }
 
 export async function listJobs(token) {

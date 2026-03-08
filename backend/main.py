@@ -34,13 +34,14 @@ from models.schemas import (
     JobListItem,
     JobListResponse,
     ProcessPdfResponse,
+    PurgeJobsDataRequest,
     Transaction,
 )
 from services.chat_service import get_reply
 from services.csv_export import transactions_to_csv
 from services.pdf_processor import extract_text_from_pdf
 from services.statement_agent import extract_and_categorize
-from store import create_job_id, get_job, list_jobs, set_job
+from store import create_job_id, get_job, list_jobs, purge_job_data, purge_jobs_data, set_job
 
 try:
     import psycopg2
@@ -253,6 +254,16 @@ async def preflight_markdown(request: Request, job_id: uuid.UUID):
     return await _preflight_response(request)
 
 
+@app.options("/api/jobs/{job_id}/data")
+async def preflight_job_data(request: Request, job_id: uuid.UUID):
+    return await _preflight_response(request)
+
+
+@app.options("/api/jobs/data")
+async def preflight_jobs_data(request: Request):
+    return await _preflight_response(request)
+
+
 @app.get("/api/jobs", response_model=JobListResponse)
 def list_user_jobs(user_id: str = Depends(get_current_user)):
     """List current user's jobs (newest first)."""
@@ -272,6 +283,7 @@ def get_job_detail(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
         transactions=[Transaction(**t) for t in job["transactions"]],
         summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
         currency=job.get("currency"),
+        data_status=job.get("data_status"),
     )
 
 
@@ -285,6 +297,7 @@ async def process_pdf(
     request: Request,
     file: UploadFile = File(...),
     scanned_method: str = Form("vision"),
+    incognito_mode: str = Form("false"),
     user_id: str = Depends(get_current_user),
 ):
     t0 = time.perf_counter()
@@ -327,7 +340,8 @@ async def process_pdf(
 
         csv_content = transactions_to_csv(transactions)
         job_id = create_job_id()
-        set_job(job_id, user_id, transactions, csv_content, raw_text, currency)
+        incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
+        set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito)
         summary = _summary_by_category(transactions)
         logger.info("process-pdf: finished successfully, job_id=%s, total=%.2f s", job_id, time.perf_counter() - t0)
 
@@ -346,11 +360,30 @@ async def process_pdf(
         raise HTTPException(500, GENERIC_500_MESSAGE)
 
 
+@app.delete("/api/jobs/{job_id}/data")
+def delete_job_data(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
+    """Purge payload data for one job. Job row is kept."""
+    job = get_job(str(job_id), user_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    purge_job_data(str(job_id), user_id)
+    return Response(status_code=204)
+
+
+@app.delete("/api/jobs/data")
+def delete_jobs_data(body: PurgeJobsDataRequest, user_id: str = Depends(get_current_user)):
+    """Purge payload data for multiple jobs. Job rows are kept."""
+    purged = purge_jobs_data(body.job_ids, user_id)
+    return Response(status_code=204, headers={"X-Purged-Count": str(purged)})
+
+
 @app.get("/api/jobs/{job_id}/csv")
 def download_csv(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
     job = get_job(str(job_id), user_id)
     if not job:
         raise HTTPException(404, "Job not found")
+    if job.get("data_status"):
+        raise HTTPException(404, "No data for this job")
     return Response(
         content=job["csv_content"],
         media_type="text/csv",
@@ -364,6 +397,8 @@ def download_markdown(job_id: uuid.UUID, user_id: str = Depends(get_current_user
     job = get_job(str(job_id), user_id)
     if not job:
         raise HTTPException(404, "Job not found")
+    if job.get("data_status"):
+        raise HTTPException(404, "No data for this job")
     raw_text = job.get("raw_text", "")
     return Response(
         content=raw_text,
@@ -379,6 +414,8 @@ def chat(request: Request, body: ChatRequest, user_id: str = Depends(get_current
     job = get_job(str(body.job_id), user_id)
     if not job:
         raise HTTPException(404, "Job not found")
+    if job.get("data_status"):
+        raise HTTPException(404, "No data for this job")
     try:
         reply = get_reply(job, body.message)
         logger.info("chat: job_id=%s, reply len=%d (%.2f s)", body.job_id, len(reply), time.perf_counter() - t0)
