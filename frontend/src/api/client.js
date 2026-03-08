@@ -1,4 +1,8 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+let API_BASE = "http://localhost:8000";
+
+export function setApiBase(url) {
+  API_BASE = url || API_BASE;
+}
 
 const UPLOAD_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes (scanned PDFs + OCR/vision can be slow)
 
