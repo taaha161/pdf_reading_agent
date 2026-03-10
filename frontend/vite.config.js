@@ -14,7 +14,8 @@ export default defineConfig(({ mode }) => {
   const isProd = mode === 'production'
   const siteUrl = env.VITE_PUBLIC_SITE_URL ?? ''
   const basePath = (env.BASE_PATH || '/').replace(/\/?$/, '/')
-  const ogImageUrl = siteUrl ? `${siteUrl.replace(/\/$/, '')}${basePath}og-image.png` : ''
+  const origin = siteUrl || DEFAULT_SITE_URL
+  const ogImageUrl = `${origin.replace(/\/$/, '')}${basePath}og-image.png`
 
   const baseUrl = (siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '') + basePath.replace(/\/?$/, '/')
 
