@@ -25,7 +25,7 @@ Free tiers for both. Backend runs in Docker with OCR support (poppler, tesseract
    - `GOOGLE_GEMINI_API_KEY` = your Google Gemini API key (required for AI extraction, categorization, chat, and scanned-PDF vision)
    - `SUPABASE_URL` = your Supabase project URL (Project Settings → API)
    - `DATABASE_URL` = Supabase connection string (Project Settings → Database; use pooler for serverless, port 6543)
-   - `ALLOWED_ORIGINS` = your frontend URL (see step 2 below). After deploying the frontend, set this to e.g. `https://your-app.vercel.app` (no trailing slash). You can add multiple origins separated by commas.
+   - `ALLOWED_ORIGINS` = your frontend URL (see step 2 below). After deploying the frontend, set this to e.g. `https://bankstatementscanner.com` (no trailing slash). You can add multiple origins separated by commas.
 
 6. Deploy. Note the backend URL, e.g. `https://pdf-statement-api.onrender.com`.
 
@@ -48,12 +48,12 @@ Free tiers for both. Backend runs in Docker with OCR support (poppler, tesseract
    - `VITE_SUPABASE_URL` = your Supabase project URL (same as backend)
    - `VITE_SUPABASE_PUBLISHABLE_KEY` = Supabase **Publishable key** (`sb_publishable_...`) from Project Settings → API Keys (not Legacy)
 
-5. Deploy. Vercel will give you a URL like `https://your-project.vercel.app`.
+5. Deploy. Vercel will give you a URL (e.g. `https://bankstatementscanner.com` if using a custom domain).
 
 ### 3. Point backend at the frontend
 
 1. In **Render** → your Web Service → **Environment**:
-   - Set `ALLOWED_ORIGINS` to your Vercel URL, e.g. `https://your-project.vercel.app`
+   - Set `ALLOWED_ORIGINS` to your frontend URL, e.g. `https://bankstatementscanner.com`
    - (Add `http://localhost:5173` too if you want to test locally against the deployed API.)
 
 2. Redeploy the backend if you changed env vars so CORS uses the new origin.
@@ -118,7 +118,7 @@ If you prefer one URL and one deployment:
 | `GOOGLE_GEMINI_API_KEY` | Backend   | Google Gemini API key for extraction, categorization, chat, and scanned-PDF vision. If unset, Ollama is used for text/chat. |
 | `SUPABASE_URL`    | Backend   | Supabase project URL for JWT verification (JWKS). |
 | `DATABASE_URL`    | Backend   | Supabase database connection string (use pooler for serverless). |
-| `ALLOWED_ORIGINS` | Backend   | Comma-separated frontend origins for CORS, e.g. `https://app.vercel.app`. |
+| `ALLOWED_ORIGINS` | Backend   | Comma-separated frontend origins for CORS, e.g. `https://bankstatementscanner.com`. |
 | `VITE_API_URL`    | Frontend  | Backend API URL. Set at **build** time. |
 | `VITE_SUPABASE_URL` | Frontend | Supabase project URL (same as backend). |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Frontend | Supabase Publishable key (`sb_publishable_...`). |

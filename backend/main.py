@@ -82,10 +82,10 @@ if psycopg2 is not None:
         )
 
 # CORS: allow origins from ALLOWED_ORIGINS (comma-separated); if unset, use defaults. Localhost and production are always allowed.
-_VERCEL_ORIGIN = "https://pdf-reading-agent.vercel.app"
+_VERCEL_ORIGIN = "https://bankstatementscanner.com"
 _EXTRA_ORIGINS = (
     "https://pdftoexcelconverter.io",
-    "https://bankstatementscanner.com",
+    "https://pdf-reading-agent.vercel.app",
 )
 _LOCALHOST_ORIGINS = (
     "http://localhost:5173",
