@@ -91,6 +91,24 @@
   margin-bottom: 0;
 }
 
+.scanner-alert-link {
+  margin-left: 0.25rem;
+  padding: 0.2em 0.5em;
+  font-size: inherit;
+  color: inherit;
+  text-decoration: underline;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.scanner-trial-chat-hint {
+  margin: 0;
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #666);
+}
+
 .scanner-results {
   display: grid;
   grid-template-columns: 1fr;

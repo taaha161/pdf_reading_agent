@@ -59,6 +59,13 @@ export default function Landing() {
               <button
                 type="button"
                 className="landing-cta"
+                onClick={() => navigate("/scanner")}
+              >
+                Try it free – process one PDF
+              </button>
+              <button
+                type="button"
+                className="landing-cta landing-cta-secondary"
                 onClick={() => navigate("/signup")}
               >
                 Sign up

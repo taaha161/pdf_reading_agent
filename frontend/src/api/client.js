@@ -44,6 +44,7 @@ export async function processPdf(file, options = {}) {
       headers: authHeaders(),
       body: form,
       signal: controller.signal,
+      credentials: "include",
     });
   } catch (e) {
     clearTimeout(timeoutId);
@@ -57,7 +58,11 @@ export async function processPdf(file, options = {}) {
     }
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     const msg = Array.isArray(err.detail) ? err.detail.map((d) => d.msg || d).join(", ") : (err.detail || res.statusText);
-    throw new Error(msg);
+    const e = new Error(msg);
+    if (res.status === 401 && msg && msg.toLowerCase().includes("trial limit")) {
+      e.isTrialLimit = true;
+    }
+    throw e;
   }
   return res.json();
 }

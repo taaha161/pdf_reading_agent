@@ -117,3 +117,20 @@ def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
     logger.debug("JWT verify: ok sub=%s", sub)
     return str(sub)
+
+
+def get_current_user_optional(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_HTTP_BEARER)],
+) -> str | None:
+    """Like get_current_user but returns None when Authorization is missing or invalid (for trial flow)."""
+    if not credentials or not credentials.credentials:
+        return None
+    token = credentials.credentials
+    try:
+        payload = _decode_supabase_jwt(token)
+        sub = payload.get("sub")
+        if not sub:
+            return None
+        return str(sub)
+    except HTTPException:
+        return None

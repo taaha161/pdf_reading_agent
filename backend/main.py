@@ -25,7 +25,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from auth import get_current_user
+from auth import get_current_user, get_current_user_optional
 from models.schemas import (
     CategorySummary,
     ChatRequest,
@@ -329,6 +329,10 @@ _RATE_LIMIT_PROCESS_PDF = os.environ.get("RATE_LIMIT_PROCESS_PDF", "10/minute")
 _RATE_LIMIT_CHAT = os.environ.get("RATE_LIMIT_CHAT", "30/minute")
 
 
+TRIAL_COOKIE_NAME = "trial_pdf_used"
+TRIAL_LIMIT_MESSAGE = "Trial limit reached. Please log in to process more PDFs."
+
+
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
 @limiter.limit(_RATE_LIMIT_PROCESS_PDF)
 async def process_pdf(
@@ -336,9 +340,15 @@ async def process_pdf(
     file: UploadFile = File(...),
     scanned_method: str = Form("vision"),
     incognito_mode: str = Form("false"),
-    user_id: str = Depends(get_current_user),
+    user_id: str | None = Depends(get_current_user_optional),
 ):
     t0 = time.perf_counter()
+    # Trial: unauthenticated and already used trial
+    if user_id is None:
+        if request.cookies.get(TRIAL_COOKIE_NAME):
+            raise HTTPException(status_code=401, detail=TRIAL_LIMIT_MESSAGE)
+        # Will run pipeline below and not call set_job; return inline csv_content/raw_text and set cookie
+
     # Normalize: only "ocr" or "vision" (for scanned PDFs)
     if scanned_method and scanned_method.strip().lower() == "ocr":
         scanned_method_val = "ocr"
@@ -378,19 +388,46 @@ async def process_pdf(
 
         csv_content = transactions_to_csv(transactions)
         job_id = create_job_id()
-        incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
-        set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito)
         summary = _summary_by_category(transactions)
-        logger.info("process-pdf: finished successfully, job_id=%s, total=%.2f s", job_id, time.perf_counter() - t0)
+        is_trial = user_id is None
 
-        return ProcessPdfResponse(
-            job_id=job_id,
-            transactions=[Transaction(**t) for t in transactions],
-            summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
-            csv_url=f"/api/jobs/{job_id}/csv",
-            markdown_url=f"/api/jobs/{job_id}/markdown",
-            currency=currency,
-        )
+        if is_trial:
+            # Do not save to DB; return inline csv_content and raw_text; set cookie
+            payload = ProcessPdfResponse(
+                job_id=job_id,
+                transactions=[Transaction(**t) for t in transactions],
+                summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+                csv_url="",
+                markdown_url="",
+                currency=currency,
+                csv_content=csv_content,
+                raw_text=raw_text,
+            )
+            logger.info("process-pdf: trial finished successfully, job_id=%s, total=%.2f s", job_id, time.perf_counter() - t0)
+            response = JSONResponse(content=payload.model_dump(mode="json"))
+            secure = getattr(request.url, "scheme", "http") == "https"
+            response.set_cookie(
+                key=TRIAL_COOKIE_NAME,
+                value="1",
+                httponly=True,
+                secure=secure,
+                samesite="lax",
+                path="/",
+                max_age=10 * 365 * 24 * 60 * 60,
+            )
+            return response
+        else:
+            incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
+            set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito)
+            logger.info("process-pdf: finished successfully, job_id=%s, total=%.2f s", job_id, time.perf_counter() - t0)
+            return ProcessPdfResponse(
+                job_id=job_id,
+                transactions=[Transaction(**t) for t in transactions],
+                summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+                csv_url=f"/api/jobs/{job_id}/csv",
+                markdown_url=f"/api/jobs/{job_id}/markdown",
+                currency=currency,
+            )
     except HTTPException:
         raise
     except Exception as e:

@@ -24,6 +24,8 @@ class ProcessPdfResponse(BaseModel):
     csv_url: str
     markdown_url: str
     currency: Optional[str] = None  # Inferred from statement (e.g. USD, PKR); None if unknown
+    csv_content: Optional[str] = None  # Set for trial (no job stored); client uses for download
+    raw_text: Optional[str] = None  # Set for trial; client uses for markdown download
 
 
 class ChatRequest(BaseModel):
