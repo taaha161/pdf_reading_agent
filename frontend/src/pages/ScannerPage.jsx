@@ -24,6 +24,7 @@ export default function ScannerPage() {
   const [error, setError] = useState(null);
   const [downloadError, setDownloadError] = useState(null);
   const [incognitoMode, setIncognitoMode] = useState(false);
+  const [conversionMode, setConversionMode] = useState("balanced");
   const [dataStatus, setDataStatus] = useState(null);
   const [trialCsvContent, setTrialCsvContent] = useState(null);
   const [trialRawText, setTrialRawText] = useState(null);
@@ -70,7 +71,7 @@ export default function ScannerPage() {
     setLoading(true);
     setLoadingFile({ name: file.name, size: file.size });
     try {
-      const data = await processPdf(file, { incognitoMode });
+      const data = await processPdf(file, { incognitoMode, conversionMode });
       setJobId(data.job_id);
       setTransactions(data.transactions || []);
       setSummaryByCategory(data.summary_by_category || []);
@@ -105,6 +106,22 @@ export default function ScannerPage() {
 
         <div className="scanner-main">
         <div className="scanner-upload-card">
+          <div className="scanner-conversion-mode">
+            <label htmlFor="conversion-mode" className="scanner-conversion-mode-label">Conversion mode</label>
+            <select
+              id="conversion-mode"
+              value={conversionMode}
+              onChange={(e) => setConversionMode(e.target.value)}
+              disabled={loading}
+              className="scanner-conversion-mode-select"
+              aria-describedby="conversion-mode-hint"
+            >
+              <option value="fast">Fast — lowest latency, simple documents</option>
+              <option value="balanced">Balanced — speed and accuracy (recommended)</option>
+              <option value="accurate">Accurate — best for complex layouts and tables</option>
+            </select>
+           
+          </div>
           {isLoggedIn && (
             <>
               <label className="scanner-incognito">

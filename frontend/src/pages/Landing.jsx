@@ -61,7 +61,7 @@ export default function Landing() {
                 className="landing-cta"
                 onClick={() => navigate("/scanner")}
               >
-                Try it free – process one PDF
+               Categorize your statements
               </button>
               <button
                 type="button"

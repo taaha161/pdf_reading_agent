@@ -340,6 +340,7 @@ async def process_pdf(
     file: UploadFile = File(...),
     scanned_method: str = Form("vision"),
     incognito_mode: str = Form("false"),
+    conversion_mode: str = Form("fast"),
     user_id: str | None = Depends(get_current_user_optional),
 ):
     t0 = time.perf_counter()
@@ -354,12 +355,16 @@ async def process_pdf(
         scanned_method_val = "ocr"
     else:
         scanned_method_val = "vision"
-    logger.info("process-pdf: request started, filename=%s, scanned_method=%s", file.filename or "statement.pdf", scanned_method_val)
+    # Datalab processing mode: fast | balanced | accurate
+    conversion_mode_val = (conversion_mode or "fast").strip().lower()
+    if conversion_mode_val not in ("fast", "balanced", "accurate"):
+        conversion_mode_val = "fast"
+    logger.info("process-pdf: [step 0] request started, filename=%s, scanned_method=%s, conversion_mode=%s (elapsed 0.00 s)", file.filename or "statement.pdf", scanned_method_val, conversion_mode_val)
     try:
         if file.content_type and file.content_type != ALLOWED_CONTENT_TYPE:
             raise HTTPException(400, "File must be a PDF")
         content = await file.read()
-        logger.info("process-pdf: file read, size=%d bytes (%.2f s)", len(content), time.perf_counter() - t0)
+        logger.info("process-pdf: [step 1/4] file read, size=%d bytes (%.2f s this step, total %.2f s)", len(content), time.perf_counter() - t0, time.perf_counter() - t0)
         if len(content) > MAX_FILE_SIZE:
             raise HTTPException(400, "File too large")
         if not content:
@@ -367,10 +372,10 @@ async def process_pdf(
 
         t1 = time.perf_counter()
         try:
-            raw_text = extract_text_from_pdf(content, file.filename or "statement.pdf", scanned_method=scanned_method_val)
+            raw_text = extract_text_from_pdf(content, file.filename or "statement.pdf", scanned_method=scanned_method_val, conversion_mode=conversion_mode_val)
         except Exception as e:
             raise HTTPException(422, f"PDF parsing failed: {str(e)}")
-        logger.info("process-pdf: PDF text extraction done, len=%d chars (%.2f s)", len(raw_text), time.perf_counter() - t1)
+        logger.info("process-pdf: [step 2/4] PDF text extraction done, len=%d chars (%.2f s this step, total %.2f s)", len(raw_text), time.perf_counter() - t1, time.perf_counter() - t0)
         if not raw_text.strip():
             raise HTTPException(
                 422,
@@ -384,8 +389,9 @@ async def process_pdf(
         except Exception as e:
             logger.exception("AI extraction failed: %s", e)
             raise HTTPException(500, GENERIC_500_MESSAGE)
-        logger.info("process-pdf: AI extraction + categorization done, transactions=%d, currency=%s (%.2f s)", len(transactions), currency or "none", time.perf_counter() - t2)
+        logger.info("process-pdf: [step 3/4] AI extraction + categorization done, transactions=%d, currency=%s (%.2f s this step, total %.2f s)", len(transactions), currency or "none", time.perf_counter() - t2, time.perf_counter() - t0)
 
+        t3 = time.perf_counter()
         csv_content = transactions_to_csv(transactions)
         job_id = create_job_id()
         summary = _summary_by_category(transactions)
@@ -403,7 +409,7 @@ async def process_pdf(
                 csv_content=csv_content,
                 raw_text=raw_text,
             )
-            logger.info("process-pdf: trial finished successfully, job_id=%s, total=%.2f s", job_id, time.perf_counter() - t0)
+            logger.info("process-pdf: [step 4/4] trial finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
             response = JSONResponse(content=payload.model_dump(mode="json"))
             secure = getattr(request.url, "scheme", "http") == "https"
             response.set_cookie(
@@ -419,7 +425,7 @@ async def process_pdf(
         else:
             incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
             set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito)
-            logger.info("process-pdf: finished successfully, job_id=%s, total=%.2f s", job_id, time.perf_counter() - t0)
+            logger.info("process-pdf: [step 4/4] finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
             return ProcessPdfResponse(
                 job_id=job_id,
                 transactions=[Transaction(**t) for t in transactions],

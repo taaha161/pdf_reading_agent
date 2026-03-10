@@ -32,20 +32,22 @@ def extract_text_from_pdf(
     file_content: bytes,
     filename: str = "statement.pdf",
     scanned_method: str | None = None,
+    conversion_mode: str = "fast",
 ) -> str:
     """
     When DATALAB_API_KEY is set, use only Datalab Convert API (PDF -> markdown).
     Otherwise: try direct text extraction (pdfplumber, then pypdf); if too little text per page,
     use scanned path with OCR only. scanned_method: "ocr" | None (auto). No AI vision.
+    conversion_mode: "fast" | "balanced" | "accurate" for Datalab processing mode (default "fast").
     Returns raw text string.
     """
     t0 = time.perf_counter()
-    logger.info("extract_text_from_pdf: start, filename=%s, size=%d bytes, scanned_method=%s", filename, len(file_content), scanned_method or "auto")
+    logger.info("extract_text_from_pdf: start, filename=%s, size=%d bytes, scanned_method=%s, conversion_mode=%s", filename, len(file_content), scanned_method or "auto", conversion_mode or "fast")
 
     if os.environ.get("DATALAB_API_KEY", "").strip():
         try:
             from services.datalab_client import convert_pdf_to_markdown
-            text = convert_pdf_to_markdown(file_content, filename or "statement.pdf")
+            text = convert_pdf_to_markdown(file_content, filename or "statement.pdf", mode=conversion_mode or "fast")
             logger.info("extract_text_from_pdf: Datalab done, len=%d (%.2f s)", len(text), time.perf_counter() - t0)
             return text or ""
         except Exception as e:
@@ -67,7 +69,7 @@ def extract_text_from_pdf(
         logger.info("extract_text_from_pdf: pypdf fallback, len=%d (%.2f s)", len(text), time.perf_counter() - t1)
     avg_chars = len(text) / pages if pages else 0
     if avg_chars < MIN_TEXT_PER_PAGE:
-        logger.info("extract_text_from_pdf: low text per page (%.0f), using scanned path", avg_chars)
+        logger.info("extract_text_from_pdf: low text per page (%.0f), using scanned path (%.2f s)", avg_chars, time.perf_counter() - t0)
         text = _extract_text_scanned(file_content, scanned_method=scanned_method)
     else:
         logger.info("extract_text_from_pdf: using direct text, total len=%d (%.2f s)", len(text), time.perf_counter() - t0)

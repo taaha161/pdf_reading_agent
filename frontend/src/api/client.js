@@ -35,6 +35,8 @@ export async function processPdf(file, options = {}) {
   if (options.incognitoMode) {
     form.append("incognito_mode", "true");
   }
+  const mode = options.conversionMode && ["fast", "balanced", "accurate"].includes(options.conversionMode) ? options.conversionMode : "fast";
+  form.append("conversion_mode", mode);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
   let res;
