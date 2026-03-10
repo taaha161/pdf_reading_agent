@@ -3,4 +3,4 @@ Allow: /
 Disallow: /dashboard
 Disallow: /settings
 
-Sitemap: https://pdf-reading-agent.vercel.app/sitemap.xml
+Sitemap: https://bankstatementscanner.com/sitemap.xml
