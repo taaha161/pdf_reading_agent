@@ -32,8 +32,8 @@ function AppContent() {
         <Route path="/terms-of-service" element={<TermsOfServicePage />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
-        <Route path="/scanner" element={<ProtectedRoute><ScannerPage /></ProtectedRoute>} />
-        <Route path="/scanner/:jobId" element={<ProtectedRoute><ScannerPage /></ProtectedRoute>} />
+        <Route path="/scanner" element={<ScannerPage />} />
+        <Route path="/scanner/:jobId" element={<ScannerPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Analytics />

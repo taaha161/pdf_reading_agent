@@ -74,11 +74,13 @@ def _get_llm():
     api_key = os.environ.get("GOOGLE_GEMINI_API_KEY")
     if api_key and _GEMINI_AVAILABLE:
         # Use production Flash model for speed and availability; preview models (e.g. gemini-3-flash-preview) are often slow and return 503 under load.
+        # thinking_budget=0 disables Gemini 2.5's internal "thinking" to minimize latency (otherwise extraction can take ~60+ s).
         return ChatGoogleGenerativeAI(
             model="gemini-2.5-flash",
             google_api_key=api_key,
             temperature=0,
             max_output_tokens=32768,
+            thinking_budget=0,
         )
     return ChatOllama(model="llama3.2", temperature=0)
 
@@ -251,7 +253,7 @@ def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | N
     t0 = time.perf_counter()
     llm = _get_llm()
     text_trimmed = raw_text.strip()
-    logger.info("extract_and_categorize: start, text len=%d", len(text_trimmed))
+    logger.info("extract_and_categorize: start, text len=%d (elapsed 0.00 s)", len(text_trimmed))
 
     categories_str = ", ".join(CATEGORIES)
     combined_prompt = ChatPromptTemplate.from_messages(
@@ -286,15 +288,15 @@ def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | N
             if end >= len(text_trimmed):
                 break
             start = end - EXTRACTION_CHUNK_OVERLAP
-        logger.info("extract_and_categorize: text len=%d, splitting into %d chunks", len(text_trimmed), len(chunks))
+        logger.info("extract_and_categorize: text len=%d, splitting into %d chunks (%.2f s)", len(text_trimmed), len(chunks), time.perf_counter() - t0)
 
     all_transactions: list[dict] = []
     currency: str | None = None
     for chunk_idx, text_input in enumerate(chunks):
-        logger.info("extract_and_categorize: single-call extract+categorize+currency (chunk %d/%d)...", chunk_idx + 1, len(chunks))
+        logger.info("extract_and_categorize: single-call extract+categorize+currency (chunk %d/%d)... (total so far %.2f s)", chunk_idx + 1, len(chunks), time.perf_counter() - t0)
         t1 = time.perf_counter()
         out = chain.invoke({"text": text_input})
-        logger.info("extract_and_categorize: LLM done (%.2f s)", time.perf_counter() - t1)
+        logger.info("extract_and_categorize: LLM done (%.2f s this chunk, total %.2f s)", time.perf_counter() - t1, time.perf_counter() - t0)
         json_str = _extract_json_block(out)
         # Parse currency from the rest of the response (after the JSON)
         if not currency:
@@ -318,14 +320,14 @@ def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | N
         seen.add(key)
         transactions.append(t)
     if len(chunks) > 1 and all_transactions:
-        logger.info("extract_and_categorize: merged %d chunks -> %d unique", len(chunks), len(transactions))
+        logger.info("extract_and_categorize: merged %d chunks -> %d unique (%.2f s)", len(chunks), len(transactions), time.perf_counter() - t0)
 
     if not transactions:
         transactions = []
 
     # Fallback: 0 transactions — try extract-only then categorize (2 calls)
     if len(transactions) == 0 and len(text_trimmed) > 400:
-        logger.info("extract_and_categorize: 0 transactions, trying fallback (extract then categorize)")
+        logger.info("extract_and_categorize: 0 transactions, trying fallback (extract then categorize) (%.2f s)", time.perf_counter() - t0)
         fallback_prompt = ChatPromptTemplate.from_messages(
             [
                 (

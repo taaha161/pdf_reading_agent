@@ -25,7 +25,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from auth import get_current_user
+from auth import get_current_user, get_current_user_optional
 from models.schemas import (
     CategorySummary,
     ChatRequest,
@@ -41,7 +41,7 @@ from services.chat_service import get_reply
 from services.csv_export import transactions_to_csv
 from services.pdf_processor import extract_text_from_pdf
 from services.statement_agent import extract_and_categorize
-from store import create_job_id, delete_user_data, get_job, list_jobs, purge_job_data, purge_jobs_data, set_job
+from store import create_job_id, delete_user_data, get_job, list_jobs, purge_job_data, purge_jobs_data, record_trial_run, set_job
 
 try:
     import psycopg2
@@ -190,14 +190,20 @@ def _parse_amount(amount_str: str) -> float:
 
 
 def _summary_by_category(transactions: list[dict]) -> list[tuple[str, float]]:
-    """Group by category; total = sum of debit amounts only (outflow) per category. Credits are not subtracted so each row shows total spent/outflow in that category."""
+    """Group by category. For Income: sum credits (inflow). For other categories: sum debits (outflow)."""
     totals: dict[str, float] = {}
     for t in transactions:
         magnitude = abs(_parse_amount(t.get("amount")))
         is_debit = str(t.get("type", "")).lower() == "debit"
-        if not is_debit:
-            magnitude = 0.0  # Only count debits (outflows) in the summary total
         cat = str(t.get("category", "")).strip() or "Other"
+        if cat == "Income":
+            # Income: count credits only (money in)
+            if is_debit:
+                magnitude = 0.0
+        else:
+            # All other categories: count debits only (money out)
+            if not is_debit:
+                magnitude = 0.0
         totals[cat] = totals.get(cat, 0) + magnitude
     return sorted(totals.items(), key=lambda x: -x[1])
 
@@ -329,6 +335,10 @@ _RATE_LIMIT_PROCESS_PDF = os.environ.get("RATE_LIMIT_PROCESS_PDF", "10/minute")
 _RATE_LIMIT_CHAT = os.environ.get("RATE_LIMIT_CHAT", "30/minute")
 
 
+TRIAL_COOKIE_NAME = "trial_pdf_used"
+TRIAL_LIMIT_MESSAGE = "Trial limit reached. Please log in to process more PDFs."
+
+
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
 @limiter.limit(_RATE_LIMIT_PROCESS_PDF)
 async def process_pdf(
@@ -336,20 +346,31 @@ async def process_pdf(
     file: UploadFile = File(...),
     scanned_method: str = Form("vision"),
     incognito_mode: str = Form("false"),
-    user_id: str = Depends(get_current_user),
+    conversion_mode: str = Form("fast"),
+    user_id: str | None = Depends(get_current_user_optional),
 ):
     t0 = time.perf_counter()
+    # Trial: unauthenticated and already used trial
+    if user_id is None:
+        if request.cookies.get(TRIAL_COOKIE_NAME):
+            raise HTTPException(status_code=401, detail=TRIAL_LIMIT_MESSAGE)
+        # Will run pipeline below and not call set_job; return inline csv_content/raw_text and set cookie
+
     # Normalize: only "ocr" or "vision" (for scanned PDFs)
     if scanned_method and scanned_method.strip().lower() == "ocr":
         scanned_method_val = "ocr"
     else:
         scanned_method_val = "vision"
-    logger.info("process-pdf: request started, filename=%s, scanned_method=%s", file.filename or "statement.pdf", scanned_method_val)
+    # Datalab processing mode: fast | balanced | accurate
+    conversion_mode_val = (conversion_mode or "fast").strip().lower()
+    if conversion_mode_val not in ("fast", "balanced", "accurate"):
+        conversion_mode_val = "fast"
+    logger.info("process-pdf: [step 0] request started, filename=%s, scanned_method=%s, conversion_mode=%s (elapsed 0.00 s)", file.filename or "statement.pdf", scanned_method_val, conversion_mode_val)
     try:
         if file.content_type and file.content_type != ALLOWED_CONTENT_TYPE:
             raise HTTPException(400, "File must be a PDF")
         content = await file.read()
-        logger.info("process-pdf: file read, size=%d bytes (%.2f s)", len(content), time.perf_counter() - t0)
+        logger.info("process-pdf: [step 1/4] file read, size=%d bytes (%.2f s this step, total %.2f s)", len(content), time.perf_counter() - t0, time.perf_counter() - t0)
         if len(content) > MAX_FILE_SIZE:
             raise HTTPException(400, "File too large")
         if not content:
@@ -357,10 +378,10 @@ async def process_pdf(
 
         t1 = time.perf_counter()
         try:
-            raw_text = extract_text_from_pdf(content, file.filename or "statement.pdf", scanned_method=scanned_method_val)
+            raw_text = extract_text_from_pdf(content, file.filename or "statement.pdf", scanned_method=scanned_method_val, conversion_mode=conversion_mode_val)
         except Exception as e:
             raise HTTPException(422, f"PDF parsing failed: {str(e)}")
-        logger.info("process-pdf: PDF text extraction done, len=%d chars (%.2f s)", len(raw_text), time.perf_counter() - t1)
+        logger.info("process-pdf: [step 2/4] PDF text extraction done, len=%d chars (%.2f s this step, total %.2f s)", len(raw_text), time.perf_counter() - t1, time.perf_counter() - t0)
         if not raw_text.strip():
             raise HTTPException(
                 422,
@@ -374,23 +395,56 @@ async def process_pdf(
         except Exception as e:
             logger.exception("AI extraction failed: %s", e)
             raise HTTPException(500, GENERIC_500_MESSAGE)
-        logger.info("process-pdf: AI extraction + categorization done, transactions=%d, currency=%s (%.2f s)", len(transactions), currency or "none", time.perf_counter() - t2)
+        logger.info("process-pdf: [step 3/4] AI extraction + categorization done, transactions=%d, currency=%s (%.2f s this step, total %.2f s)", len(transactions), currency or "none", time.perf_counter() - t2, time.perf_counter() - t0)
 
+        t3 = time.perf_counter()
         csv_content = transactions_to_csv(transactions)
         job_id = create_job_id()
-        incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
-        set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito)
         summary = _summary_by_category(transactions)
-        logger.info("process-pdf: finished successfully, job_id=%s, total=%.2f s", job_id, time.perf_counter() - t0)
+        is_trial = user_id is None
 
-        return ProcessPdfResponse(
-            job_id=job_id,
-            transactions=[Transaction(**t) for t in transactions],
-            summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
-            csv_url=f"/api/jobs/{job_id}/csv",
-            markdown_url=f"/api/jobs/{job_id}/markdown",
-            currency=currency,
-        )
+        if is_trial:
+            # Record trial run for analytics (no PDF/transaction data)
+            try:
+                record_trial_run(job_id)
+            except Exception as e:
+                logger.warning("trial_runs insert failed (continuing): %s", e)
+            # Return inline csv_content and raw_text; set cookie
+            payload = ProcessPdfResponse(
+                job_id=job_id,
+                transactions=[Transaction(**t) for t in transactions],
+                summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+                csv_url="",
+                markdown_url="",
+                currency=currency,
+                csv_content=csv_content,
+                raw_text=raw_text,
+            )
+            logger.info("process-pdf: [step 4/4] trial finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
+            response = JSONResponse(content=payload.model_dump(mode="json"))
+            secure = getattr(request.url, "scheme", "http") == "https"
+            response.set_cookie(
+                key=TRIAL_COOKIE_NAME,
+                value="1",
+                httponly=True,
+                secure=secure,
+                samesite="lax",
+                path="/",
+                max_age=10 * 365 * 24 * 60 * 60,
+            )
+            return response
+        else:
+            incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
+            set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito)
+            logger.info("process-pdf: [step 4/4] finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
+            return ProcessPdfResponse(
+                job_id=job_id,
+                transactions=[Transaction(**t) for t in transactions],
+                summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+                csv_url=f"/api/jobs/{job_id}/csv",
+                markdown_url=f"/api/jobs/{job_id}/markdown",
+                currency=currency,
+            )
     except HTTPException:
         raise
     except Exception as e:

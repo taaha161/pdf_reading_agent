@@ -1,12 +1,26 @@
 import { downloadCsv, downloadMarkdown } from "../api/client";
 import "./ResultsTable.css";
 
-export default function ResultsTable({ transactions, jobId, onDownloadError }) {
+function downloadBlob(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export default function ResultsTable({ transactions, jobId, csvContent, rawText, onDownloadError }) {
   if (!jobId) return null;
 
   const handleDownloadCsv = async () => {
     try {
-      await downloadCsv(jobId);
+      if (csvContent != null) {
+        downloadBlob(csvContent, "statement.csv", "text/csv");
+      } else {
+        await downloadCsv(jobId);
+      }
     } catch (e) {
       onDownloadError?.(e.message);
     }
@@ -14,7 +28,11 @@ export default function ResultsTable({ transactions, jobId, onDownloadError }) {
 
   const handleDownloadMarkdown = async () => {
     try {
-      await downloadMarkdown(jobId);
+      if (rawText != null) {
+        downloadBlob(rawText, "statement.md", "text/markdown");
+      } else {
+        await downloadMarkdown(jobId);
+      }
     } catch (e) {
       onDownloadError?.(e.message);
     }

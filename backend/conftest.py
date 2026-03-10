@@ -12,7 +12,7 @@ os.environ.pop("REDIS_URL", None)
 import pytest
 from fastapi.testclient import TestClient
 
-from auth import get_current_user
+from auth import get_current_user, get_current_user_optional
 from main import app
 
 
@@ -23,6 +23,7 @@ def client():
         return "test-user-id"
 
     app.dependency_overrides[get_current_user] = fake_get_current_user
+    app.dependency_overrides[get_current_user_optional] = fake_get_current_user
     try:
         with TestClient(app) as c:
             yield c

@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import FileUpload from "../components/FileUpload";
 import Loader from "../components/Loader";
 import SummaryTable from "../components/SummaryTable";
 import ResultsTable from "../components/ResultsTable";
 import ChatPanel from "../components/ChatPanel";
+import { useAuth } from "../contexts/AuthContext";
 import { processPdf, getJob } from "../api/client";
 import "./ScannerPage.css";
 
 export default function ScannerPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const { jobId: routeJobId } = useParams();
   const [jobId, setJobId] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -21,11 +24,20 @@ export default function ScannerPage() {
   const [error, setError] = useState(null);
   const [downloadError, setDownloadError] = useState(null);
   const [incognitoMode, setIncognitoMode] = useState(false);
+  const [conversionMode, setConversionMode] = useState("balanced");
   const [dataStatus, setDataStatus] = useState(null);
+  const [trialCsvContent, setTrialCsvContent] = useState(null);
+  const [trialRawText, setTrialRawText] = useState(null);
+  const isLoggedIn = !!user;
 
   // Load existing job when opening from dashboard (e.g. /scanner/:jobId)
   useEffect(() => {
     if (!routeJobId) return;
+    if (!isLoggedIn) {
+      setError("Sign in to view this job.");
+      setLoadingJob(false);
+      return;
+    }
     setError(null);
     setLoadingJob(true);
     getJob(routeJobId)
@@ -36,13 +48,15 @@ export default function ScannerPage() {
           setSummaryByCategory((data.summary_by_category || []).map((s) => ({ category: s.category, total: s.total })));
           setCurrency(data.currency ?? null);
           setDataStatus(data.data_status ?? null);
+          setTrialCsvContent(null);
+          setTrialRawText(null);
         } else {
           setError("Job not found");
         }
       })
       .catch((e) => setError(e.message || "Failed to load job"))
       .finally(() => setLoadingJob(false));
-  }, [routeJobId]);
+  }, [routeJobId, isLoggedIn]);
 
   const handleUpload = async (file) => {
     setError(null);
@@ -52,15 +66,19 @@ export default function ScannerPage() {
     setSummaryByCategory([]);
     setCurrency(null);
     setDataStatus(null);
+    setTrialCsvContent(null);
+    setTrialRawText(null);
     setLoading(true);
     setLoadingFile({ name: file.name, size: file.size });
     try {
-      const data = await processPdf(file, { incognitoMode });
+      const data = await processPdf(file, { incognitoMode, conversionMode });
       setJobId(data.job_id);
       setTransactions(data.transactions || []);
       setSummaryByCategory(data.summary_by_category || []);
       setCurrency(data.currency ?? null);
       setDataStatus(null);
+      setTrialCsvContent(data.csv_content ?? null);
+      setTrialRawText(data.raw_text ?? null);
     } catch (e) {
       setError(e.message || "Upload failed");
       setJobId(null);
@@ -68,6 +86,8 @@ export default function ScannerPage() {
       setTransactions([]);
       setSummaryByCategory([]);
       setCurrency(null);
+      setTrialCsvContent(null);
+      setTrialRawText(null);
     } finally {
       setLoading(false);
       setLoadingFile(null);
@@ -86,16 +106,36 @@ export default function ScannerPage() {
 
         <div className="scanner-main">
         <div className="scanner-upload-card">
-          <label className="scanner-incognito">
-            <input
-              type="checkbox"
-              checked={incognitoMode}
-              onChange={(e) => setIncognitoMode(e.target.checked)}
+          <div className="scanner-conversion-mode">
+            <label htmlFor="conversion-mode" className="scanner-conversion-mode-label">Conversion mode</label>
+            <select
+              id="conversion-mode"
+              value={conversionMode}
+              onChange={(e) => setConversionMode(e.target.value)}
               disabled={loading}
-            />
-            <span>Incognito mode</span>
-          </label>
-          <p className="scanner-incognito-hint">Do not store transaction data, currency, or raw text (job count is still recorded).</p>
+              className="scanner-conversion-mode-select"
+              aria-describedby="conversion-mode-hint"
+            >
+              <option value="fast">Fast — lowest latency, simple documents</option>
+              <option value="balanced">Balanced — speed and accuracy (recommended)</option>
+              <option value="accurate">Accurate — best for complex layouts and tables</option>
+            </select>
+           
+          </div>
+          {isLoggedIn && (
+            <>
+              <label className="scanner-incognito">
+                <input
+                  type="checkbox"
+                  checked={incognitoMode}
+                  onChange={(e) => setIncognitoMode(e.target.checked)}
+                  disabled={loading}
+                />
+                <span>Incognito mode</span>
+              </label>
+              <p className="scanner-incognito-hint">Do not store transaction data, currency, or raw text (job count is still recorded).</p>
+            </>
+          )}
           <FileUpload onUpload={handleUpload} disabled={loading} />
         </div>
 
@@ -112,7 +152,19 @@ export default function ScannerPage() {
 
         {(error || downloadError) && (
           <div className="scanner-alerts" role="alert">
-            {error && <p className="scanner-alert error">{error}</p>}
+            {error && (
+              <p className="scanner-alert error">
+                {error}
+                {error.includes("Trial limit") && (
+                  <>
+                    {" "}
+                    <button type="button" className="scanner-alert-link" onClick={() => navigate("/login")}>
+                      Log in to process more
+                    </button>
+                  </>
+                )}
+              </p>
+            )}
             {downloadError && <p className="scanner-alert error">{downloadError}</p>}
           </div>
         )}
@@ -132,11 +184,17 @@ export default function ScannerPage() {
               <ResultsTable
                 transactions={transactions}
                 jobId={jobId}
+                csvContent={trialCsvContent}
+                rawText={trialRawText}
                 onDownloadError={setDownloadError}
               />
             </div>
             <aside className="scanner-results-chat">
-              <ChatPanel key={jobId} jobId={jobId} disabled={!jobId} />
+              {isLoggedIn ? (
+                <ChatPanel key={jobId} jobId={jobId} disabled={!jobId} />
+              ) : (
+                <p className="scanner-trial-chat-hint">Sign in to save this job and chat about it.</p>
+              )}
             </aside>
           </div>
         )}
