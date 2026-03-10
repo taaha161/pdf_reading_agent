@@ -41,7 +41,7 @@ from services.chat_service import get_reply
 from services.csv_export import transactions_to_csv
 from services.pdf_processor import extract_text_from_pdf
 from services.statement_agent import extract_and_categorize
-from store import create_job_id, delete_user_data, get_job, list_jobs, purge_job_data, purge_jobs_data, set_job
+from store import create_job_id, delete_user_data, get_job, list_jobs, purge_job_data, purge_jobs_data, record_trial_run, set_job
 
 try:
     import psycopg2
@@ -190,14 +190,20 @@ def _parse_amount(amount_str: str) -> float:
 
 
 def _summary_by_category(transactions: list[dict]) -> list[tuple[str, float]]:
-    """Group by category; total = sum of debit amounts only (outflow) per category. Credits are not subtracted so each row shows total spent/outflow in that category."""
+    """Group by category. For Income: sum credits (inflow). For other categories: sum debits (outflow)."""
     totals: dict[str, float] = {}
     for t in transactions:
         magnitude = abs(_parse_amount(t.get("amount")))
         is_debit = str(t.get("type", "")).lower() == "debit"
-        if not is_debit:
-            magnitude = 0.0  # Only count debits (outflows) in the summary total
         cat = str(t.get("category", "")).strip() or "Other"
+        if cat == "Income":
+            # Income: count credits only (money in)
+            if is_debit:
+                magnitude = 0.0
+        else:
+            # All other categories: count debits only (money out)
+            if not is_debit:
+                magnitude = 0.0
         totals[cat] = totals.get(cat, 0) + magnitude
     return sorted(totals.items(), key=lambda x: -x[1])
 
@@ -398,7 +404,12 @@ async def process_pdf(
         is_trial = user_id is None
 
         if is_trial:
-            # Do not save to DB; return inline csv_content and raw_text; set cookie
+            # Record trial run for analytics (no PDF/transaction data)
+            try:
+                record_trial_run(job_id)
+            except Exception as e:
+                logger.warning("trial_runs insert failed (continuing): %s", e)
+            # Return inline csv_content and raw_text; set cookie
             payload = ProcessPdfResponse(
                 job_id=job_id,
                 transactions=[Transaction(**t) for t in transactions],

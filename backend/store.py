@@ -162,3 +162,15 @@ def delete_user_data(user_id: str) -> None:
     """Delete all jobs (and their payloads via CASCADE) for the given user."""
     with _cursor() as cur:
         cur.execute("DELETE FROM jobs WHERE user_id = %s", (user_id,))
+
+
+def record_trial_run(job_id: str) -> None:
+    """Insert a row into trial_runs for analytics (no PDF/transaction data stored)."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO trial_runs (job_id, created_at)
+            VALUES (%s, NOW())
+            """,
+            (job_id,),
+        )
