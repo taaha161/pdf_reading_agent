@@ -13,6 +13,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
+import PageMeta from "./components/PageMeta";
 
 function AppContent() {
   const { accessToken } = useAuth();
@@ -22,6 +23,7 @@ function AppContent() {
 
   return (
     <>
+      <PageMeta />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<AuthPage mode="login" />} />

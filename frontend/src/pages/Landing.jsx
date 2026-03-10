@@ -1,15 +1,30 @@
 import { useNavigate, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import logo from "../assets/pdf_to_excel_logo.png";
 import { useAuth } from "../contexts/AuthContext";
+import { getCanonicalUrl } from "../lib/seo";
 import "./Landing.css";
 
 export default function Landing() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const isLoggedIn = !!user;
+  const appUrl = getCanonicalUrl("/") || (typeof window !== "undefined" ? window.location.origin : "");
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "Bank Statement Scanner",
+    description: "Upload a bank statement PDF to itemize, categorize, and validate transactions with AI—then export to CSV.",
+    applicationCategory: "FinanceApplication",
+    url: appUrl,
+  };
 
   return (
     <div className="landing">
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      </Helmet>
       <header className="landing-header">
         {isLoggedIn && (
           <div className="landing-user-row">

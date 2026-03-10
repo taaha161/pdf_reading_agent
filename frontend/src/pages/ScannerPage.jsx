@@ -190,11 +190,13 @@ export default function ScannerPage() {
               />
             </div>
             <aside className="scanner-results-chat">
-              {isLoggedIn ? (
-                <ChatPanel key={jobId} jobId={jobId} disabled={!jobId} />
-              ) : (
-                <p className="scanner-trial-chat-hint">Sign in to save this job and chat about it.</p>
-              )}
+              <ChatPanel
+                key={jobId}
+                jobId={jobId}
+                disabled={!jobId}
+                requireLogin={!isLoggedIn}
+                onRequireLogin={() => navigate("/login")}
+              />
             </aside>
           </div>
         )}

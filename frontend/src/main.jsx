@@ -1,6 +1,7 @@
 import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { HelmetProvider } from 'react-helmet-async'
 import './index.css'
 import { AuthProvider } from './contexts/AuthContext'
 import { JobsProvider } from './contexts/JobsContext'
@@ -33,11 +34,13 @@ function BootstrappedApp() {
   if (!ready) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading…</div>;
 
   return (
-    <AuthProvider>
-      <JobsProvider>
-        <App />
-      </JobsProvider>
-    </AuthProvider>
+    <HelmetProvider>
+      <AuthProvider>
+        <JobsProvider>
+          <App />
+        </JobsProvider>
+      </AuthProvider>
+    </HelmetProvider>
   );
 }
 

@@ -2,13 +2,18 @@ import { useState } from "react";
 import { sendChatMessage } from "../api/client";
 import "./ChatPanel.css";
 
-export default function ChatPanel({ jobId, disabled }) {
+export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogin }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const send = async () => {
+    if (requireLogin) {
+      setError("Please log in to chat.");
+      onRequireLogin?.();
+      return;
+    }
     const text = input.trim();
     if (!text || !jobId || disabled) return;
     setInput("");
@@ -56,11 +61,11 @@ export default function ChatPanel({ jobId, disabled }) {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
           placeholder="Ask about the data or categories..."
           disabled={disabled || loading}
         />
-        <button type="button" onClick={send} disabled={disabled || loading || !input.trim()}>
+        <button type="button" onClick={send} disabled={disabled || loading || (!requireLogin && !input.trim())}>
           Send
         </button>
       </div>
