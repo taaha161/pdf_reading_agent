@@ -58,6 +58,17 @@ export async function processPdf(file, options = {}) {
     if (res.status === 429) {
       throw new Error("Too many requests. Please try again in a minute.");
     }
+    if (res.status === 402) {
+      const data = await res.json().catch(() => ({}));
+      const detail = data.detail && typeof data.detail === "object" ? data.detail : {};
+      const e = new Error(detail.detail || "Insufficient credits");
+      e.insufficientCredits = {
+        code: detail.code || "INSUFFICIENT_CREDITS",
+        balance_cents: detail.balance_cents ?? 0,
+        required_cents: detail.required_cents ?? 0,
+      };
+      throw e;
+    }
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     const msg = Array.isArray(err.detail) ? err.detail.map((d) => d.msg || d).join(", ") : (err.detail || res.statusText);
     const e = new Error(msg);
@@ -67,6 +78,37 @@ export async function processPdf(file, options = {}) {
     throw e;
   }
   return res.json();
+}
+
+export async function getBillingBalance() {
+  const res = await fetch(`${API_BASE}/api/billing/balance`, {
+    headers: authHeaders(),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Failed to load billing balance");
+  }
+  return res.json();
+}
+
+export async function createCheckoutSession(mode, email = null) {
+  const body = { mode };
+  if (email) body.email = email;
+  const res = await fetch(`${API_BASE}/api/billing/checkout-session`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Failed to create checkout session");
+  }
+  const data = await res.json();
+  return data.url;
 }
 
 export async function deleteJobData(jobId) {
