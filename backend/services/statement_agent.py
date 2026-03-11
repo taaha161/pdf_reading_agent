@@ -1,4 +1,4 @@
-"""LangChain agent: extract transactions from statement text and categorize them."""
+"""Extract transactions from statement text and categorize them using Gemini."""
 import json
 import logging
 import os
@@ -6,18 +6,10 @@ import re
 import time
 from typing import Any
 
-from langchain_core.prompts import ChatPromptTemplate
+from google import genai
+from google.genai.types import GenerateContentConfig
 
 logger = logging.getLogger("statement_agent")
-from langchain_core.output_parsers import StrOutputParser
-
-# Prefer Gemini when GOOGLE_GEMINI_API_KEY is set; fallback to Ollama otherwise
-try:
-    from langchain_google_genai import ChatGoogleGenerativeAI
-    _GEMINI_AVAILABLE = True
-except ImportError:
-    _GEMINI_AVAILABLE = False
-from langchain_community.chat_models import ChatOllama
 
 CATEGORIES = [
     "Income",
@@ -65,24 +57,18 @@ Use the FULL description, reference, and memo to infer merchant or purpose. Pick
 - Other: only when the transaction clearly does not fit any of the above; avoid overusing.
 """
 
-# Max chars of statement text to send to extraction LLM in one go (raise if table still misses later months)
+# Max chars of statement text to send to extraction in one go
 EXTRACTION_TEXT_CAP = 100000
-EXTRACTION_CHUNK_OVERLAP = 3000  # overlap when chunking so we don't cut a transaction in half
+EXTRACTION_CHUNK_OVERLAP = 3000
 
 
-def _get_llm():
+def _get_client() -> genai.Client:
     api_key = os.environ.get("GOOGLE_GEMINI_API_KEY")
-    if api_key and _GEMINI_AVAILABLE:
-        # Use production Flash model for speed and availability; preview models (e.g. gemini-3-flash-preview) are often slow and return 503 under load.
-        # thinking_budget=0 disables Gemini 2.5's internal "thinking" to minimize latency (otherwise extraction can take ~60+ s).
-        return ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
-            google_api_key=api_key,
-            temperature=0,
-            max_output_tokens=32768,
-            thinking_budget=0,
+    if not api_key:
+        raise ValueError(
+            "GOOGLE_GEMINI_API_KEY is not set. Set it in .env for extraction and categorization."
         )
-    return ChatOllama(model="llama3.2", temperature=0)
+    return genai.Client(api_key=api_key)
 
 
 def _format_transactions_for_categorization(transactions: list[dict]) -> str:
@@ -97,16 +83,14 @@ def _format_transactions_for_categorization(transactions: list[dict]) -> str:
 
 
 def _extract_json_block(text: str) -> str:
-    """Try to get a JSON array or object from LLM output. Strips markdown code fences (e.g. ```json ... ```) first."""
+    """Try to get a JSON array or object from LLM output. Strips markdown code fences first."""
     cleaned = text.strip()
-    # Strip ```json ... ``` or ``` ... ``` so we parse even when the model wraps JSON in code blocks
     for marker in ("```json", "```"):
         if cleaned.startswith(marker):
             end = cleaned.find("```", len(marker))
             if end != -1:
                 cleaned = cleaned[len(marker) : end].strip()
             break
-    # Match [...] or {...}
     for pattern in [r"\[[\s\S]*\]", r"\{[\s\S]*\}"]:
         m = re.search(pattern, cleaned)
         if m:
@@ -115,7 +99,7 @@ def _extract_json_block(text: str) -> str:
 
 
 def _extract_first_json_array(text: str) -> str:
-    """Extract the first complete JSON array by bracket matching (handles 'Extra data' when LLM appends text)."""
+    """Extract the first complete JSON array by bracket matching."""
     start = text.find("[")
     if start == -1:
         return ""
@@ -149,7 +133,7 @@ def _extract_first_json_array(text: str) -> str:
 
 
 def _extract_first_json_object(text: str, start_pos: int = 0) -> tuple[str, int] | None:
-    """Extract the first complete JSON object {...} starting at start_pos. Returns (substring, end_index) or None."""
+    """Extract the first complete JSON object {...} starting at start_pos."""
     start = text.find("{", start_pos)
     if start == -1:
         return None
@@ -183,7 +167,7 @@ def _extract_first_json_object(text: str, start_pos: int = 0) -> tuple[str, int]
 
 
 def _parse_transaction_objects_from_text(text: str) -> list[dict]:
-    """When full JSON array parse fails, extract individual {...} objects and parse; return list of transaction-like dicts."""
+    """Extract individual {...} objects and parse; return list of transaction-like dicts."""
     result = []
     pos = 0
     while True:
@@ -204,7 +188,7 @@ def _parse_transaction_objects_from_text(text: str) -> list[dict]:
 
 
 def _parse_currency_from_response(response_text: str) -> str | None:
-    """Parse a line like 'CURRENCY: GBP' or 'CURRENCY: UNKNOWN' from the model response (after the JSON)."""
+    """Parse a line like 'CURRENCY: GBP' or 'CURRENCY: UNKNOWN' from the model response."""
     if not response_text:
         return None
     for line in response_text.splitlines():
@@ -217,33 +201,50 @@ def _parse_currency_from_response(response_text: str) -> str | None:
     return None
 
 
-def _infer_currency_fallback(raw_text: str, llm) -> str | None:
-    """Fallback: infer currency via a separate LLM call (used only when combined response had no currency)."""
+def _infer_currency_fallback(raw_text: str, client: genai.Client) -> str | None:
+    """Fallback: infer currency via a separate Gemini call when combined response had no currency."""
     if not raw_text or len(raw_text.strip()) < 50:
         return None
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "Identify the currency from bank statement text (Currency field, symbols, phrases). Reply with ONLY the currency code (USD, PKR, GBP, etc.) or UNKNOWN. No other text.",
-            ),
-            ("human", "{text}"),
-        ]
+    system = (
+        "Identify the currency from bank statement text (Currency field, symbols, phrases). "
+        "Reply with ONLY the currency code (USD, PKR, GBP, etc.) or UNKNOWN. No other text."
     )
     try:
-        out = (prompt | llm | StrOutputParser()).invoke({"text": raw_text.strip()[:6000]})
-        code = (out or "").strip().upper()
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=raw_text.strip()[:6000],
+            config=GenerateContentConfig(
+                system_instruction=system,
+                temperature=0,
+            ),
+        )
+        out = (response.text or "").strip()
+        code = out.upper()
         if not code or code == "UNKNOWN":
             return None
-        return (out or "").strip()
+        return out
     except Exception as e:
         logger.warning("_infer_currency_fallback failed: %s", e)
         return None
 
 
+def _generate(client: genai.Client, system: str, user_content: str, max_tokens: int = 32768) -> str:
+    """Single Gemini generate_content call with system instruction."""
+    response = client.models.generate_content(
+        model="gemini-3.1-flash-lite-preview",
+        contents=user_content,
+        config=GenerateContentConfig(
+            system_instruction=system,
+            temperature=1.0,
+            max_output_tokens=max_tokens,
+        ),
+    )
+    return (response.text or "").strip()
+
+
 def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | None]:
     """
-    Extract transactions from raw statement text and assign categories in a single LLM call.
+    Extract transactions from raw statement text and assign categories using Gemini.
     Also infers currency from the same response. Returns (transactions, currency or None).
     Fallback: if 0 transactions, retry with extract-only then categorize (2 calls).
     """
@@ -251,31 +252,25 @@ def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | N
         return [], None
 
     t0 = time.perf_counter()
-    llm = _get_llm()
+    client = _get_client()
     text_trimmed = raw_text.strip()
     logger.info("extract_and_categorize: start, text len=%d (elapsed 0.00 s)", len(text_trimmed))
 
     categories_str = ", ".join(CATEGORIES)
-    combined_prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "You are a precise assistant. The input is MARKDOWN from a bank statement (e.g. Datalab PDF conversion). "
-                "It often contains markdown tables with columns: Date, Value Date, Description, Debit, Credit, Balance. "
-                "Task: (1) Extract EVERY transaction row from every such table. (2) For each transaction assign exactly one category from this list: "
-                f"{categories_str}. "
-                + CATEGORY_GUIDANCE
-                + " For each data row: use Date for \"date\", Description for \"description\" (preserve exactly). "
-                "If Credit column has a non-zero value use type \"credit\" and amount as that value; if Debit has non-zero use type \"debit\" and amount as absolute value. Ignore Balance. "
-                "EXCLUDE: Opening Balance, Closing Balance, summary/footer tables (Total Deposit, End Of Statement), header rows. "
-                "Output format: First, a valid JSON array of objects. Each object must have: \"date\", \"description\", \"amount\", \"type\" (\"credit\" or \"debit\"), \"category\" (one of the list above). "
-                "Output the complete array—no truncation. Then on the next line write exactly: CURRENCY: <currency code e.g. USD PKR GBP or UNKNOWN if not found in the statement>. "
-                "If no transactions are found, output [] then CURRENCY: UNKNOWN.",
-            ),
-            ("human", "Extract and categorize all transactions from this bank statement markdown. Output the JSON array then a line CURRENCY: ...\n\n{text}"),
-        ]
+    combined_system = (
+        "You are a precise assistant. The input is MARKDOWN from a bank statement (e.g. Datalab PDF conversion). "
+        "It often contains markdown tables with columns: Date, Value Date, Description, Debit, Credit, Balance. "
+        "Task: (1) Extract EVERY transaction row from every such table. (2) For each transaction assign exactly one category from this list: "
+        f"{categories_str}. "
+        + CATEGORY_GUIDANCE
+        + ' For each data row: use Date for "date", Description for "description" (preserve exactly). '
+        "If Credit column has a non-zero value use type \"credit\" and amount as that value; if Debit has non-zero use type \"debit\" and amount as absolute value. Ignore Balance. "
+        "EXCLUDE: Opening Balance, Closing Balance, summary/footer tables (Total Deposit, End Of Statement), header rows. "
+        "Output format: First, a valid JSON array of objects. Each object must have: \"date\", \"description\", \"amount\", \"type\" (\"credit\" or \"debit\"), \"category\" (one of the list above). "
+        "Output the complete array—no truncation. Then on the next line write exactly: CURRENCY: <currency code e.g. USD PKR GBP or UNKNOWN if not found in the statement>. "
+        "If no transactions are found, output [] then CURRENCY: UNKNOWN."
     )
-    chain = combined_prompt | llm | StrOutputParser()
+    user_template = "Extract and categorize all transactions from this bank statement markdown. Output the JSON array then a line CURRENCY: ...\n\n{text}"
 
     if len(text_trimmed) <= EXTRACTION_TEXT_CAP:
         chunks = [text_trimmed]
@@ -288,17 +283,30 @@ def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | N
             if end >= len(text_trimmed):
                 break
             start = end - EXTRACTION_CHUNK_OVERLAP
-        logger.info("extract_and_categorize: text len=%d, splitting into %d chunks (%.2f s)", len(text_trimmed), len(chunks), time.perf_counter() - t0)
+        logger.info(
+            "extract_and_categorize: text len=%d, splitting into %d chunks (%.2f s)",
+            len(text_trimmed),
+            len(chunks),
+            time.perf_counter() - t0,
+        )
 
     all_transactions: list[dict] = []
     currency: str | None = None
     for chunk_idx, text_input in enumerate(chunks):
-        logger.info("extract_and_categorize: single-call extract+categorize+currency (chunk %d/%d)... (total so far %.2f s)", chunk_idx + 1, len(chunks), time.perf_counter() - t0)
+        logger.info(
+            "extract_and_categorize: single-call extract+categorize+currency (chunk %d/%d)... (total so far %.2f s)",
+            chunk_idx + 1,
+            len(chunks),
+            time.perf_counter() - t0,
+        )
         t1 = time.perf_counter()
-        out = chain.invoke({"text": text_input})
-        logger.info("extract_and_categorize: LLM done (%.2f s this chunk, total %.2f s)", time.perf_counter() - t1, time.perf_counter() - t0)
+        out = _generate(client, combined_system, user_template.format(text=text_input))
+        logger.info(
+            "extract_and_categorize: LLM done (%.2f s this chunk, total %.2f s)",
+            time.perf_counter() - t1,
+            time.perf_counter() - t0,
+        )
         json_str = _extract_json_block(out)
-        # Parse currency from the rest of the response (after the JSON)
         if not currency:
             rest = out.replace(json_str, "", 1).strip() if json_str else out
             currency = _parse_currency_from_response(rest)
@@ -320,28 +328,35 @@ def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | N
         seen.add(key)
         transactions.append(t)
     if len(chunks) > 1 and all_transactions:
-        logger.info("extract_and_categorize: merged %d chunks -> %d unique (%.2f s)", len(chunks), len(transactions), time.perf_counter() - t0)
+        logger.info(
+            "extract_and_categorize: merged %d chunks -> %d unique (%.2f s)",
+            len(chunks),
+            len(transactions),
+            time.perf_counter() - t0,
+        )
 
     if not transactions:
         transactions = []
 
     # Fallback: 0 transactions — try extract-only then categorize (2 calls)
     if len(transactions) == 0 and len(text_trimmed) > 400:
-        logger.info("extract_and_categorize: 0 transactions, trying fallback (extract then categorize) (%.2f s)", time.perf_counter() - t0)
-        fallback_prompt = ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    "The input is markdown from a bank statement with tables (Date, Description, Debit, Credit). "
-                    "Extract EVERY transaction row: date, description, amount, type (\"credit\" or \"debit\"). Skip Opening/Closing balance and summary rows. Return ONLY a JSON array.",
-                ),
-                ("human", "{text}"),
-            ]
+        logger.info(
+            "extract_and_categorize: 0 transactions, trying fallback (extract then categorize) (%.2f s)",
+            time.perf_counter() - t0,
+        )
+        fallback_system = (
+            "The input is markdown from a bank statement with tables (Date, Description, Debit, Credit). "
+            "Extract EVERY transaction row: date, description, amount, type (\"credit\" or \"debit\"). "
+            "Skip Opening/Closing balance and summary rows. Return ONLY a JSON array."
         )
         fallback_out = ""
         try:
-            fallback_out = (fallback_prompt | llm | StrOutputParser()).invoke({"text": text_trimmed[:EXTRACTION_TEXT_CAP]})
-            fallback_json = _extract_first_json_array(fallback_out) or _extract_json_block(fallback_out)
+            fallback_out = _generate(
+                client, fallback_system, text_trimmed[:EXTRACTION_TEXT_CAP]
+            )
+            fallback_json = _extract_first_json_array(fallback_out) or _extract_json_block(
+                fallback_out
+            )
             fallback_list = json.loads(fallback_json)
             if isinstance(fallback_list, list) and fallback_list:
                 transactions = [dict(t) for t in fallback_list]
@@ -356,25 +371,35 @@ def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | N
                 if not isinstance(t, dict):
                     continue
                 t.setdefault("category", "Other")
-            cat_prompt = ChatPromptTemplate.from_messages(
-                [
-                    ("system", f"Assign each transaction exactly one category from: {categories_str}. " + CATEGORY_GUIDANCE + " Return ONLY a JSON array of objects with date, description, amount, type, category."),
-                    ("human", "Categorize:\n{transactions_context}"),
-                ]
+            cat_system = (
+                f"Assign each transaction exactly one category from: {categories_str}. "
+                + CATEGORY_GUIDANCE
+                + " Return ONLY a JSON array of objects with date, description, amount, type, category."
             )
             ctx = _format_transactions_for_categorization(transactions)
             try:
-                cat_out = (cat_prompt | llm | StrOutputParser()).invoke({"transactions_context": ctx})
+                cat_out = _generate(client, cat_system, f"Categorize:\n{ctx}")
                 categorized = json.loads(_extract_json_block(cat_out))
                 if isinstance(categorized, list):
                     for i, c in enumerate(categorized):
-                        if i < len(transactions) and isinstance(c, dict) and "category" in c:
+                        if (
+                            i < len(transactions)
+                            and isinstance(c, dict)
+                            and "category" in c
+                        ):
                             cat = str(c.get("category", "")).strip()
-                            transactions[i]["category"] = cat if cat in CATEGORIES else next((a for a in CATEGORIES if a.lower() == cat.lower()), "Other")
+                            transactions[i]["category"] = (
+                                cat
+                                if cat in CATEGORIES
+                                else next(
+                                    (a for a in CATEGORIES if a.lower() == cat.lower()),
+                                    "Other",
+                                )
+                            )
             except Exception:
                 pass
             if not currency:
-                currency = _infer_currency_fallback(text_trimmed, llm)
+                currency = _infer_currency_fallback(text_trimmed, client)
 
     # Normalize: ensure category in CATEGORIES, type is credit/debit
     normalized = []
@@ -383,14 +408,23 @@ def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | N
             continue
         cat = str(t.get("category", "")).strip()
         if cat not in CATEGORIES:
-            cat = next((a for a in CATEGORIES if a.lower() == cat.lower()), "Other")
+            cat = next(
+                (a for a in CATEGORIES if a.lower() == cat.lower()), "Other"
+            )
         normalized.append({
             "date": str(t.get("date", "")),
             "description": str(t.get("description", "")),
             "amount": str(t.get("amount", "")),
-            "type": "credit" if str(t.get("type", "")).lower() in ("credit", "cr") else "debit",
+            "type": "credit"
+            if str(t.get("type", "")).lower() in ("credit", "cr")
+            else "debit",
             "category": cat,
         })
     transactions = normalized
-    logger.info("extract_and_categorize: done, %d transactions, currency=%s (%.2f s total)", len(transactions), currency or "none", time.perf_counter() - t0)
+    logger.info(
+        "extract_and_categorize: done, %d transactions, currency=%s (%.2f s total)",
+        len(transactions),
+        currency or "none",
+        time.perf_counter() - t0,
+    )
     return transactions, currency
