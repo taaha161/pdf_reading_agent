@@ -28,6 +28,7 @@ export default function ScannerPage() {
   const [dataStatus, setDataStatus] = useState(null);
   const [trialCsvContent, setTrialCsvContent] = useState(null);
   const [trialRawText, setTrialRawText] = useState(null);
+  const [outOfCredits, setOutOfCredits] = useState(false);
   const isLoggedIn = !!user;
 
   // Load existing job when opening from dashboard (e.g. /scanner/:jobId)
@@ -60,6 +61,7 @@ export default function ScannerPage() {
 
   const handleUpload = async (file) => {
     setError(null);
+    setOutOfCredits(false);
     setDownloadError(null);
     setJobId(null);
     setTransactions([]);
@@ -80,7 +82,12 @@ export default function ScannerPage() {
       setTrialCsvContent(data.csv_content ?? null);
       setTrialRawText(data.raw_text ?? null);
     } catch (e) {
-      setError(e.message || "Upload failed");
+      if (e.insufficientCredits) {
+        setOutOfCredits(true);
+        setError("Out of credits. Add more to continue scanning.");
+      } else {
+        setError(e.message || "Upload failed");
+      }
       setJobId(null);
       setDataStatus(null);
       setTransactions([]);
@@ -160,6 +167,14 @@ export default function ScannerPage() {
                     {" "}
                     <button type="button" className="scanner-alert-link" onClick={() => navigate("/login")}>
                       Log in to process more
+                    </button>
+                  </>
+                )}
+                {outOfCredits && (
+                  <>
+                    {" "}
+                    <button type="button" className="scanner-alert-link" onClick={() => navigate("/settings")}>
+                      Add credits
                     </button>
                   </>
                 )}

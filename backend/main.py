@@ -27,9 +27,12 @@ from slowapi.util import get_remote_address
 
 from auth import get_current_user, get_current_user_optional
 from models.schemas import (
+    BillingBalanceResponse,
     CategorySummary,
     ChatRequest,
     ChatResponse,
+    CheckoutSessionRequest,
+    CheckoutSessionResponse,
     JobDetailResponse,
     JobListItem,
     JobListResponse,
@@ -37,11 +40,24 @@ from models.schemas import (
     PurgeJobsDataRequest,
     Transaction,
 )
+from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
 from services.chat_service import get_reply
 from services.csv_export import transactions_to_csv
 from services.pdf_processor import extract_text_from_pdf
 from services.statement_agent import extract_and_categorize
-from store import create_job_id, delete_user_data, get_job, list_jobs, purge_job_data, purge_jobs_data, record_trial_run, set_job
+from store import (
+    create_job_id,
+    deduct_balance,
+    delete_user_data,
+    get_billing,
+    get_job,
+    insert_usage_log,
+    list_jobs,
+    purge_job_data,
+    purge_jobs_data,
+    record_trial_run,
+    set_job,
+)
 
 try:
     import psycopg2
@@ -328,6 +344,7 @@ def get_job_detail(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
         summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
         currency=job.get("currency"),
         data_status=job.get("data_status"),
+        conversion_mode=job.get("conversion_mode"),
     )
 
 
@@ -337,6 +354,7 @@ _RATE_LIMIT_CHAT = os.environ.get("RATE_LIMIT_CHAT", "30/minute")
 
 TRIAL_COOKIE_NAME = "trial_pdf_used"
 TRIAL_LIMIT_MESSAGE = "Trial limit reached. Please log in to process more PDFs."
+INSUFFICIENT_CREDITS_CODE = "INSUFFICIENT_CREDITS"
 
 
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
@@ -366,6 +384,23 @@ async def process_pdf(
     if conversion_mode_val not in ("fast", "balanced", "accurate"):
         conversion_mode_val = "fast"
     logger.info("process-pdf: [step 0] request started, filename=%s, scanned_method=%s, conversion_mode=%s (elapsed 0.00 s)", file.filename or "statement.pdf", scanned_method_val, conversion_mode_val)
+
+    # Authenticated: check credits before running pipeline
+    if user_id is not None:
+        cost_cents = SCAN_COST_CENTS.get(conversion_mode_val, SCAN_COST_CENTS["fast"])
+        billing = get_billing(user_id)
+        balance_cents = billing["balance_cents"] if billing else None
+        if balance_cents is None or balance_cents < cost_cents:
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "detail": "Insufficient credits",
+                    "code": INSUFFICIENT_CREDITS_CODE,
+                    "balance_cents": balance_cents if balance_cents is not None else 0,
+                    "required_cents": cost_cents,
+                },
+            )
+
     try:
         if file.content_type and file.content_type != ALLOWED_CONTENT_TYPE:
             raise HTTPException(400, "File must be a PDF")
@@ -434,8 +469,24 @@ async def process_pdf(
             )
             return response
         else:
+            cost_cents = SCAN_COST_CENTS.get(conversion_mode_val, SCAN_COST_CENTS["fast"])
+            new_balance = deduct_balance(user_id, cost_cents)
+            if new_balance is None:
+                raise HTTPException(
+                    status_code=402,
+                    detail={
+                        "detail": "Insufficient credits",
+                        "code": INSUFFICIENT_CREDITS_CODE,
+                        "balance_cents": 0,
+                        "required_cents": cost_cents,
+                    },
+                )
+            try:
+                insert_usage_log(user_id, job_id, cost_cents, new_balance, conversion_mode_val)
+            except Exception as e:
+                logger.warning("insert_usage_log failed (continuing): %s", e)
             incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
-            set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito)
+            set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito, conversion_mode=conversion_mode_val)
             logger.info("process-pdf: [step 4/4] finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
             return ProcessPdfResponse(
                 job_id=job_id,
@@ -515,3 +566,36 @@ def chat(request: Request, body: ChatRequest, user_id: str = Depends(get_current
         logger.exception("Chat failed: %s", e)
         raise HTTPException(500, GENERIC_500_MESSAGE)
     return ChatResponse(reply=reply)
+
+
+# --- Billing ---
+
+@app.get("/api/billing/balance", response_model=BillingBalanceResponse)
+def get_billing_balance(user_id: str = Depends(get_current_user)):
+    """Return current credit balance and subscription status."""
+    billing = get_billing(user_id)
+    balance_cents = billing["balance_cents"] if billing else 0
+    subscription_active = bool(billing and billing.get("stripe_subscription_id"))
+    return BillingBalanceResponse(balance_cents=balance_cents, subscription_active=subscription_active)
+
+
+@app.post("/api/billing/checkout-session", response_model=CheckoutSessionResponse)
+def create_billing_checkout_session(body: CheckoutSessionRequest, user_id: str = Depends(get_current_user)):
+    """Create Stripe Checkout session for subscription or top-up. Returns URL to redirect user."""
+    if body.mode not in ("subscription", "topup"):
+        raise HTTPException(400, "mode must be 'subscription' or 'topup'")
+    result = create_checkout_session(user_id, body.mode, email=body.email)
+    if not result or not result.get("url"):
+        raise HTTPException(502, "Could not create checkout session. Please try again.")
+    return CheckoutSessionResponse(url=result["url"], sessionId=result.get("sessionId"))
+
+
+@app.post("/api/billing/webhook")
+async def stripe_webhook(request: Request):
+    """Stripe webhook: verify signature and process invoice/subscription events."""
+    payload = await request.body()
+    signature = request.headers.get("Stripe-Signature", "")
+    ok, msg = handle_webhook(payload, signature)
+    if not ok:
+        raise HTTPException(400, msg)
+    return {"received": True}

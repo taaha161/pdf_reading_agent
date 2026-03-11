@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
-import { deleteAccount } from "../api/client";
+import { createCheckoutSession, deleteAccount, getBillingBalance } from "../api/client";
 import "./AccountSettingsPage.css";
 import "./AuthPage.css";
 
@@ -28,6 +28,20 @@ export default function AccountSettingsPage() {
   useEffect(() => {
     setName(currentName);
   }, [currentName]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getBillingBalance();
+        if (!cancelled) setBillingBalance(data);
+      } catch {
+        if (!cancelled) setBillingBalance({ balance_cents: 0, subscription_active: false });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
   const [nameLoading, setNameLoading] = useState(false);
   const [nameMessage, setNameMessage] = useState({ type: "", text: "" });
 
@@ -40,6 +54,10 @@ export default function AccountSettingsPage() {
   const [deleteChecked, setDeleteChecked] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState({ type: "", text: "" });
+
+  const [billingBalance, setBillingBalance] = useState(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingMessage, setBillingMessage] = useState({ type: "", text: "" });
 
   const setError = (setter, text) => setter({ type: "error", text });
   const setSuccess = (setter, text) => setter({ type: "success", text });
@@ -87,6 +105,32 @@ export default function AccountSettingsPage() {
       setError(setPasswordMessage, err.message || "Failed to update password");
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  const handleSubscribe = async () => {
+    setBillingLoading(true);
+    setBillingMessage({ type: "", text: "" });
+    try {
+      const url = await createCheckoutSession("subscription", user?.email ?? undefined);
+      if (url) window.location.href = url;
+    } catch (err) {
+      setError(setBillingMessage, err.message || "Failed to start checkout");
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const handleAddCredits = async () => {
+    setBillingLoading(true);
+    setBillingMessage({ type: "", text: "" });
+    try {
+      const url = await createCheckoutSession("topup", user?.email ?? undefined);
+      if (url) window.location.href = url;
+    } catch (err) {
+      setError(setBillingMessage, err.message || "Failed to start checkout");
+    } finally {
+      setBillingLoading(false);
     }
   };
 
@@ -178,6 +222,46 @@ export default function AccountSettingsPage() {
           {passwordMessage.text && (
             <p className={`auth-message auth-message-${passwordMessage.type}`} role="alert">
               {passwordMessage.text}
+            </p>
+          )}
+        </section>
+
+        <section className="account-settings-section">
+          <h2 className="account-settings-section-title">Billing</h2>
+          <p className="account-settings-description">
+            Credits are used for scans. Light (fast) = $0.005, Normal (balanced) = $1, High accuracy = $1.50. $10/month gives you $10 in credits; add more when you run out.
+          </p>
+          {billingBalance !== null && (
+            <>
+              <p className="account-settings-billing-balance">
+                <strong>{(billingBalance.balance_cents / 100).toFixed(2)}</strong> credits remaining
+              </p>
+              <div className="account-settings-billing-actions">
+                {!billingBalance.subscription_active ? (
+                  <button
+                    type="button"
+                    className="auth-btn auth-btn-primary"
+                    onClick={handleSubscribe}
+                    disabled={billingLoading}
+                  >
+                    {billingLoading ? "Redirecting…" : "Subscribe — $10/month"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="auth-btn auth-btn-primary"
+                    onClick={handleAddCredits}
+                    disabled={billingLoading}
+                  >
+                    {billingLoading ? "Redirecting…" : "Add credits"}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+          {billingMessage.text && (
+            <p className={`auth-message auth-message-${billingMessage.type}`} role="alert">
+              {billingMessage.text}
             </p>
           )}
         </section>

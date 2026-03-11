@@ -43,6 +43,7 @@ class JobListItem(BaseModel):
     transaction_count: int
     currency: Optional[str] = None
     has_payload: bool = True  # False when incognito or payload was purged
+    conversion_mode: Optional[str] = None  # fast | balanced | accurate
 
 
 class JobListResponse(BaseModel):
@@ -55,6 +56,22 @@ class JobDetailResponse(BaseModel):
     summary_by_category: list[CategorySummary]
     currency: Optional[str] = None
     data_status: Optional[str] = None  # "incognito" | "purged" when no payload
+    conversion_mode: Optional[str] = None  # fast | balanced | accurate
+
+
+class BillingBalanceResponse(BaseModel):
+    balance_cents: int
+    subscription_active: bool
+
+
+class CheckoutSessionRequest(BaseModel):
+    mode: str  # "subscription" | "topup"
+    email: Optional[str] = None  # optional, for Stripe Customer
+
+
+class CheckoutSessionResponse(BaseModel):
+    url: str
+    sessionId: Optional[str] = None
 
 
 class PurgeJobsDataRequest(BaseModel):
