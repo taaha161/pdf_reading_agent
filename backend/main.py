@@ -39,6 +39,7 @@ from models.schemas import (
     ProcessPdfResponse,
     PurgeJobsDataRequest,
     Transaction,
+    UpdateJobTransactionsRequest,
 )
 from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
 from services.chat_service import get_reply
@@ -57,6 +58,7 @@ from store import (
     purge_jobs_data,
     record_trial_run,
     set_job,
+    update_job_transactions,
 )
 
 try:
@@ -345,6 +347,34 @@ def get_job_detail(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
         currency=job.get("currency"),
         data_status=job.get("data_status"),
         conversion_mode=job.get("conversion_mode"),
+    )
+
+
+@app.patch("/api/jobs/{job_id}", response_model=JobDetailResponse)
+def update_job_detail(
+    job_id: uuid.UUID,
+    body: UpdateJobTransactionsRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """Update transactions for a job and return refreshed detail (including summary)."""
+    job = get_job(str(job_id), user_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    if job.get("data_status"):
+        # Incognito or purged job: no payload to update
+        raise HTTPException(404, "No data for this job")
+
+    update_job_transactions(str(job_id), user_id, [t.model_dump(mode="json") for t in body.transactions])
+
+    updated = get_job(str(job_id), user_id)
+    summary = _summary_by_category(updated["transactions"])
+    return JobDetailResponse(
+        job_id=str(job_id),
+        transactions=[Transaction(**t) for t in updated["transactions"]],
+        summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+        currency=updated.get("currency"),
+        data_status=updated.get("data_status"),
+        conversion_mode=updated.get("conversion_mode"),
     )
 
 

@@ -180,6 +180,20 @@ def record_trial_run(job_id: str) -> None:
         )
 
 
+def update_job_transactions(job_id: str, user_id: str, transactions: list[dict[str, Any]]) -> None:
+    """Update stored transactions for a job owned by the user. No-op for incognito/purged jobs (no payload row)."""
+    payload_json = json.dumps(transactions)
+    with _cursor() as cur:
+        cur.execute(
+            """
+            UPDATE job_payloads
+            SET transactions = %s
+            WHERE job_id = %s AND job_id IN (SELECT id FROM jobs WHERE user_id = %s)
+            """,
+            (payload_json, job_id, user_id),
+        )
+
+
 # --- Billing ---
 
 def get_billing(user_id: str) -> dict | None:

@@ -1,17 +1,17 @@
 .privacy-policy-page {
   min-height: 100vh;
-  background: #fff;
-  color: #333;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .privacy-policy-page-header {
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #eee;
-  background: #fafafa;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
 }
 
 .privacy-policy-back {
-  color: #3030f1;
+  color: var(--color-primary);
   text-decoration: none;
   font-size: 0.95rem;
 }
@@ -28,7 +28,7 @@
 }
 
 .privacy-policy-content a {
-  color: #3030f1;
+  color: var(--color-primary);
 }
 
 .privacy-policy-content a:hover {

@@ -7,8 +7,64 @@ import SummaryTable from "../components/SummaryTable";
 import ResultsTable from "../components/ResultsTable";
 import ChatPanel from "../components/ChatPanel";
 import { useAuth } from "../contexts/AuthContext";
-import { processPdf, getJob } from "../api/client";
+import { processPdf, getJob, updateJobTransactions } from "../api/client";
 import "./ScannerPage.css";
+
+function parseAmount(amountStr) {
+  const raw = String(amountStr ?? "0").replace(/,/g, "").trim();
+  if (!raw) return 0;
+  const num = Number.parseFloat(raw);
+  if (Number.isNaN(num)) return 0;
+  return Math.abs(num);
+}
+
+function computeSummaryByCategory(transactions) {
+  const totals = {};
+  for (const t of transactions || []) {
+    const type = String(t.type || "").toLowerCase();
+    const isDebit = type === "debit";
+    const category = (t.category || "").trim() || "Other";
+    let magnitude = parseAmount(t.amount);
+    if (category === "Income") {
+      if (isDebit) {
+        magnitude = 0;
+      }
+    } else if (!isDebit) {
+      magnitude = 0;
+    }
+    totals[category] = (totals[category] || 0) + magnitude;
+  }
+  return Object.entries(totals)
+    .sort((a, b) => b[1] - a[1])
+    .map(([category, total]) => ({ category, total }));
+}
+
+function escapeCsvValue(value) {
+  const s = value == null ? "" : String(value);
+  if (/[",\n]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+function transactionsToCsvBrowser(transactions) {
+  const header = "date,description,amount,type,category";
+  if (!transactions || transactions.length === 0) {
+    return `${header}\n`;
+  }
+  const rows = transactions.map((t) =>
+    [
+      t.date ?? "",
+      t.description ?? "",
+      t.amount ?? "",
+      t.type ?? "",
+      t.category ?? "",
+    ]
+      .map(escapeCsvValue)
+      .join(","),
+  );
+  return `${header}\n${rows.join("\n")}\n`;
+}
 
 export default function ScannerPage() {
   const { user } = useAuth();
@@ -102,6 +158,70 @@ export default function ScannerPage() {
   };
 
   const hasResults = !!jobId;
+
+  const handleTransactionChange = async (index, field, value) => {
+    if (!Array.isArray(transactions) || index < 0 || index >= transactions.length) {
+      return;
+    }
+    const nextTransactions = transactions.map((t, i) =>
+      i === index ? { ...t, [field]: value } : t,
+    );
+    setTransactions(nextTransactions);
+
+    // Update summary locally for immediate feedback
+    setSummaryByCategory(computeSummaryByCategory(nextTransactions));
+
+    // Keep CSV in sync for trial runs (unauthenticated)
+    if (!isLoggedIn || trialCsvContent != null) {
+      setTrialCsvContent(transactionsToCsvBrowser(nextTransactions));
+    }
+
+    // Persist changes for stored jobs (non-incognito / not purged)
+    if (jobId && isLoggedIn && !dataStatus) {
+      try {
+        const updated = await updateJobTransactions(jobId, nextTransactions);
+        setSummaryByCategory(
+          (updated.summary_by_category || []).map((s) => ({
+            category: s.category,
+            total: s.total,
+          })),
+        );
+      } catch (e) {
+        // Surface the error alongside other scanner alerts
+        setError(e.message || "Failed to save changes");
+      }
+    }
+  };
+
+  /** Replace a single transaction (e.g. from the edit card). Updates table, summary, CSV, and API in one go. */
+  const handleSaveTransaction = async (index, transaction) => {
+    if (!Array.isArray(transactions) || index < 0 || index >= transactions.length) {
+      return;
+    }
+    const nextTransactions = transactions.map((t, i) =>
+      i === index ? { ...t, ...transaction } : t,
+    );
+    setTransactions(nextTransactions);
+    setSummaryByCategory(computeSummaryByCategory(nextTransactions));
+
+    if (!isLoggedIn || trialCsvContent != null) {
+      setTrialCsvContent(transactionsToCsvBrowser(nextTransactions));
+    }
+
+    if (jobId && isLoggedIn && !dataStatus) {
+      try {
+        const updated = await updateJobTransactions(jobId, nextTransactions);
+        setSummaryByCategory(
+          (updated.summary_by_category || []).map((s) => ({
+            category: s.category,
+            total: s.total,
+          })),
+        );
+      } catch (e) {
+        setError(e.message || "Failed to save changes");
+      }
+    }
+  };
 
   return (
     <AppLayout>
@@ -202,6 +322,8 @@ export default function ScannerPage() {
                 csvContent={trialCsvContent}
                 rawText={trialRawText}
                 onDownloadError={setDownloadError}
+                onTransactionChange={handleTransactionChange}
+                onSaveTransaction={handleSaveTransaction}
               />
             </div>
             <aside className="scanner-results-chat">

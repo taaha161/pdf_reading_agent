@@ -233,3 +233,21 @@ export async function sendChatMessage(jobId, message) {
   const data = await res.json();
   return data.reply;
 }
+
+export async function updateJobTransactions(jobId, transactions) {
+  const res = await fetch(`${API_BASE}/api/jobs/${jobId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    credentials: "include",
+    body: JSON.stringify({ transactions }),
+  });
+  if (!res.ok) {
+    if (res.status === 429) {
+      throw new Error("Too many requests. Please try again in a minute.");
+    }
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    const msg = Array.isArray(err.detail) ? err.detail.map((d) => d.msg || d).join(", ") : (err.detail || res.statusText);
+    throw new Error(msg);
+  }
+  return res.json();
+}

@@ -100,12 +100,15 @@ def handle_webhook(payload: bytes, signature: str) -> tuple[bool, str]:
     except stripe.SignatureVerificationError as e:
         return False, f"Invalid signature: {e}"
 
-    if event.type == "invoice.payment_succeeded":
+    # Support both the canonical invoice event type and the variant emitted by some Stripe tools
+    if event.type in ("invoice.payment_succeeded", "invoice_payment.paid"):
         return _handle_invoice_paid(event)
     if event.type == "customer.subscription.updated":
         return _handle_subscription_updated(event)
     if event.type == "customer.subscription.deleted":
         return _handle_subscription_deleted(event)
+    if event.type == "checkout.session.completed":
+        return _handle_checkout_completed(event)
     return True, "Event ignored"
 
 
@@ -161,6 +164,39 @@ def _handle_subscription_deleted(event) -> tuple[bool, str]:
     if user_id:
         set_stripe_ids(user_id, customer_id, None)
     return True, "OK"
+
+
+def _handle_checkout_completed(event) -> tuple[bool, str]:
+    """Handle one-time top-up payments created via Checkout (mode=payment)."""
+    session = event["data"]["object"]
+
+    # Only care about payment mode sessions
+    if session.get("mode") != "payment":
+        return True, "Ignored checkout.session.completed (not payment mode)"
+
+    metadata = session.get("metadata") or {}
+    is_topup = str(metadata.get("topup", "")).strip() == "1"
+    if not is_topup:
+        return True, "Ignored checkout.session.completed (not top-up)"
+
+    # Prefer explicit user_id in metadata, then client_reference_id, then lookup by customer
+    user_id = metadata.get("user_id") or session.get("client_reference_id")
+    if not user_id:
+        customer_id = session.get("customer")
+        user_id = _user_id_from_customer(customer_id, None, None)
+    if not user_id:
+        return True, "Could not resolve user_id for checkout.session.completed"
+
+    amount = session.get("amount_total") or 0  # cents
+    if not amount or amount <= 0:
+        return True, "No amount to apply for top-up"
+
+    try:
+        add_balance(user_id, amount)
+        return True, "Top-up applied (checkout.session.completed)"
+    except Exception as e:
+        logger.exception("add_balance failed on checkout.session.completed: %s", e)
+        return False, str(e)
 
 
 def _user_id_from_customer(stripe_customer_id: str | None, subscription_id: str | None, client_reference_id: str | None) -> str | None:

@@ -142,7 +142,7 @@
   margin: 0;
   padding: 1rem;
   font-size: 0.9rem;
-  color: var(--color-text-secondary, #666);
+  color: var(--color-text-muted);
 }
 
 .scanner-results {
