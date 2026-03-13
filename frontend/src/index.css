@@ -57,14 +57,19 @@ a:hover {
   color: var(--color-primary-hover);
 }
 
+html,
 body {
   margin: 0;
+  padding: 0;
   min-width: 320px;
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 #root {
   width: 100%;
+  max-width: 100%;
 }
 
 h1 {
