@@ -223,6 +223,27 @@
   border-left-color: var(--color-text);
 }
 
+@media (max-width: 640px) {
+  /* On small screens, keep the FAB but hide the wide tooltip to avoid overflow */
+  .scanner-fab-wrap {
+    bottom: 1rem;
+    right: 1rem;
+  }
+
+  .scanner-fab-tooltip {
+    display: none;
+  }
+
+  .scanner-chat-drawer {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .scanner-chat-drawer-header {
+    padding: 0.75rem 1rem;
+  }
+}
+
 /* Chat drawer */
 .scanner-chat-drawer-backdrop {
   position: fixed;
