@@ -72,6 +72,12 @@ body {
   max-width: 100%;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 h1 {
   font-family: var(--font-heading);
   font-size: 3.2em;
