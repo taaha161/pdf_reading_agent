@@ -6,6 +6,7 @@ import Loader from "../components/Loader";
 import SummaryTable from "../components/SummaryTable";
 import ResultsTable from "../components/ResultsTable";
 import ChatPanel from "../components/ChatPanel";
+import FlutterScannerEmbed from "../components/FlutterScannerEmbed";
 import { useAuth } from "../contexts/AuthContext";
 import { processPdf, getJob, updateJobTransactions } from "../api/client";
 import "./ScannerPage.css";
@@ -83,7 +84,7 @@ function transactionsToCsvBrowser(transactions) {
 }
 
 export default function ScannerPage() {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const navigate = useNavigate();
   const { jobId: routeJobId } = useParams();
   const [jobId, setJobId] = useState(null);
@@ -324,7 +325,13 @@ export default function ScannerPage() {
           </div>
         )}
 
-        {hasResults && (
+        {hasResults && !dataStatus && (
+          <div className="scanner-results scanner-results--embed">
+            <FlutterScannerEmbed jobId={jobId} token={accessToken ?? null} />
+          </div>
+        )}
+
+        {hasResults && dataStatus && (
           <>
             <div className="scanner-results">
               <div className="scanner-results-tables">

@@ -80,3 +80,19 @@ class CheckoutSessionResponse(BaseModel):
 
 class PurgeJobsDataRequest(BaseModel):
     job_ids: list[str]
+
+
+class ValidateRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=4000)
+
+
+class ValidateMessageResponse(BaseModel):
+    type: str = "message"
+    content: str
+
+
+class ValidateTransactionsUpdatedResponse(BaseModel):
+    type: str = "transactions_updated"
+    transactions: list[Transaction]
+    summary_by_category: list[CategorySummary]
+    message: str

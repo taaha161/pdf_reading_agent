@@ -40,9 +40,13 @@ from models.schemas import (
     PurgeJobsDataRequest,
     Transaction,
     UpdateJobTransactionsRequest,
+    ValidateMessageResponse,
+    ValidateRequest,
+    ValidateTransactionsUpdatedResponse,
 )
 from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
 from services.chat_service import get_reply
+from services.validate_edit_service import validate_and_apply
 from services.csv_export import transactions_to_csv
 from services.pdf_processor import extract_text_from_pdf
 from services.statement_agent import extract_and_categorize
@@ -606,6 +610,57 @@ def chat(request: Request, body: ChatRequest, user_id: str = Depends(get_current
         logger.exception("Chat failed: %s", e)
         raise HTTPException(500, GENERIC_500_MESSAGE)
     return ChatResponse(reply=reply)
+
+
+@app.post(
+    "/api/jobs/{job_id}/validate",
+    response_model=ValidateMessageResponse | ValidateTransactionsUpdatedResponse,
+)
+@limiter.limit(_RATE_LIMIT_CHAT)
+def validate_job(
+    request: Request,
+    job_id: uuid.UUID,
+    body: ValidateRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """Validate/edit: interpret user message as question (reply) or edit (apply and return updated transactions)."""
+    t0 = time.perf_counter()
+    job = get_job(str(job_id), user_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    if job.get("data_status"):
+        raise HTTPException(404, "No data for this job")
+    try:
+        response_type, content = validate_and_apply(job, body.message)
+    except ValueError as e:
+        raise HTTPException(503, str(e))
+    except Exception as e:
+        logger.exception("Validate failed: %s", e)
+        raise HTTPException(500, GENERIC_500_MESSAGE)
+    if response_type == "message":
+        logger.info(
+            "validate: job_id=%s type=message len=%d (%.2f s)",
+            job_id,
+            len(content),
+            time.perf_counter() - t0,
+        )
+        return ValidateMessageResponse(type="message", content=content)
+    # transactions_updated
+    update_job_transactions(str(job_id), user_id, content)
+    updated = get_job(str(job_id), user_id)
+    summary = _summary_by_category(updated["transactions"])
+    msg = "Updated transactions as requested."
+    logger.info(
+        "validate: job_id=%s type=transactions_updated (%.2f s)",
+        job_id,
+        time.perf_counter() - t0,
+    )
+    return ValidateTransactionsUpdatedResponse(
+        type="transactions_updated",
+        transactions=[Transaction(**t) for t in updated["transactions"]],
+        summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+        message=msg,
+    )
 
 
 # --- Billing ---

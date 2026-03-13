@@ -151,6 +151,14 @@
   margin-top: 1.5rem;
 }
 
+.scanner-results--embed {
+  flex: 1;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  overscroll-behavior: contain;
+}
+
 .scanner-results-tables {
   display: flex;
   flex-direction: column;

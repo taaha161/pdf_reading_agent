@@ -4,6 +4,10 @@ export function setApiBase(url) {
   API_BASE = url || API_BASE;
 }
 
+export function getApiBase() {
+  return API_BASE;
+}
+
 const UPLOAD_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes (scanned PDFs + OCR/vision can be slow)
 
 /** Set from AuthProvider so API calls include Bearer token. */
