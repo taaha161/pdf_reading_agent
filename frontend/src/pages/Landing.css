@@ -795,6 +795,45 @@
   }
 }
 
+@media (max-width: 480px) {
+  .landing-main {
+    padding: 2.25rem 1.25rem 3rem;
+  }
+
+  .landing-hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .landing-hero-cta,
+  .landing-hero-ghost {
+    width: 100%;
+    text-align: center;
+  }
+
+  .landing-hero-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .landing-upload-card {
+    padding: 1.25rem 1.1rem 1.1rem;
+  }
+
+  .landing-upload-dropzone {
+    padding: 1.6rem 1.1rem 1.1rem;
+  }
+
+  .landing-cta-band-inner {
+    padding-inline: 1.25rem;
+  }
+
+  .landing-footer-columns {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
+
 .landing-pricing {
   width: 100%;
   margin-top: 4rem;
