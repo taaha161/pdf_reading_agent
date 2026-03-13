@@ -3,7 +3,10 @@ import { Helmet } from "react-helmet-async";
 import logo from "../assets/pdf_to_excel_logo.png";
 import { useAuth } from "../contexts/AuthContext";
 import { getCanonicalUrl } from "../lib/seo";
+import { BLOG_POSTS } from "./blogPosts";
 import "./Landing.css";
+
+const BLOG_PLACEHOLDER_IMAGE = "/blog/images/placeholder.svg";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -35,13 +38,14 @@ export default function Landing() {
             <span className="landing-brand-icon" aria-hidden>
               <img src={logo} alt="" />
             </span>
-            <span className="landing-brand-name">StatementScan</span>
+            <span className="landing-brand-name">Bank Statement Scanner</span>
           </button>
 
           <div className="landing-nav-links" role="navigation" aria-label="Landing sections">
             <a className="landing-nav-link" href="#how-it-works">How it works</a>
             <a className="landing-nav-link" href="#results">Results</a>
             <a className="landing-nav-link" href="#pricing">Pricing</a>
+            <Link className="landing-nav-link" to="/blog">Blog</Link>
             <a className="landing-nav-link" href="#support">Support</a>
           </div>
 
@@ -58,7 +62,7 @@ export default function Landing() {
             <button
               type="button"
               className="landing-nav-cta"
-              onClick={() => navigate(isLoggedIn ? "/dashboard" : "/login")}
+              onClick={() => navigate(isLoggedIn ? "/dashboard" : "/scanner")}
             >
               {isLoggedIn ? "Go to dashboard" : "Get started free"}
             </button>
@@ -89,14 +93,14 @@ export default function Landing() {
               <span className="landing-accent">structured data</span> in seconds.
             </h1>
             <p className="landing-subtitle">
-              Stop spending hours every month on manual data entry. StatementScan converts any bank, credit card,
-              or PDF statement into clean, review-ready CSVs in just a few clicks.
+              AI-powered extraction and smart categorization turn any bank, credit card, or PDF statement into
+              clean, categorized CSVs—so you get structured data you can trust, not just raw line items.
             </p>
             <div className="landing-hero-actions">
               <button
                 type="button"
                 className="landing-hero-cta"
-                onClick={() => navigate(isLoggedIn ? "/scanner" : "/login")}
+                onClick={() => navigate("/scanner")}
               >
                 Get started free
               </button>
@@ -111,7 +115,7 @@ export default function Landing() {
             <div className="landing-hero-meta">
               <span>No credit card required</span>
               <span className="landing-hero-dot" aria-hidden />
-              <span>Upload up to 20 statements free</span>
+              <span>Upload up to 5 statements free</span>
             </div>
             <div className="landing-hero-stats" id="results">
               <div>
@@ -123,7 +127,7 @@ export default function Landing() {
                 <div className="landing-hero-stat-label">Saved per client</div>
               </div>
               <div>
-                <div className="landing-hero-stat-value">99.8%</div>
+                <div className="landing-hero-stat-value">Upto 100%</div>
                 <div className="landing-hero-stat-label">Extraction accuracy</div>
               </div>
             </div>
@@ -171,7 +175,7 @@ export default function Landing() {
                     className="landing-cta"
                     onClick={() => navigate("/scanner")}
                   >
-                    Upload PDF
+                  Upload PDF for free
                   </button>
                   <span className="landing-upload-or" aria-hidden>
                     or
@@ -197,11 +201,8 @@ export default function Landing() {
         <section className="landing-logos" aria-label="Trusted by">
           <p className="landing-logos-label">POWERING MODERN WORKFLOWS AT</p>
           <div className="landing-logos-row">
-            <span>FINANCE.CO</span>
-            <span>ACCUTAX</span>
-            <span>LEDGER</span>
-            <span>BOOKKEEP</span>
-            <span>VENTURE.AI</span>
+            <span>HQ TAX</span>
+            <span>CARC</span>
           </div>
         </section>
 
@@ -222,7 +223,7 @@ export default function Landing() {
               <div>
                 <h3 className="landing-feature-title">AI-powered extraction</h3>
                 <p className="landing-feature-text">
-                  Instantly pull line-item data from any PDF, scan, or photo with human-level accuracy.
+                  Instantly pull line-item data from any computer generated or photo scanned PDF with upto 100% accuracy.
                 </p>
               </div>
             </article>
@@ -237,7 +238,7 @@ export default function Landing() {
               <div>
                 <h3 className="landing-feature-title">Smart categorization</h3>
                 <p className="landing-feature-text">
-                  Automatically group transactions by merchant, type, and tax category using custom rules.
+                  Automatically group transactions by merchant, type and description using custom rules and AI categorization.
                 </p>
               </div>
             </article>
@@ -252,7 +253,7 @@ export default function Landing() {
               <div>
                 <h3 className="landing-feature-title">Secure &amp; private</h3>
                 <p className="landing-feature-text">
-                  Bank-grade encryption. We never share your data and follow strict privacy compliance.
+                  Bank-grade security. Go incognito mode to protect your privacy.
                 </p>
               </div>
             </article>
@@ -268,7 +269,7 @@ export default function Landing() {
               <div>
                 <h3 className="landing-feature-title">Export to any format</h3>
                 <p className="landing-feature-text">
-                  Download your structured data as CSV, Excel, JSON, or send it directly to your tools.
+                  Download your structured and categorized data as CSV or Excel.
                 </p>
               </div>
             </article>
@@ -277,56 +278,56 @@ export default function Landing() {
 
         <section className="landing-usecases" aria-label="Use cases">
           <article className="landing-usecard">
-            <div className="landing-usecard-media" aria-hidden />
+            <Link to="/blog/bank-statement-scanner-for-accountants" className="landing-usecard-media" aria-hidden>
+              <img
+                src={BLOG_POSTS[0].image}
+                alt=""
+                className="landing-usecard-image"
+                onError={(e) => { e.target.src = BLOG_PLACEHOLDER_IMAGE; }}
+              />
+            </Link>
             <div className="landing-usecard-body">
               <h3>For accountants</h3>
-              <p>
-                Automate client reconciliation and eliminate hours of manual data entry. Handle high-volume clients with ease.
-              </p>
-              <ul className="landing-usecard-list">
-                <li>Bulk processing</li>
-                <li>Custom tax mapping</li>
-                <li>Multi-client dashboard</li>
-              </ul>
-              <button type="button" className="landing-usecard-link" onClick={() => navigate("/dashboard")}>
+              <p>{BLOG_POSTS[0].excerpt}</p>
+              <Link to="/blog/bank-statement-scanner-for-accountants" className="landing-usecard-link">
                 Learn more
-              </button>
+              </Link>
             </div>
           </article>
 
           <article className="landing-usecard">
-            <div className="landing-usecard-media landing-usecard-media--charts" aria-hidden />
+            <Link to="/blog/bank-statement-scanner-for-small-businesses" className="landing-usecard-media" aria-hidden>
+              <img
+                src={BLOG_POSTS[1].image}
+                alt=""
+                className="landing-usecard-image"
+                onError={(e) => { e.target.src = BLOG_PLACEHOLDER_IMAGE; }}
+              />
+            </Link>
             <div className="landing-usecard-body">
               <h3>For small business</h3>
-              <p>
-                Track expenses effortlessly without complex software. Get a clear view of your cash flow in minutes.
-              </p>
-              <ul className="landing-usecard-list">
-                <li>Expense tracking</li>
-                <li>Cash flow insights</li>
-                <li>Receipt matching</li>
-              </ul>
-              <button type="button" className="landing-usecard-link" onClick={() => navigate("/scanner")}>
+              <p>{BLOG_POSTS[1].excerpt}</p>
+              <Link to="/blog/bank-statement-scanner-for-small-businesses" className="landing-usecard-link">
                 Learn more
-              </button>
+              </Link>
             </div>
           </article>
 
           <article className="landing-usecard">
-            <div className="landing-usecard-media landing-usecard-media--coins" aria-hidden />
+            <Link to="/blog/bank-statement-scanner-for-personal-finance" className="landing-usecard-media" aria-hidden>
+              <img
+                src={BLOG_POSTS[2].image}
+                alt=""
+                className="landing-usecard-image"
+                onError={(e) => { e.target.src = BLOG_PLACEHOLDER_IMAGE; }}
+              />
+            </Link>
             <div className="landing-usecard-body">
               <h3>For personal finance</h3>
-              <p>
-                Turn raw statements into clean sheets so you can see exactly where your money goes every month.
-              </p>
-              <ul className="landing-usecard-list">
-                <li>Easy CSV export</li>
-                <li>Subscription detector</li>
-                <li>Simple category setup</li>
-              </ul>
-              <button type="button" className="landing-usecard-link" onClick={() => navigate("/scanner")}>
+              <p>{BLOG_POSTS[2].excerpt}</p>
+              <Link to="/blog/bank-statement-scanner-for-personal-finance" className="landing-usecard-link">
                 Learn more
-              </button>
+              </Link>
             </div>
           </article>
         </section>
@@ -334,7 +335,7 @@ export default function Landing() {
         <section className="landing-cta-band" aria-label="Call to action">
           <div className="landing-cta-band-inner">
             <h2>Ready to stop manual data entry?</h2>
-            <p>Join thousands of firms who turn messy statements into clean, structured data with StatementScan.</p>
+            <p>Join thousands of firms who turn messy statements into clean, structured data with Bank Statement Scanner.</p>
             <div className="landing-cta-band-actions">
               <button type="button" className="landing-cta-band-btn" onClick={() => navigate("/scanner")}>
                 Start scanning now
@@ -355,7 +356,7 @@ export default function Landing() {
               <div className="landing-price-value">
                 $0<span>/mo</span>
               </div>
-              <p className="landing-price-tagline">Perfect for trying out StatementScan.</p>
+              <p className="landing-price-tagline">Perfect for trying out Bank Statement Scanner.</p>
               <ul className="landing-price-list">
                 <li>Up to 20 statements / month</li>
                 <li>CSV &amp; Excel export</li>
@@ -365,7 +366,7 @@ export default function Landing() {
               <button
                 type="button"
                 className="landing-price-btn landing-price-btn--outline"
-                onClick={() => navigate(isLoggedIn ? "/scanner" : "/login")}
+                onClick={() => navigate("/scanner")}
               >
                 Get started free
               </button>
@@ -423,7 +424,7 @@ export default function Landing() {
                 <img src={logo} alt="" />
               </span>
               <div className="landing-footer-brand-text">
-                <span>StatementScan</span>
+                <span>Bank Statement Scanner</span>
                 <p>Turn messy bank statements into structured data in seconds.</p>
               </div>
             </div>
@@ -433,6 +434,7 @@ export default function Landing() {
                 <a href="#how-it-works" className="landing-footer-link">How it works</a>
                 <a href="#results" className="landing-footer-link">Results</a>
                 <a href="#pricing" className="landing-footer-link">Pricing</a>
+                <Link to="/blog" className="landing-footer-link">Blog</Link>
               </div>
               <div className="landing-footer-col">
                 <h3>Legal</h3>
@@ -443,12 +445,12 @@ export default function Landing() {
               <div className="landing-footer-col">
                 <h3>Support</h3>
                 <a href="#help" className="landing-footer-link">Help Center</a>
-                <a href="mailto:support@statementscan.ai" className="landing-footer-link">Email support</a>
+                <a href="mailto:team@bankstatementscanner.com" className="landing-footer-link">Email support</a>
               </div>
             </div>
           </div>
           <div className="landing-footer-meta">
-            © {new Date().getFullYear()} StatementScan AI. All rights reserved.
+            © {new Date().getFullYear()} Bank Statement Scanner. All rights reserved.
           </div>
         </div>
       </footer>

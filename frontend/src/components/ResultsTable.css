@@ -473,6 +473,29 @@
   color: var(--color-text);
 }
 
+.results-edit-card-errors {
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: var(--color-error);
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-md);
+}
+
+.results-edit-card-field-error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-error);
+}
+
+.results-edit-card-input--error,
+.results-edit-card-input--error:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 2px var(--color-error-bg);
+}
+
 .results-edit-card-fields {
   display: flex;
   flex-direction: column;

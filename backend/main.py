@@ -383,6 +383,7 @@ _RATE_LIMIT_CHAT = os.environ.get("RATE_LIMIT_CHAT", "30/minute")
 
 
 TRIAL_COOKIE_NAME = "trial_pdf_used"
+TRIAL_LIMIT = 5  # Number of free statements for unauthenticated users
 TRIAL_LIMIT_MESSAGE = "Trial limit reached. Please log in to process more PDFs."
 INSUFFICIENT_CREDITS_CODE = "INSUFFICIENT_CREDITS"
 
@@ -398,9 +399,13 @@ async def process_pdf(
     user_id: str | None = Depends(get_current_user_optional),
 ):
     t0 = time.perf_counter()
-    # Trial: unauthenticated and already used trial
+    # Trial: unauthenticated and trial count at limit
     if user_id is None:
-        if request.cookies.get(TRIAL_COOKIE_NAME):
+        try:
+            trial_used = int(request.cookies.get(TRIAL_COOKIE_NAME) or 0)
+        except ValueError:
+            trial_used = 0
+        if trial_used >= TRIAL_LIMIT:
             raise HTTPException(status_code=401, detail=TRIAL_LIMIT_MESSAGE)
         # Will run pipeline below and not call set_job; return inline csv_content/raw_text and set cookie
 
@@ -488,9 +493,14 @@ async def process_pdf(
             logger.info("process-pdf: [step 4/4] trial finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
             response = JSONResponse(content=payload.model_dump(mode="json"))
             secure = getattr(request.url, "scheme", "http") == "https"
+            try:
+                trial_used = int(request.cookies.get(TRIAL_COOKIE_NAME) or 0)
+            except ValueError:
+                trial_used = 0
+            new_count = min(trial_used + 1, TRIAL_LIMIT)
             response.set_cookie(
                 key=TRIAL_COOKIE_NAME,
-                value="1",
+                value=str(new_count),
                 httponly=True,
                 secure=secure,
                 samesite="lax",

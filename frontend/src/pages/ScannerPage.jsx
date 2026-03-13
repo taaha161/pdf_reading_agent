@@ -10,6 +10,22 @@ import { useAuth } from "../contexts/AuthContext";
 import { processPdf, getJob, updateJobTransactions } from "../api/client";
 import "./ScannerPage.css";
 
+function ChatIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
 function parseAmount(amountStr) {
   const raw = String(amountStr ?? "0").replace(/,/g, "").trim();
   if (!raw) return 0;
@@ -83,8 +99,8 @@ export default function ScannerPage() {
   const [conversionMode, setConversionMode] = useState("balanced");
   const [dataStatus, setDataStatus] = useState(null);
   const [trialCsvContent, setTrialCsvContent] = useState(null);
-  const [trialRawText, setTrialRawText] = useState(null);
   const [outOfCredits, setOutOfCredits] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const isLoggedIn = !!user;
 
   // Load existing job when opening from dashboard (e.g. /scanner/:jobId)
@@ -106,7 +122,6 @@ export default function ScannerPage() {
           setCurrency(data.currency ?? null);
           setDataStatus(data.data_status ?? null);
           setTrialCsvContent(null);
-          setTrialRawText(null);
         } else {
           setError("Job not found");
         }
@@ -125,7 +140,6 @@ export default function ScannerPage() {
     setCurrency(null);
     setDataStatus(null);
     setTrialCsvContent(null);
-    setTrialRawText(null);
     setLoading(true);
     setLoadingFile({ name: file.name, size: file.size });
     try {
@@ -136,7 +150,6 @@ export default function ScannerPage() {
       setCurrency(data.currency ?? null);
       setDataStatus(null);
       setTrialCsvContent(data.csv_content ?? null);
-      setTrialRawText(data.raw_text ?? null);
     } catch (e) {
       if (e.insufficientCredits) {
         setOutOfCredits(true);
@@ -150,7 +163,6 @@ export default function ScannerPage() {
       setSummaryByCategory([]);
       setCurrency(null);
       setTrialCsvContent(null);
-      setTrialRawText(null);
     } finally {
       setLoading(false);
       setLoadingFile(null);
@@ -313,29 +325,63 @@ export default function ScannerPage() {
         )}
 
         {hasResults && (
-          <div className="scanner-results">
-            <div className="scanner-results-tables">
-              <SummaryTable summaryByCategory={summaryByCategory} currency={currency} />
-              <ResultsTable
-                transactions={transactions}
-                jobId={jobId}
-                csvContent={trialCsvContent}
-                rawText={trialRawText}
-                onDownloadError={setDownloadError}
-                onTransactionChange={handleTransactionChange}
-                onSaveTransaction={handleSaveTransaction}
-              />
+          <>
+            <div className="scanner-results">
+              <div className="scanner-results-tables">
+                <SummaryTable summaryByCategory={summaryByCategory} currency={currency} />
+                <ResultsTable
+                  transactions={transactions}
+                  jobId={jobId}
+                  csvContent={trialCsvContent}
+                  onDownloadError={setDownloadError}
+                  onTransactionChange={handleTransactionChange}
+                  onSaveTransaction={handleSaveTransaction}
+                />
+              </div>
             </div>
-            <aside className="scanner-results-chat">
-              <ChatPanel
-                key={jobId}
-                jobId={jobId}
-                disabled={!jobId}
-                requireLogin={!isLoggedIn}
-                onRequireLogin={() => navigate("/login")}
-              />
-            </aside>
-          </div>
+
+            <div className="scanner-fab-wrap">
+              <button
+                type="button"
+                className="scanner-fab"
+                onClick={() => setChatOpen(true)}
+                aria-label="Open Validate CSV chat"
+                title="Validate CSV – Ask about your transactions and categories"
+              >
+                <span className="scanner-fab-icon" aria-hidden>
+                  <ChatIcon />
+                </span>
+                <span className="scanner-fab-tooltip">Validate CSV – Ask about your transactions and categories</span>
+              </button>
+            </div>
+
+            {chatOpen && (
+              <div className="scanner-chat-drawer-backdrop" onClick={() => setChatOpen(false)} aria-hidden />
+            )}
+            <div className={`scanner-chat-drawer ${chatOpen ? "scanner-chat-drawer--open" : ""}`}>
+              <div className="scanner-chat-drawer-inner">
+                <div className="scanner-chat-drawer-header">
+                  <h2 className="scanner-chat-drawer-title">Validate CSV</h2>
+                  <button
+                    type="button"
+                    className="scanner-chat-drawer-close"
+                    onClick={() => setChatOpen(false)}
+                    aria-label="Close chat"
+                  >
+                    <CloseIcon />
+                  </button>
+                </div>
+                <ChatPanel
+                  key={jobId}
+                  jobId={jobId}
+                  disabled={!jobId}
+                  requireLogin={!isLoggedIn}
+                  onRequireLogin={() => navigate("/login")}
+                  hideHeading
+                />
+              </div>
+            </div>
+          </>
         )}
         </div>
       </div>

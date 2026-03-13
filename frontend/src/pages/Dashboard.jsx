@@ -161,7 +161,7 @@ export default function Dashboard() {
                   <span className="dashboard-stat-label">AI Accuracy Rating</span>
                   <span className="dashboard-stat-badge dashboard-stat-badge--accuracy" aria-hidden>✓</span>
                 </div>
-                <div className="dashboard-stat-value">98%</div>
+                <div className="dashboard-stat-value">Upto 100%</div>
                 <div className="dashboard-stat-meta">AI Accuracy Rating</div>
               </div>
             </div>

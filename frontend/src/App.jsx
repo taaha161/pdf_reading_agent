@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 import { setApiAuthToken } from "./api/client";
 import { useAuth } from "./contexts/AuthContext";
@@ -11,9 +11,19 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AccountSettingsPage from "./pages/AccountSettingsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
+import BlogPage from "./pages/BlogPage";
+import BlogPostPage from "./pages/BlogPostPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageMeta from "./components/PageMeta";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
 
 function AppContent() {
   const { accessToken } = useAuth();
@@ -23,6 +33,7 @@ function AppContent() {
 
   return (
     <>
+      <ScrollToTop />
       <PageMeta />
       <Routes>
         <Route path="/" element={<Landing />} />
@@ -32,6 +43,8 @@ function AppContent() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:slug" element={<BlogPostPage />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
         <Route path="/scanner" element={<ScannerPage />} />

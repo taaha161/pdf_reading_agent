@@ -518,17 +518,18 @@
 }
 
 .landing-usecard-media {
+  display: block;
   height: 150px;
   border-radius: 16px 16px 0 0;
-  background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.16), transparent 60%), radial-gradient(circle at 80% 80%, rgba(15, 23, 42, 0.4), #020617);
+  overflow: hidden;
+  background: var(--color-bg);
 }
 
-.landing-usecard-media--charts {
-  background: radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.2), transparent 55%), radial-gradient(circle at 80% 40%, rgba(16, 185, 129, 0.25), #020617);
-}
-
-.landing-usecard-media--coins {
-  background: radial-gradient(circle at 50% 0%, rgba(234, 179, 8, 0.25), transparent 55%), radial-gradient(circle at 40% 80%, rgba(37, 99, 235, 0.2), #020617);
+.landing-usecard-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  vertical-align: middle;
 }
 
 .landing-usecard-body {
@@ -564,6 +565,7 @@
 }
 
 .landing-usecard-link {
+  display: inline-block;
   margin-top: auto;
   padding: 0;
   border: none;
@@ -574,6 +576,10 @@
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.landing-usecard-link:hover {
+  color: var(--color-primary-hover);
 }
 
 .landing-cta-band {

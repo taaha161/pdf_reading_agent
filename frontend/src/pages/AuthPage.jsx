@@ -201,7 +201,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
             <span className="auth-logo-icon" aria-hidden>
               <img src={logo} alt="" />
             </span>
-            <span className="auth-logo-text">StatementScan</span>
+            <span className="auth-logo-text">Bank Statement Scanner</span>
           </Link>
           <div className="auth-header-right">
             <span className="auth-header-copy">Already have an account?</span>
@@ -215,7 +215,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
               Smart financial <span>management starts here.</span>
             </h1>
             <p className="auth-hero-body">
-              Join thousands of users who trust StatementScan for secure, automated financial insights
+              Join thousands of users who trust Bank Statement Scanner for secure, automated financial insights
               and statement processing.
             </p>
             <div className="auth-feature-stack">
@@ -344,7 +344,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
             </div>
 
             <p className="auth-shell-copy">
-              © {new Date().getFullYear()} StatementScan Inc. All rights reserved. Your data is handled according to our
+              © {new Date().getFullYear()} Bank Statement Scanner Inc. All rights reserved. Your data is handled according to our
               standard security protocols.
             </p>
           </section>
@@ -363,7 +363,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
               <span className="auth-logo-icon" aria-hidden>
                 <img src={logo} alt="" />
               </span>
-              <span className="auth-logo-text">StatementScan</span>
+              <span className="auth-logo-text">Bank Statement Scanner</span>
             </Link>
           </header>
 
@@ -452,7 +452,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
           </footer>
         </section>
 
-        <section className="auth-panel auth-panel-right auth-panel-right--login" aria-label="Why StatementScan">
+        <section className="auth-panel auth-panel-right auth-panel-right--login" aria-label="Why Bank Statement Scanner">
           <div className="auth-right-inner">
             <div className="auth-illustration-icon" aria-hidden />
             <h2 className="auth-right-title">Automate your financial data entry today.</h2>

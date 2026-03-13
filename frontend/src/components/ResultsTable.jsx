@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { downloadCsv, downloadMarkdown } from "../api/client";
+import { downloadCsv } from "../api/client";
 import "./ResultsTable.css";
 
 function downloadBlob(content, filename, mimeType) {
@@ -65,17 +65,71 @@ function getAmountClass(type, amount) {
   return "results-amount--neutral";
 }
 
+function formatAmountForDisplay(type, amount) {
+  const raw = String(amount ?? "").trim();
+  if (!raw || raw === "—") return "—";
+  const rawType = String(type || "").toLowerCase();
+  const isDebit = rawType === "debit";
+  const alreadyNegative = raw.startsWith("-");
+  if (isDebit && !alreadyNegative) return `-${raw}`;
+  return raw;
+}
+
+function validateTransactionDraft(draft) {
+  const err = {};
+  const date = String(draft.date ?? "").trim();
+  const description = String(draft.description ?? "").trim();
+  const type = String(draft.type ?? "").toLowerCase();
+  const amountRaw = String(draft.amount ?? "").trim();
+
+  if (!date) err.date = "Date is required";
+  if (!description) err.description = "Description is required";
+  if (type && type !== "credit" && type !== "debit") {
+    err.type = "Type must be Credit or Debit";
+  }
+  if (!amountRaw) {
+    err.amount = "Amount is required";
+  } else if (/[^0-9.]/.test(amountRaw)) {
+    err.amount = "Amount can only contain numbers";
+  } else {
+    const dotCount = (amountRaw.match(/\./g) || []).length;
+    if (dotCount > 1) {
+      err.amount = "Amount must be a valid number";
+    } else {
+      const num = Number.parseFloat(amountRaw);
+      if (Number.isNaN(num) || !Number.isFinite(num)) {
+        err.amount = "Amount must be a valid number";
+      }
+    }
+  }
+  return err;
+}
+
 export default function ResultsTable({
   transactions,
   jobId,
   csvContent,
-  rawText,
   onDownloadError,
   onTransactionChange,
   onSaveTransaction,
 }) {
   const [editingIndex, setEditingIndex] = useState(null);
   const [draft, setDraft] = useState({ date: "", description: "", category: "", type: "", amount: "" });
+  const [errors, setErrors] = useState({});
+
+  const closeEditCard = () => {
+    setEditingIndex(null);
+    setErrors({});
+  };
+
+  useEffect(() => {
+    if (editingIndex == null) return;
+    const onEscape = (e) => {
+      if (e.key === "Escape") closeEditCard();
+    };
+    document.addEventListener("keydown", onEscape);
+    return () => document.removeEventListener("keydown", onEscape);
+  }, [editingIndex]);
 
   if (!jobId) return null;
 
@@ -89,40 +143,36 @@ export default function ResultsTable({
         type: t.type ?? "",
         amount: t.amount ?? "",
       });
+      setErrors({});
       setEditingIndex(index);
     }
   };
 
-  const closeEditCard = () => setEditingIndex(null);
-
   const handleSaveEdit = () => {
     if (editingIndex == null) return;
+    const validation = validateTransactionDraft(draft);
+    if (Object.keys(validation).length > 0) {
+      setErrors(validation);
+      return;
+    }
+    setErrors({});
     if (onSaveTransaction) {
       onSaveTransaction(editingIndex, {
-        date: draft.date,
-        description: draft.description,
-        category: draft.category,
-        type: draft.type,
-        amount: draft.amount,
+        date: draft.date.trim(),
+        description: draft.description.trim(),
+        category: (draft.category ?? "").trim(),
+        type: (draft.type ?? "").trim() || undefined,
+        amount: draft.amount.trim(),
       });
     } else {
-      onTransactionChange?.(editingIndex, "date", draft.date);
-      onTransactionChange?.(editingIndex, "description", draft.description);
-      onTransactionChange?.(editingIndex, "category", draft.category);
-      onTransactionChange?.(editingIndex, "type", draft.type);
-      onTransactionChange?.(editingIndex, "amount", draft.amount);
+      onTransactionChange?.(editingIndex, "date", draft.date.trim());
+      onTransactionChange?.(editingIndex, "description", draft.description.trim());
+      onTransactionChange?.(editingIndex, "category", (draft.category ?? "").trim());
+      onTransactionChange?.(editingIndex, "type", (draft.type ?? "").trim());
+      onTransactionChange?.(editingIndex, "amount", draft.amount.trim());
     }
     closeEditCard();
   };
-
-  useEffect(() => {
-    if (editingIndex == null) return;
-    const onEscape = (e) => {
-      if (e.key === "Escape") closeEditCard();
-    };
-    document.addEventListener("keydown", onEscape);
-    return () => document.removeEventListener("keydown", onEscape);
-  }, [editingIndex]);
 
   const handleDownloadCsv = async () => {
     try {
@@ -136,26 +186,11 @@ export default function ResultsTable({
     }
   };
 
-  const handleDownloadMarkdown = async () => {
-    try {
-      if (rawText != null) {
-        downloadBlob(rawText, "statement.md", "text/markdown");
-      } else {
-        await downloadMarkdown(jobId);
-      }
-    } catch (e) {
-      onDownloadError?.(e.message);
-    }
-  };
-
   return (
     <section className="results-section">
       <div className="results-header">
         <h2>Transactions</h2>
         <div className="results-header-actions">
-          <button type="button" onClick={handleDownloadMarkdown} className="download-btn download-btn-secondary">
-            Download markdown
-          </button>
           {transactions?.length > 0 && (
             <button type="button" onClick={handleDownloadCsv} className="download-btn">
               Download CSV
@@ -202,7 +237,7 @@ export default function ResultsTable({
                     )}
                   </td>
                   <td>
-                    <span className={`results-amount ${amountClass}`}>{t.amount || "—"}</span>
+                    <span className={`results-amount ${amountClass}`}>{formatAmountForDisplay(t.type, t.amount)}</span>
                   </td>
                   <td className="results-cell-actions">
                     <div className="results-cell-actions-inner">
@@ -211,7 +246,7 @@ export default function ResultsTable({
                         className="results-row-action-btn"
                         onClick={() => openEditCard(i)}
                       >
-                        Manual override
+                        Edit
                       </button>
                     </div>
                   </td>
@@ -222,7 +257,7 @@ export default function ResultsTable({
         </table>
       </div>
       ) : (
-        <p className="results-empty">No transactions extracted. Download the markdown to check if the PDF was converted correctly.</p>
+        <p className="results-empty">No transactions extracted. Try re-uploading the PDF or a different statement.</p>
       )}
 
       {editingIndex != null && (
@@ -238,26 +273,41 @@ export default function ResultsTable({
             onClick={(e) => e.stopPropagation()}
           >
             <h3 id="results-edit-card-title" className="results-edit-card-title">Edit transaction</h3>
+            {Object.keys(errors).length > 0 && (
+              <div className="results-edit-card-errors" role="alert">
+                Please fix the errors below before saving.
+              </div>
+            )}
             <div className="results-edit-card-fields">
               <label className="results-edit-card-label">
                 <span>Date</span>
                 <input
                   type="text"
-                  className="results-edit-card-input"
+                  className={`results-edit-card-input ${errors.date ? "results-edit-card-input--error" : ""}`}
                   value={draft.date}
                   onChange={(e) => setDraft((p) => ({ ...p, date: e.target.value }))}
                   aria-label="Date"
+                  aria-invalid={!!errors.date}
+                  aria-describedby={errors.date ? "results-edit-date-error" : undefined}
                 />
+                {errors.date && (
+                  <span id="results-edit-date-error" className="results-edit-card-field-error">{errors.date}</span>
+                )}
               </label>
               <label className="results-edit-card-label">
                 <span>Description</span>
                 <input
                   type="text"
-                  className="results-edit-card-input"
+                  className={`results-edit-card-input ${errors.description ? "results-edit-card-input--error" : ""}`}
                   value={draft.description}
                   onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))}
                   aria-label="Description"
+                  aria-invalid={!!errors.description}
+                  aria-describedby={errors.description ? "results-edit-description-error" : undefined}
                 />
+                {errors.description && (
+                  <span id="results-edit-description-error" className="results-edit-card-field-error">{errors.description}</span>
+                )}
               </label>
               <label className="results-edit-card-label">
                 <span>Category</span>
@@ -272,25 +322,43 @@ export default function ResultsTable({
               <label className="results-edit-card-label">
                 <span>Type</span>
                 <select
-                  className="results-edit-card-input results-edit-card-select"
+                  className={`results-edit-card-input results-edit-card-select ${errors.type ? "results-edit-card-input--error" : ""}`}
                   value={draft.type}
                   onChange={(e) => setDraft((p) => ({ ...p, type: e.target.value }))}
                   aria-label="Type"
+                  aria-invalid={!!errors.type}
+                  aria-describedby={errors.type ? "results-edit-type-error" : undefined}
                 >
                   <option value="">—</option>
                   <option value="credit">Credit</option>
                   <option value="debit">Debit</option>
                 </select>
+                {errors.type && (
+                  <span id="results-edit-type-error" className="results-edit-card-field-error">{errors.type}</span>
+                )}
               </label>
               <label className="results-edit-card-label">
                 <span>Amount</span>
                 <input
                   type="text"
-                  className="results-edit-card-input results-edit-card-input--amount"
+                  className={`results-edit-card-input results-edit-card-input--amount ${errors.amount ? "results-edit-card-input--error" : ""}`}
                   value={draft.amount}
-                  onChange={(e) => setDraft((p) => ({ ...p, amount: e.target.value }))}
+                  onChange={(e) => {
+                  const v = e.target.value.replace(/[^0-9.]/g, "");
+                  const firstDot = v.indexOf(".");
+                  const filtered =
+                    firstDot === -1
+                      ? v
+                      : v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
+                  setDraft((p) => ({ ...p, amount: filtered }));
+                }}
                   aria-label="Amount"
+                  aria-invalid={!!errors.amount}
+                  aria-describedby={errors.amount ? "results-edit-amount-error" : undefined}
                 />
+                {errors.amount && (
+                  <span id="results-edit-amount-error" className="results-edit-card-field-error">{errors.amount}</span>
+                )}
               </label>
             </div>
             <div className="results-edit-card-actions">

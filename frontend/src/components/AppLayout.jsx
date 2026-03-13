@@ -13,7 +13,10 @@ export default function AppLayout({ children }) {
   const jobsWithPayload = jobs.filter((j) => j.has_payload);
   const scanCount = jobsWithPayload.length;
   const scanLimit = 20;
+  const isLoggedIn = user != null;
+  const freeScanLimit = 5;
   const scanProgress = Math.min(scanCount / scanLimit, 1);
+  const freeScanProgress = Math.min(scanCount / freeScanLimit, 1);
 
   return (
     <div className="app-layout">
@@ -24,7 +27,7 @@ export default function AppLayout({ children }) {
               <img src={logo} alt="" className="app-layout-logo" aria-hidden />
             </span>
           </Link>
-          <span className="app-layout-brand-name">StatementScan</span>
+          <span className="app-layout-brand-name">Bank Statement Scanner</span>
         </div>
         <div className="app-layout-header-actions">
           <button
@@ -79,14 +82,25 @@ export default function AppLayout({ children }) {
               <span className="app-layout-nav-text">Log out</span>
             </button>
           </nav>
+         {isLoggedIn && (
           <div className="app-layout-summary-card">
             <p className="app-layout-summary-label">Monthly Scan Limit</p>
-            <div className="app-layout-summary-bar-wrap">
-              <div className="app-layout-summary-bar" style={{ width: `${scanProgress * 100}%` }} />
+              <div className="app-layout-summary-bar-wrap">
+                <div className="app-layout-summary-bar" style={{ width: `${scanProgress * 100}%` }} />
+              </div>
+              <p className="app-layout-summary-value">{scanCount} / {scanLimit} Statements</p>
+              <Link to="/scanner" className="app-layout-summary-cta">Process statement</Link>
             </div>
-            <p className="app-layout-summary-value">{scanCount} / {scanLimit} Statements</p>
-            <Link to="/scanner" className="app-layout-summary-cta">Process statement</Link>
-          </div>
+          )}
+          {!isLoggedIn && (
+            <div className="app-layout-summary-card">
+            <p className="app-layout-summary-label">Free Scan Limit</p>
+            <div className="app-layout-summary-bar-wrap">
+              <div className="app-layout-summary-bar" style={{ width: `${freeScanProgress * 100}%` }} />
+            </div>
+            <p className="app-layout-summary-value">{scanCount} / {freeScanLimit} Statements</p>
+            </div>
+          )}
         </aside>
         <main className="app-layout-main">
           {children}

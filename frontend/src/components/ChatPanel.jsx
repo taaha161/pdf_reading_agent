@@ -2,7 +2,7 @@ import { useState } from "react";
 import { sendChatMessage } from "../api/client";
 import "./ChatPanel.css";
 
-export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogin }) {
+export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogin, hideHeading }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,10 +32,14 @@ export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogi
 
   return (
     <section className="chat-panel">
-      <h2>Validate CSV</h2>
-      <p className="chat-hint">
-        Ask why a transaction was categorized a certain way or to explain any row.
-      </p>
+      {!hideHeading && (
+        <>
+          <h2>Validate CSV</h2>
+          <p className="chat-hint">
+            Ask why a transaction was categorized a certain way or to explain any row.
+          </p>
+        </>
+      )}
       <div className="messages">
         {messages.length === 0 && (
           <div className="message placeholder">
