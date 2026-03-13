@@ -519,8 +519,22 @@
   width: 52px;
   height: 52px;
   border-radius: 18px;
-  background: rgba(15, 23, 42, 0.34);
   margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.auth-illustration-icon-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.auth-shell--signup .auth-illustration-icon {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
 }
 
 .auth-right-title {
@@ -554,6 +568,12 @@
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.9);
   border: 2px solid rgba(37, 99, 235, 0.6);
+}
+
+.auth-avatar--img {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .auth-badge {

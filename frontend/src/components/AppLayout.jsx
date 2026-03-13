@@ -73,6 +73,7 @@ export default function AppLayout({ children }) {
               <span className="app-layout-nav-text">Account</span>
             </NavLink>
             <span className="app-layout-nav-spacer" />
+           {isLoggedIn && (
             <button
               type="button"
               className="app-layout-nav-link app-layout-nav-link--button"
@@ -81,6 +82,7 @@ export default function AppLayout({ children }) {
               <span className="app-layout-nav-icon" aria-hidden><LogOutIcon /></span>
               <span className="app-layout-nav-text">Log out</span>
             </button>
+            )}
           </nav>
          {isLoggedIn && (
           <div className="app-layout-summary-card">

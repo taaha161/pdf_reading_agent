@@ -107,7 +107,7 @@ export default function Landing() {
               <button
                 type="button"
                 className="landing-hero-ghost"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate("/scanner")}
               >
                 View sample export
               </button>
@@ -191,7 +191,7 @@ export default function Landing() {
                 <div className="landing-upload-meta" aria-label="Upload limits">
                   <span>MAX 50MB</span>
                   <span className="landing-upload-dot" aria-hidden />
-                  <span>PDF ONLY</span>
+                  <span>Computer generated or photo scanned PDF ONLY</span>
                 </div>
               </div>
             </div>
@@ -347,69 +347,48 @@ export default function Landing() {
 
         <section className="landing-pricing" id="pricing" aria-label="Pricing">
           <header className="landing-pricing-head">
-            <h2>Simple, transparent pricing</h2>
-            <p>Discover the plan that fits your volume. Switch or cancel anytime.</p>
+            <h2>Simple, pay-as-you-go pricing</h2>
+            <p>Subscribe monthly and $10 is added to your credit each month. Optionally top up anytime for extra credits. No long-term commitment.</p>
           </header>
           <div className="landing-pricing-grid">
-            <article className="landing-price-card">
-              <div className="landing-price-label">Starter</div>
-              <div className="landing-price-value">
-                $0<span>/mo</span>
-              </div>
-              <p className="landing-price-tagline">Perfect for trying out Bank Statement Scanner.</p>
-              <ul className="landing-price-list">
-                <li>Up to 20 statements / month</li>
-                <li>CSV &amp; Excel export</li>
-                <li>AI-powered categorization</li>
-                <li>Email support</li>
-              </ul>
-              <button
-                type="button"
-                className="landing-price-btn landing-price-btn--outline"
-                onClick={() => navigate("/scanner")}
-              >
-                Get started free
-              </button>
-            </article>
-
             <article className="landing-price-card landing-price-card--highlight">
               <div className="landing-price-pill">Most popular</div>
-              <div className="landing-price-label">Professional</div>
+              <div className="landing-price-label">Monthly subscription</div>
               <div className="landing-price-value">
-                $19<span>/mo</span>
+                $10<span>/mo</span>
               </div>
-              <p className="landing-price-tagline">Designed for busy accountants and finance teams.</p>
+              <p className="landing-price-tagline">$10 in credit added to your account every month. Use credits per scan—pay only for what you use.</p>
               <ul className="landing-price-list">
-                <li>Up to 250 statements / month</li>
-                <li>Advanced rules &amp; mapping</li>
-                <li>Team workspaces</li>
-                <li>Priority support</li>
+                <li>$10 credit added each billing cycle</li>
+                <li>Credits used per scan (from &lt;1¢ to $1.50 depending on mode)</li>
+                <li>Optionally top up anytime for extra credits</li>
+                <li>CSV &amp; Excel export, AI categorization—cancel anytime</li>
               </ul>
               <button
                 type="button"
                 className="landing-price-btn"
                 onClick={() => navigate(isLoggedIn ? "/settings" : "/login")}
               >
-                Subscribe to Pro
+                {isLoggedIn ? "Manage subscription" : "Get started"}
               </button>
             </article>
 
             <article className="landing-price-card">
-              <div className="landing-price-label">Enterprise</div>
-              <div className="landing-price-value landing-price-value--custom">Custom</div>
-              <p className="landing-price-tagline">For institutions processing thousands of statements a month.</p>
+              <div className="landing-price-label">Optional top-up</div>
+              <div className="landing-price-value landing-price-value--custom">Add credits</div>
+              <p className="landing-price-tagline">Need more credits? Add a one-time top-up anytime—with or without a subscription.</p>
               <ul className="landing-price-list">
-                <li>Unlimited statements</li>
-                <li>Dedicated onboarding</li>
-                <li>Custom SLAs &amp; security review</li>
-                <li>API &amp; SSO options</li>
+                <li>One-time credit purchases</li>
+                <li>Fast mode from &lt;1¢, balanced $1, accurate $1.50 per scan</li>
+                <li>Same export &amp; categorization features</li>
+                <li>Works alongside your monthly plan</li>
               </ul>
               <button
                 type="button"
                 className="landing-price-btn landing-price-btn--outline"
-                onClick={() => navigate("/contact")}
+                onClick={() => navigate(isLoggedIn ? "/settings" : "/login")}
               >
-                Contact sales
+                {isLoggedIn ? "Add credits" : "Get started"}
               </button>
             </article>
           </div>

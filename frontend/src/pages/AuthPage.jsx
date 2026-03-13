@@ -19,6 +19,38 @@ function GoogleLogo({ className }) {
   );
 }
 
+/** Shield icon for \"Smart Categorization\" card */
+function ShieldIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden focusable="false">
+      <path
+        d="M12 3 6 5v6c0 4.1 2.7 7.5 6 8.5 3.3-1 6-4.4 6-8.5V5l-6-2Z"
+        fill="currentColor"
+      />
+      <path
+        d="M10.5 12.5 12 14l3-3"
+        fill="none"
+        stroke="#0f172a"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Lightning bolt icon for \"Instant Processing\" */
+function BoltIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden focusable="false">
+      <path
+        d="M13 2 5 13h5l-1 9 8-11h-5l1-9Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 /** Strong password: min 8 chars, uppercase, lowercase, number, special char */
 function validatePasswordStrength(password) {
   if (!password || password.length < PASSWORD_MIN_LENGTH) return { ok: false, message: `At least ${PASSWORD_MIN_LENGTH} characters` };
@@ -220,17 +252,21 @@ export default function AuthPage({ mode: initialMode = "login" }) {
             </p>
             <div className="auth-feature-stack">
               <div className="auth-feature-card">
-                <div className="auth-feature-icon auth-feature-icon--shield" aria-hidden />
+                <div className="auth-feature-icon auth-feature-icon--shield" aria-hidden>
+                  <ShieldIcon />
+                </div>
                 <div>
-                  <h2>Bank-Grade Security</h2>
-                  <p>Your data is encrypted and private.</p>
+                  <h2>Smart Categorization</h2>
+                  <p>Automatically categorize your transactions with AI.</p>
                 </div>
               </div>
               <div className="auth-feature-card">
-                <div className="auth-feature-icon auth-feature-icon--bolt" aria-hidden />
+                <div className="auth-feature-icon auth-feature-icon--bolt" aria-hidden>
+                  <BoltIcon />
+                </div>
                 <div>
-                  <h2>Instant Processing</h2>
-                  <p>Scan and analyze in seconds.</p>
+                  <h2>Convert PDF to Excel in seconds</h2>
+                  <p>Scan and convert PDF to Excel in seconds.</p>
                 </div>
               </div>
             </div>
@@ -323,7 +359,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                       <GoogleLogo className="auth-btn-google-icon" />
                       <span>Google</span>
                     </button>
-                    <button
+                    {/* <button
                       type="button"
                       className="auth-btn auth-btn-provider"
                       onClick={() => handleSocialLogin("github")}
@@ -331,7 +367,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                     >
                       <span className="auth-provider-icon">G</span>
                       <span>GitHub</span>
-                    </button>
+                    </button> */}
                   </div>
                 </>
               )}
@@ -421,6 +457,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                 <GoogleLogo className="auth-btn-google-icon" />
                 <span>Google</span>
               </button>
+              {/*
               <button
                 type="button"
                 className="auth-btn auth-btn-provider"
@@ -430,6 +467,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                 <span className="auth-provider-icon"></span>
                 <span>Apple</span>
               </button>
+              */}
             </div>
 
             {message.text && (
@@ -454,7 +492,10 @@ export default function AuthPage({ mode: initialMode = "login" }) {
 
         <section className="auth-panel auth-panel-right auth-panel-right--login" aria-label="Why Bank Statement Scanner">
           <div className="auth-right-inner">
-            <div className="auth-illustration-icon" aria-hidden />
+            {/* Add your SVG to public/auth-illustration.svg to replace the placeholder */}
+            <div className="auth-illustration-icon" aria-hidden>
+              <img src="/auth-illustration.svg" alt="" className="auth-illustration-icon-img" />
+            </div>
             <h2 className="auth-right-title">Automate your financial data entry today.</h2>
             <p className="auth-right-body">
               Connect your statements, scan and categorize transactions with AI, and sync everything to your favorite
@@ -462,9 +503,10 @@ export default function AuthPage({ mode: initialMode = "login" }) {
             </p>
             <div className="auth-trust-row">
               <div className="auth-avatar-group" aria-hidden>
-                <span className="auth-avatar" />
-                <span className="auth-avatar" />
-                <span className="auth-avatar" />
+                {/* Add your images to public/auth-avatars/ as avatar-1.jpg, avatar-2.jpg, avatar-3.jpg */}
+                <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-1.jpg)" }} />
+                <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-2.jpg)" }} />
+                <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-3.jpg)" }} />
                 <span className="auth-badge">10k+</span>
               </div>
               <div className="auth-trust-copy">
