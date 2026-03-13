@@ -213,6 +213,10 @@
   box-shadow: var(--shadow-md);
 }
 
+.scanner-fab-tooltip-text-mobile {
+  display: none;
+}
+
 .scanner-fab-tooltip::after {
   content: "";
   position: absolute;
@@ -224,14 +228,33 @@
 }
 
 @media (max-width: 640px) {
-  /* On small screens, keep the FAB but hide the wide tooltip to avoid overflow */
   .scanner-fab-wrap {
     bottom: 1rem;
     right: 1rem;
   }
 
   .scanner-fab-tooltip {
+    right: 50%;
+    bottom: calc(100% + 10px);
+    transform: translateX(50%);
+    white-space: nowrap;
+  }
+
+  .scanner-fab-tooltip-text-full {
     display: none;
+  }
+
+  .scanner-fab-tooltip-text-mobile {
+    display: inline;
+  }
+
+  .scanner-fab-tooltip::after {
+    right: 50%;
+    top: auto;
+    bottom: -6px;
+    transform: translateX(50%);
+    border: 6px solid transparent;
+    border-top-color: var(--color-text);
   }
 
   .scanner-chat-drawer {

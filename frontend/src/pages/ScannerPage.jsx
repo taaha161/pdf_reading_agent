@@ -346,12 +346,15 @@ export default function ScannerPage() {
                 className="scanner-fab"
                 onClick={() => setChatOpen(true)}
                 aria-label="Open Validate CSV chat"
-                title="Validate CSV – Ask about your transactions and categories"
+                title="Validate using AI"
               >
                 <span className="scanner-fab-icon" aria-hidden>
                   <ChatIcon />
                 </span>
-                <span className="scanner-fab-tooltip">Validate CSV – Ask about your transactions and categories</span>
+                <span className="scanner-fab-tooltip">
+                  <span className="scanner-fab-tooltip-text-full">Validate CSV – Ask about your transactions and categories</span>
+                  <span className="scanner-fab-tooltip-text-mobile">Validate using AI</span>
+                </span>
               </button>
             </div>
 
