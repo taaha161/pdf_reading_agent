@@ -39,6 +39,7 @@ from models.schemas import (
     ProcessPdfResponse,
     PurgeJobsDataRequest,
     Transaction,
+    UpdateJobTransactionsRequest,
 )
 from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
 from services.chat_service import get_reply
@@ -57,6 +58,7 @@ from store import (
     purge_jobs_data,
     record_trial_run,
     set_job,
+    update_job_transactions,
 )
 
 try:
@@ -348,11 +350,40 @@ def get_job_detail(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
     )
 
 
+@app.patch("/api/jobs/{job_id}", response_model=JobDetailResponse)
+def update_job_detail(
+    job_id: uuid.UUID,
+    body: UpdateJobTransactionsRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """Update transactions for a job and return refreshed detail (including summary)."""
+    job = get_job(str(job_id), user_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    if job.get("data_status"):
+        # Incognito or purged job: no payload to update
+        raise HTTPException(404, "No data for this job")
+
+    update_job_transactions(str(job_id), user_id, [t.model_dump(mode="json") for t in body.transactions])
+
+    updated = get_job(str(job_id), user_id)
+    summary = _summary_by_category(updated["transactions"])
+    return JobDetailResponse(
+        job_id=str(job_id),
+        transactions=[Transaction(**t) for t in updated["transactions"]],
+        summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+        currency=updated.get("currency"),
+        data_status=updated.get("data_status"),
+        conversion_mode=updated.get("conversion_mode"),
+    )
+
+
 _RATE_LIMIT_PROCESS_PDF = os.environ.get("RATE_LIMIT_PROCESS_PDF", "10/minute")
 _RATE_LIMIT_CHAT = os.environ.get("RATE_LIMIT_CHAT", "30/minute")
 
 
 TRIAL_COOKIE_NAME = "trial_pdf_used"
+TRIAL_LIMIT = 5  # Number of free statements for unauthenticated users
 TRIAL_LIMIT_MESSAGE = "Trial limit reached. Please log in to process more PDFs."
 INSUFFICIENT_CREDITS_CODE = "INSUFFICIENT_CREDITS"
 
@@ -368,9 +399,13 @@ async def process_pdf(
     user_id: str | None = Depends(get_current_user_optional),
 ):
     t0 = time.perf_counter()
-    # Trial: unauthenticated and already used trial
+    # Trial: unauthenticated and trial count at limit
     if user_id is None:
-        if request.cookies.get(TRIAL_COOKIE_NAME):
+        try:
+            trial_used = int(request.cookies.get(TRIAL_COOKIE_NAME) or 0)
+        except ValueError:
+            trial_used = 0
+        if trial_used >= TRIAL_LIMIT:
             raise HTTPException(status_code=401, detail=TRIAL_LIMIT_MESSAGE)
         # Will run pipeline below and not call set_job; return inline csv_content/raw_text and set cookie
 
@@ -458,9 +493,14 @@ async def process_pdf(
             logger.info("process-pdf: [step 4/4] trial finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
             response = JSONResponse(content=payload.model_dump(mode="json"))
             secure = getattr(request.url, "scheme", "http") == "https"
+            try:
+                trial_used = int(request.cookies.get(TRIAL_COOKIE_NAME) or 0)
+            except ValueError:
+                trial_used = 0
+            new_count = min(trial_used + 1, TRIAL_LIMIT)
             response.set_cookie(
                 key=TRIAL_COOKIE_NAME,
-                value="1",
+                value=str(new_count),
                 httponly=True,
                 secure=secure,
                 samesite="lax",

@@ -107,7 +107,7 @@
 .chat-input-wrap button {
   padding: 0.65rem 1.1rem;
   background: var(--color-primary);
-  color: var(--color-bg);
+  color: var(--color-on-primary);
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;

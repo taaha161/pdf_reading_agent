@@ -59,6 +59,10 @@ class JobDetailResponse(BaseModel):
     conversion_mode: Optional[str] = None  # fast | balanced | accurate
 
 
+class UpdateJobTransactionsRequest(BaseModel):
+    transactions: list[Transaction]
+
+
 class BillingBalanceResponse(BaseModel):
     balance_cents: int
     subscription_active: bool
