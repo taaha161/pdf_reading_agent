@@ -7,6 +7,7 @@ const JobsContext = createContext(null);
 export function JobsProvider({ children }) {
   const { accessToken } = useAuth();
   const [jobs, setJobs] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasFetched, setHasFetched] = useState(false);
@@ -15,6 +16,7 @@ export function JobsProvider({ children }) {
   useEffect(() => {
     if (!accessToken) {
       setJobs([]);
+      setStats(null);
       setError(null);
       setHasFetched(false);
     }
@@ -27,6 +29,7 @@ export function JobsProvider({ children }) {
     listJobs(accessToken)
       .then((data) => {
         setJobs(data.jobs || []);
+        setStats(data.stats ?? null);
         setHasFetched(true);
       })
       .catch((e) => {
@@ -41,7 +44,10 @@ export function JobsProvider({ children }) {
     if (!accessToken) return;
     setLoading(true);
     listJobs(accessToken)
-      .then((data) => setJobs(data.jobs || []))
+      .then((data) => {
+        setJobs(data.jobs || []);
+        setStats(data.stats ?? null);
+      })
       .catch((e) => {
         setError(e.status === 401 ? "Please log in again." : e.message || "Failed to load jobs");
       })
@@ -50,6 +56,7 @@ export function JobsProvider({ children }) {
 
   const value = {
     jobs,
+    stats,
     loading,
     error,
     loadJobs,

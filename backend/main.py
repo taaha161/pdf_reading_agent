@@ -33,6 +33,7 @@ from models.schemas import (
     ChatResponse,
     CheckoutSessionRequest,
     CheckoutSessionResponse,
+    DashboardStats,
     JobDetailResponse,
     JobListItem,
     JobListResponse,
@@ -328,9 +329,10 @@ async def delete_account(user_id: str = Depends(get_current_user)):
 
 @app.get("/api/jobs", response_model=JobListResponse)
 def list_user_jobs(user_id: str = Depends(get_current_user)):
-    """List current user's jobs (newest first)."""
-    jobs = list_jobs(user_id)
-    return JobListResponse(jobs=[JobListItem(**j) for j in jobs])
+    """List current user's jobs (newest first) and dashboard stats (income, expenses, surplus, category breakdown)."""
+    jobs, stats = list_jobs(user_id)
+    stats_model = DashboardStats(**stats) if stats else None
+    return JobListResponse(jobs=[JobListItem(**j) for j in jobs], stats=stats_model)
 
 
 @app.get("/api/jobs/{job_id}", response_model=JobDetailResponse)

@@ -46,8 +46,17 @@ class JobListItem(BaseModel):
     conversion_mode: Optional[str] = None  # fast | balanced | accurate
 
 
+class DashboardStats(BaseModel):
+    total_income: float
+    total_expenses: float
+    surplus: float
+    summary_by_category: list[CategorySummary]
+    primary_currency: Optional[str] = None
+
+
 class JobListResponse(BaseModel):
     jobs: list[JobListItem]
+    stats: Optional[DashboardStats] = None
 
 
 class JobDetailResponse(BaseModel):

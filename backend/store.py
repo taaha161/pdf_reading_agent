@@ -11,6 +11,34 @@ from psycopg2.extras import RealDictCursor
 from services.csv_export import transactions_to_csv
 
 
+def _parse_amount(amount_str: str) -> float:
+    """Parse amount string (may contain commas or leading minus) to float. Returns magnitude."""
+    raw = str(amount_str or "0").replace(",", "").strip()
+    try:
+        return float(raw) if raw else 0.0
+    except (ValueError, TypeError):
+        return 0.0
+
+
+def _aggregate_transactions(transactions: list[dict]) -> tuple[float, float, dict[str, float]]:
+    """Income (credits with category Income), expenses (debits not Income), category totals (debits only)."""
+    total_income = 0.0
+    total_expenses = 0.0
+    by_category: dict[str, float] = {}
+    for t in transactions:
+        magnitude = abs(_parse_amount(t.get("amount")))
+        is_debit = str(t.get("type", "")).lower() == "debit"
+        cat = str(t.get("category", "")).strip() or "Other"
+        if cat == "Income":
+            if not is_debit:  # credits
+                total_income += magnitude
+        else:
+            if is_debit:
+                total_expenses += magnitude
+                by_category[cat] = by_category.get(cat, 0) + magnitude
+    return total_income, total_expenses, by_category
+
+
 def _get_conn():
     url = os.environ.get("DATABASE_URL", "").strip()
     if not url:
@@ -65,8 +93,9 @@ def set_job(
             )
 
 
-def list_jobs(user_id: str, limit: int = 100) -> list[dict]:
-    """Return list of jobs for user: id, created_at, transaction_count, currency, conversion_mode. Newest first."""
+def list_jobs(user_id: str, limit: int = 100) -> tuple[list[dict], dict[str, Any] | None]:
+    """Return (jobs list, dashboard stats or None). Jobs: id, created_at, transaction_count, currency, etc. Newest first.
+    Stats: total_income, total_expenses, surplus, summary_by_category, primary_currency. Computed from same query (no extra DB round-trip)."""
     with _cursor() as cur:
         cur.execute(
             """
@@ -81,10 +110,21 @@ def list_jobs(user_id: str, limit: int = 100) -> list[dict]:
         )
         rows = cur.fetchall()
     out = []
+    total_income = 0.0
+    total_expenses = 0.0
+    category_totals: dict[str, float] = {}
+    primary_currency: str | None = None
     for row in rows:
         transactions = row["transactions"] if isinstance(row["transactions"], list) else (json.loads(row["transactions"]) if row["transactions"] else [])
         if transactions is None:
             transactions = []
+        if row.get("has_payload") and transactions and primary_currency is None:
+            primary_currency = row.get("currency")
+        inc, exp, by_cat = _aggregate_transactions(transactions)
+        total_income += inc
+        total_expenses += exp
+        for cat, val in by_cat.items():
+            category_totals[cat] = category_totals.get(cat, 0) + val
         out.append({
             "id": row["id"],
             "created_at": row["created_at"].isoformat() if hasattr(row["created_at"], "isoformat") else str(row["created_at"]),
@@ -93,7 +133,15 @@ def list_jobs(user_id: str, limit: int = 100) -> list[dict]:
             "has_payload": bool(row.get("has_payload")),
             "conversion_mode": row.get("conversion_mode"),
         })
-    return out
+    summary_list = sorted(category_totals.items(), key=lambda x: -x[1])
+    stats = {
+        "total_income": total_income,
+        "total_expenses": total_expenses,
+        "surplus": total_income - total_expenses,
+        "summary_by_category": [{"category": c, "total": t} for c, t in summary_list],
+        "primary_currency": primary_currency,
+    }
+    return out, stats
 
 
 def get_job(job_id: str, user_id: str) -> dict | None:

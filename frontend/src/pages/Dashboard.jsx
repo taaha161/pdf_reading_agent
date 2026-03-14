@@ -15,9 +15,25 @@ function formatDate(isoString) {
   }
 }
 
+function formatMoney(value, currency) {
+  if (value == null || Number.isNaN(value)) return "—";
+  const code = (currency || "USD").toUpperCase();
+  const symbol = code === "USD" ? "$" : code === "EUR" ? "€" : code === "GBP" ? "£" : code === "PKR" ? "Rs " : `${code} `;
+  const abs = Math.abs(value);
+  const formatted = abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return value < 0 ? `-${symbol}${formatted}` : `+${symbol}${formatted}`;
+}
+
+function formatSurplus(value, currency) {
+  if (value == null || Number.isNaN(value)) return "—";
+  const code = (currency || "USD").toUpperCase();
+  const symbol = code === "USD" ? "$" : code === "EUR" ? "€" : code === "GBP" ? "£" : code === "PKR" ? "Rs " : `${code} `;
+  return `${value >= 0 ? "" : "-"}${symbol}${Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 export default function Dashboard() {
   const { user, accessToken } = useAuth();
-  const { jobs, loading, error, loadJobs, refreshJobs, hasFetched } = useJobs();
+  const { jobs, stats, loading, error, loadJobs, refreshJobs, hasFetched } = useJobs();
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState("");
@@ -131,10 +147,11 @@ export default function Dashboard() {
                   <span className="dashboard-stat-label">Total Income</span>
                   <span className="dashboard-stat-badge" aria-hidden>↑</span>
                 </div>
-                <div className="dashboard-stat-value dashboard-stat-value--positive">+$5,240.00</div>
+                <div className="dashboard-stat-value dashboard-stat-value--positive">
+                  {formatMoney(stats?.total_income, stats?.primary_currency)}
+                </div>
                 <div className="dashboard-stat-meta">
-                  <span>vs last month</span>
-                  <span className="dashboard-stat-meta-val">+12%</span>
+                  <span>Across all statements</span>
                 </div>
               </div>
               <div className="dashboard-stat-card">
@@ -142,27 +159,32 @@ export default function Dashboard() {
                   <span className="dashboard-stat-label">Total Expenses</span>
                   <span className="dashboard-stat-badge" aria-hidden>↓</span>
                 </div>
-                <div className="dashboard-stat-value dashboard-stat-value--negative">-$3,150.25</div>
+                <div className="dashboard-stat-value dashboard-stat-value--negative">
+                  {stats != null ? formatMoney(-stats.total_expenses, stats.primary_currency) : "—"}
+                </div>
                 <div className="dashboard-stat-meta">
-                  <span>vs last month</span>
-                  <span className="dashboard-stat-meta-val">-5%</span>
+                  <span>Across all statements</span>
                 </div>
               </div>
               <div className="dashboard-stat-card">
                 <div className="dashboard-stat-head">
-                  <span className="dashboard-stat-label">Monthly Surplus</span>
+                  <span className="dashboard-stat-label">Surplus</span>
                   <span className="dashboard-stat-badge dashboard-stat-badge--neutral" aria-hidden>→</span>
                 </div>
-                <div className="dashboard-stat-value">$2,089.75</div>
-                <div className="dashboard-stat-meta">Monthly Surplus</div>
+                <div className="dashboard-stat-value">
+                  {formatSurplus(stats?.surplus ?? 0, stats?.primary_currency)}
+                </div>
+                <div className="dashboard-stat-meta">Income − expenses</div>
               </div>
               <div className="dashboard-stat-card">
                 <div className="dashboard-stat-head">
-                  <span className="dashboard-stat-label">AI Accuracy Rating</span>
+                  <span className="dashboard-stat-label">Statements</span>
                   <span className="dashboard-stat-badge dashboard-stat-badge--accuracy" aria-hidden>✓</span>
                 </div>
-                <div className="dashboard-stat-value">Upto 100%</div>
-                <div className="dashboard-stat-meta">AI Accuracy Rating</div>
+                <div className="dashboard-stat-value">
+                  {jobs.filter((j) => j.has_payload).length}
+                </div>
+                <div className="dashboard-stat-meta">With data</div>
               </div>
             </div>
 
@@ -278,33 +300,28 @@ export default function Dashboard() {
               <div className="dashboard-analysis-card">
                 <h3 className="dashboard-analysis-title">Spending by Category</h3>
                 <div className="dashboard-analysis-bars">
-                  <div className="dashboard-analysis-bar-row">
-                    <div className="dashboard-analysis-bar-label">
-                      <span>Groceries</span>
-                      <span>58%</span>
-                    </div>
-                    <div className="dashboard-analysis-bar-track">
-                      <div className="dashboard-analysis-bar-fill" style={{ width: "58%" }} />
-                    </div>
-                  </div>
-                  <div className="dashboard-analysis-bar-row">
-                    <div className="dashboard-analysis-bar-label">
-                      <span>Dining</span>
-                      <span>22%</span>
-                    </div>
-                    <div className="dashboard-analysis-bar-track">
-                      <div className="dashboard-analysis-bar-fill" style={{ width: "22%" }} />
-                    </div>
-                  </div>
-                  <div className="dashboard-analysis-bar-row">
-                    <div className="dashboard-analysis-bar-label">
-                      <span>Transport</span>
-                      <span>12%</span>
-                    </div>
-                    <div className="dashboard-analysis-bar-track">
-                      <div className="dashboard-analysis-bar-fill" style={{ width: "12%" }} />
-                    </div>
-                  </div>
+                  {stats?.summary_by_category?.length > 0 ? (
+                    (() => {
+                      const total = stats.summary_by_category.reduce((s, i) => s + i.total, 0);
+                      const top = stats.summary_by_category.slice(0, 6);
+                      return top.map(({ category, total: catTotal }) => {
+                        const pct = total > 0 ? Math.round((catTotal / total) * 100) : 0;
+                        return (
+                          <div key={category} className="dashboard-analysis-bar-row">
+                            <div className="dashboard-analysis-bar-label">
+                              <span>{category}</span>
+                              <span>{pct}%</span>
+                            </div>
+                            <div className="dashboard-analysis-bar-track">
+                              <div className="dashboard-analysis-bar-fill" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()
+                  ) : (
+                    <p className="dashboard-analysis-empty">Process statements to see spending by category.</p>
+                  )}
                 </div>
               </div>
               <div className="dashboard-analysis-card dashboard-analysis-card--cta">
