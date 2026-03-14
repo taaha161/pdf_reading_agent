@@ -245,8 +245,22 @@ class ResultsTable extends StatelessWidget {
               ),
           ],
         );
-        if (shrinkWrap) return content;
-        return Expanded(child: SingleChildScrollView(child: content));
+        Widget body = content;
+        if (jobState.loading && transactions.isNotEmpty) {
+          body = Stack(
+            children: [
+              content,
+              Positioned.fill(
+                child: ColoredBox(
+                  color: Theme.of(context).colorScheme.surface.withOpacity(0.6),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+              ),
+            ],
+          );
+        }
+        if (shrinkWrap) return body;
+        return Expanded(child: SingleChildScrollView(child: body));
       },
     );
   }

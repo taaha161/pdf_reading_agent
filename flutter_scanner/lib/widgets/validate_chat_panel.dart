@@ -67,39 +67,71 @@ class _ValidateChatPanelState extends State<ValidateChatPanel> {
                   ),
                 );
               }
-              return ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: messages.length,
-                itemBuilder: (context, i) {
-                  final msg = messages[i];
-                  if (msg is UserMessage) {
-                    return ChatMessageView(
-                      text: msg.text,
-                      icon: Icons.person,
-                      alignment: MainAxisAlignment.end,
-                    );
-                  }
-                  if (msg is AiTextMessage) {
-                    return ChatMessageView(
-                      text: msg.text,
-                      icon: Icons.smart_toy,
-                      alignment: MainAxisAlignment.start,
-                    );
-                  }
-                  if (msg is AiUiMessage) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        msg.parts
-                            .whereType<TextPart>()
-                            .map((p) => p.text)
-                            .join('\n'),
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
+              return ValueListenableBuilder<bool>(
+                valueListenable: widget.conversation.isProcessing,
+                builder: (context, isProcessing, _) {
+                  final itemCount = messages.length + (isProcessing ? 1 : 0);
+                  return ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: itemCount,
+                    itemBuilder: (context, i) {
+                      if (i == messages.length) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'AI is thinking…',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      final msg = messages[i];
+                      if (msg is UserMessage) {
+                        return ChatMessageView(
+                          text: msg.text,
+                          icon: Icons.person,
+                          alignment: MainAxisAlignment.end,
+                        );
+                      }
+                      if (msg is AiTextMessage) {
+                        return ChatMessageView(
+                          text: msg.text,
+                          icon: Icons.smart_toy,
+                          alignment: MainAxisAlignment.start,
+                        );
+                      }
+                      if (msg is AiUiMessage) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            msg.parts
+                                .whereType<TextPart>()
+                                .map((p) => p.text)
+                                .join('\n'),
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  );
                 },
               );
             },

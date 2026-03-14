@@ -96,6 +96,9 @@ class _ScannerPageState extends State<ScannerPage> {
       apiClient: _jobState.apiClient,
       jobId: jobId,
       jobState: _jobState,
+      onTransactionsUpdated: () {
+        if (mounted) Navigator.of(context).pop();
+      },
     );
     final a2uiMessageProcessor = A2uiMessageProcessor(
       catalogs: [CoreCatalogItems.asCatalog()],

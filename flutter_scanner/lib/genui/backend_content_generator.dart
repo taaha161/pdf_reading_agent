@@ -15,11 +15,14 @@ class BackendContentGenerator implements ContentGenerator {
     required this.apiClient,
     required this.jobId,
     required this.jobState,
+    this.onTransactionsUpdated,
   });
 
   final ApiClient apiClient;
   final String jobId;
   final JobState jobState;
+  /// Called when the backend returns transactions_updated (e.g. to close the chat screen).
+  final VoidCallback? onTransactionsUpdated;
 
   final _a2uiMessageController = StreamController<A2uiMessage>.broadcast();
   final _textResponseController = StreamController<String>.broadcast();
@@ -56,6 +59,7 @@ class BackendContentGenerator implements ContentGenerator {
           response.summaryByCategory,
         );
         _textResponseController.add(response.message);
+        onTransactionsUpdated?.call();
       } else if (response is ValidateMessageResponse) {
         _textResponseController.add(response.content);
       }

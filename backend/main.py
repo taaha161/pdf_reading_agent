@@ -94,6 +94,22 @@ def _handle_uncaught_exception(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": GENERIC_500_MESSAGE})
 
 
+try:
+    import redis.exceptions as redis_exc
+except ImportError:
+    redis_exc = None
+
+if redis_exc is not None:
+    @app.exception_handler(redis_exc.RedisError)
+    def _handle_redis_error(request: Request, exc: Exception):
+        """Return 503 when Redis (e.g. rate limiter storage) is unreachable or times out."""
+        logger.warning("Redis error on request: %s", exc)
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Service temporarily unavailable. Please try again in a moment."},
+        )
+
+
 if psycopg2 is not None:
     @app.exception_handler(psycopg2.OperationalError)
     def _handle_db_unavailable(request, exc):
@@ -612,11 +628,11 @@ def chat(request: Request, body: ChatRequest, user_id: str = Depends(get_current
     return ChatResponse(reply=reply)
 
 
+# Validate endpoint is not rate-limited so it does not depend on Redis (avoids 500 on Redis timeout).
 @app.post(
     "/api/jobs/{job_id}/validate",
     response_model=ValidateMessageResponse | ValidateTransactionsUpdatedResponse,
 )
-@limiter.limit(_RATE_LIMIT_CHAT)
 def validate_job(
     request: Request,
     job_id: uuid.UUID,
