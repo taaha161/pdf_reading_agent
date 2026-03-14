@@ -199,14 +199,18 @@ export default function ScannerPage() {
         conversionMode,
         password,
       });
+      // Close modal and clear pending state first so the dialog always dismisses on success
       setShowPasswordModal(false);
       setPendingPasswordFile(null);
-      setJobId(data.job_id);
-      setTransactions(data.transactions || []);
-      setSummaryByCategory(data.summary_by_category || []);
-      setCurrency(data.currency ?? null);
+      setPasswordInput("");
+      setPasswordError(null);
+      // Then update results (optional chaining so we never throw and block the close)
+      setJobId(data?.job_id ?? null);
+      setTransactions(Array.isArray(data?.transactions) ? data.transactions : []);
+      setSummaryByCategory(Array.isArray(data?.summary_by_category) ? data.summary_by_category : []);
+      setCurrency(data?.currency ?? null);
       setDataStatus(null);
-      setTrialCsvContent(data.csv_content ?? null);
+      setTrialCsvContent(data?.csv_content ?? null);
     } catch (e) {
       if (e.isPdfPasswordIncorrect) {
         setPasswordError("Incorrect password. Please try again.");
