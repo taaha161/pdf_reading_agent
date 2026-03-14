@@ -5,11 +5,12 @@ import "./FlutterScannerEmbed.css";
 /**
  * Embeds the Flutter scanner app (results table + Validate AI) in an iframe.
  * Passes jobId, apiBase, and auth token via postMessage after load.
+ * @param {boolean} fillHeight - If true, iframe fills the parent (for full-screen page).
  */
 const MIN_EMBED_HEIGHT = 400;
 const MAX_EMBED_HEIGHT = 2000;
 
-export default function FlutterScannerEmbed({ jobId, token }) {
+export default function FlutterScannerEmbed({ jobId, token, fillHeight = false }) {
   const iframeRef = useRef(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [embedHeight, setEmbedHeight] = useState(MIN_EMBED_HEIGHT);
@@ -70,8 +71,12 @@ export default function FlutterScannerEmbed({ jobId, token }) {
   const apiBase = getApiBase();
   const src = `/flutter-scanner/index.html?jobId=${encodeURIComponent(jobId)}&apiBase=${encodeURIComponent(apiBase)}`;
 
+  const iframeStyle = fillHeight
+    ? { minHeight: "100%", height: "100%" }
+    : { minHeight: embedHeight, height: embedHeight };
+
   return (
-    <div className="flutter-scanner-embed">
+    <div className={`flutter-scanner-embed${fillHeight ? " flutter-scanner-embed--fill" : ""}`}>
       {!iframeLoaded && (
         <div className="flutter-scanner-embed__loading" aria-live="polite">
           Loading results…
@@ -82,7 +87,7 @@ export default function FlutterScannerEmbed({ jobId, token }) {
         src={src}
         title="Statement results and Validate AI"
         className="flutter-scanner-embed__iframe"
-        style={{ minHeight: embedHeight, height: embedHeight }}
+        style={iframeStyle}
       />
     </div>
   );

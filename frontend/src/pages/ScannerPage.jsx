@@ -6,7 +6,6 @@ import Loader from "../components/Loader";
 import SummaryTable from "../components/SummaryTable";
 import ResultsTable from "../components/ResultsTable";
 import ChatPanel from "../components/ChatPanel";
-import FlutterScannerEmbed from "../components/FlutterScannerEmbed";
 import { useAuth } from "../contexts/AuthContext";
 import { processPdf, getJob, updateJobTransactions } from "../api/client";
 import "./ScannerPage.css";
@@ -84,7 +83,7 @@ function transactionsToCsvBrowser(transactions) {
 }
 
 export default function ScannerPage() {
-  const { user, accessToken } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { jobId: routeJobId } = useParams();
   const [jobId, setJobId] = useState(null);
@@ -171,6 +170,13 @@ export default function ScannerPage() {
   };
 
   const hasResults = !!jobId;
+
+  // When we have results (from upload or loaded job), go to full-screen results page.
+  useEffect(() => {
+    if (!loadingJob && hasResults && !dataStatus && jobId) {
+      navigate(`/scanner/${jobId}/results`, { replace: true });
+    }
+  }, [loadingJob, hasResults, dataStatus, jobId, navigate]);
 
   const handleTransactionChange = async (index, field, value) => {
     if (!Array.isArray(transactions) || index < 0 || index >= transactions.length) {
@@ -322,12 +328,6 @@ export default function ScannerPage() {
             {dataStatus === "incognito"
               ? "This job was run in incognito mode. No transaction data, currency, or raw text was stored."
               : "Data for this job was deleted. Transaction data, currency, and raw text are no longer available."}
-          </div>
-        )}
-
-        {hasResults && !dataStatus && (
-          <div className="scanner-results scanner-results--embed">
-            <FlutterScannerEmbed jobId={jobId} token={accessToken ?? null} />
           </div>
         )}
 

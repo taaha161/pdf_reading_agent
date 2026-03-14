@@ -8,6 +8,10 @@
   overscroll-behavior: contain;
 }
 
+.flutter-scanner-embed--fill {
+  height: 100%;
+}
+
 .flutter-scanner-embed__loading {
   position: absolute;
   top: 50%;

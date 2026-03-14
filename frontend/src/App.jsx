@@ -5,6 +5,7 @@ import { setApiAuthToken } from "./api/client";
 import { useAuth } from "./contexts/AuthContext";
 import Landing from "./pages/Landing";
 import ScannerPage from "./pages/ScannerPage";
+import ScannerResultsPage from "./pages/ScannerResultsPage";
 import Dashboard from "./pages/Dashboard";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -49,6 +50,7 @@ function AppContent() {
         <Route path="/settings" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
         <Route path="/scanner" element={<ScannerPage />} />
         <Route path="/scanner/:jobId" element={<ScannerPage />} />
+        <Route path="/scanner/:jobId/results" element={<ScannerResultsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Analytics />
