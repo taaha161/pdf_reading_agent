@@ -101,6 +101,10 @@ export default function ScannerPage() {
   const [trialCsvContent, setTrialCsvContent] = useState(null);
   const [outOfCredits, setOutOfCredits] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pendingPasswordFile, setPendingPasswordFile] = useState(null);
+  const [passwordError, setPasswordError] = useState(null);
+  const [passwordInput, setPasswordInput] = useState("");
   const isLoggedIn = !!user;
 
   // Load existing job when opening from dashboard (e.g. /scanner/:jobId)
@@ -151,6 +155,21 @@ export default function ScannerPage() {
       setDataStatus(null);
       setTrialCsvContent(data.csv_content ?? null);
     } catch (e) {
+      if (e.isPdfPasswordRequired) {
+        setPendingPasswordFile(file);
+        setShowPasswordModal(true);
+        setPasswordError(null);
+        setPasswordInput("");
+        setError(null);
+        setJobId(null);
+        setTransactions([]);
+        setSummaryByCategory([]);
+        setCurrency(null);
+        setTrialCsvContent(null);
+        setLoading(false);
+        setLoadingFile(null);
+        return;
+      }
       if (e.insufficientCredits) {
         setOutOfCredits(true);
         setError("Out of credits. Add more to continue scanning.");
@@ -167,6 +186,44 @@ export default function ScannerPage() {
       setLoading(false);
       setLoadingFile(null);
     }
+  };
+
+  const handlePasswordSubmit = async (password) => {
+    if (!pendingPasswordFile) return;
+    setPasswordError(null);
+    setLoading(true);
+    setLoadingFile({ name: pendingPasswordFile.name, size: pendingPasswordFile.size });
+    try {
+      const data = await processPdf(pendingPasswordFile, {
+        incognitoMode,
+        conversionMode,
+        password,
+      });
+      setShowPasswordModal(false);
+      setPendingPasswordFile(null);
+      setJobId(data.job_id);
+      setTransactions(data.transactions || []);
+      setSummaryByCategory(data.summary_by_category || []);
+      setCurrency(data.currency ?? null);
+      setDataStatus(null);
+      setTrialCsvContent(data.csv_content ?? null);
+    } catch (e) {
+      if (e.isPdfPasswordIncorrect) {
+        setPasswordError("Incorrect password. Please try again.");
+      } else {
+        setPasswordError(e.message || "Something went wrong.");
+      }
+    } finally {
+      setLoading(false);
+      setLoadingFile(null);
+    }
+  };
+
+  const handlePasswordModalClose = () => {
+    setShowPasswordModal(false);
+    setPendingPasswordFile(null);
+    setPasswordError(null);
+    setPasswordInput("");
   };
 
   const hasResults = !!jobId;
@@ -388,6 +445,49 @@ export default function ScannerPage() {
         )}
         </div>
       </div>
+
+      {showPasswordModal && (
+        <div className="scanner-password-modal-backdrop" onClick={handlePasswordModalClose} aria-hidden />
+      )}
+      {showPasswordModal && (
+        <div className="scanner-password-modal" role="dialog" aria-labelledby="pdf-password-title" aria-modal="true">
+          <h2 id="pdf-password-title" className="scanner-password-modal-title">PDF is password protected</h2>
+          <p className="scanner-password-modal-desc">Enter the password to unlock and process this file.</p>
+          {passwordError && (
+            <p className="scanner-password-modal-error" role="alert">{passwordError}</p>
+          )}
+          <form
+            className="scanner-password-modal-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handlePasswordSubmit(passwordInput);
+            }}
+          >
+            <label htmlFor="pdf-password-input" className="scanner-password-modal-label">
+              Password
+            </label>
+            <input
+              id="pdf-password-input"
+              type="password"
+              className="scanner-password-modal-input"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              placeholder="Enter PDF password"
+              autoComplete="current-password"
+              disabled={loading}
+              autoFocus
+            />
+            <div className="scanner-password-modal-actions">
+              <button type="button" className="scanner-password-modal-btn secondary" onClick={handlePasswordModalClose} disabled={loading}>
+                Cancel
+              </button>
+              <button type="submit" className="scanner-password-modal-btn primary" disabled={loading || !passwordInput.trim()}>
+                {loading ? "Unlocking…" : "Unlock"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </AppLayout>
   );
 }

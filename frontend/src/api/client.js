@@ -35,6 +35,9 @@ export async function processPdf(file, options = {}) {
   if (options.incognitoMode) {
     form.append("incognito_mode", "true");
   }
+  if (options.password != null && String(options.password).trim() !== "") {
+    form.append("pdf_password", String(options.password).trim());
+  }
   const mode = options.conversionMode && ["fast", "balanced", "accurate"].includes(options.conversionMode) ? options.conversionMode : "fast";
   form.append("conversion_mode", mode);
   const controller = new AbortController();
@@ -70,10 +73,17 @@ export async function processPdf(file, options = {}) {
       throw e;
     }
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    const msg = Array.isArray(err.detail) ? err.detail.map((d) => d.msg || d).join(", ") : (err.detail || res.statusText);
+    const detail = err.detail;
+    const msg = Array.isArray(detail) ? detail.map((d) => d.msg || d).join(", ") : (typeof detail === "object" && detail?.detail ? detail.detail : detail || res.statusText);
     const e = new Error(msg);
     if (res.status === 401 && msg && msg.toLowerCase().includes("trial limit")) {
       e.isTrialLimit = true;
+    }
+    if (res.status === 422 && typeof detail === "object" && detail?.code === "PDF_PASSWORD_REQUIRED") {
+      e.isPdfPasswordRequired = true;
+    }
+    if (res.status === 422 && typeof detail === "object" && detail?.code === "PDF_PASSWORD_INCORRECT") {
+      e.isPdfPasswordIncorrect = true;
     }
     throw e;
   }

@@ -8,7 +8,7 @@ import time
 import pdfplumber
 
 logger = logging.getLogger("pdf_processor")
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
 from pdf2image import convert_from_path
 import pytesseract
 from PIL import Image, ImageEnhance, ImageFilter
@@ -28,21 +28,58 @@ OCR_DPI = 350
 # Tesseract PSM 3 = fully automatic page segmentation (good for documents)
 TESSERACT_PSM = 3
 
+
+class PdfPasswordRequired(Exception):
+    """Raised when the PDF is encrypted and no password was provided."""
+
+
 def extract_text_from_pdf(
     file_content: bytes,
     filename: str = "statement.pdf",
     scanned_method: str | None = None,
     conversion_mode: str = "fast",
+    password: str | None = None,
 ) -> str:
     """
     When DATALAB_API_KEY is set, use only Datalab Convert API (PDF -> markdown).
     Otherwise: try direct text extraction (pdfplumber, then pypdf); if too little text per page,
     use scanned path with OCR only. scanned_method: "ocr" | None (auto). No AI vision.
     conversion_mode: "fast" | "balanced" | "accurate" for Datalab processing mode (default "fast").
+    password: if the PDF is encrypted, pass the user password to decrypt; if None and encrypted,
+    raises PdfPasswordRequired.
     Returns raw text string.
     """
     t0 = time.perf_counter()
     logger.info("extract_text_from_pdf: start, filename=%s, size=%d bytes, scanned_method=%s, conversion_mode=%s", filename, len(file_content), scanned_method or "auto", conversion_mode or "fast")
+
+    # Detect encrypted PDF and optionally decrypt so downstream code sees plain bytes
+    try:
+        reader = PdfReader(io.BytesIO(file_content))
+        if reader.is_encrypted:
+            pwd = (password or "").strip()
+            if not pwd:
+                raise PdfPasswordRequired()
+            result = reader.decrypt(pwd)
+            if result == 0:
+                raise ValueError("Incorrect PDF password")
+            writer = PdfWriter()
+            for page in reader.pages:
+                writer.add_page(page)
+            out = io.BytesIO()
+            writer.write(out)
+            file_content = out.getvalue()
+            logger.info("extract_text_from_pdf: decrypted PDF with provided password")
+    except PdfPasswordRequired:
+        raise
+    except ValueError as e:
+        if "password" in str(e).lower() or "decrypt" in str(e).lower():
+            raise
+        raise
+    except Exception as e:
+        err_lower = str(e).lower()
+        if ("encrypt" in err_lower or "password" in err_lower or "decrypt" in err_lower) and not (password or "").strip():
+            raise PdfPasswordRequired() from e
+        raise
 
     if os.environ.get("DATALAB_API_KEY", "").strip():
         try:

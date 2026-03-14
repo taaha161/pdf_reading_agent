@@ -45,7 +45,7 @@ from models.schemas import (
 from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
 from services.chat_service import get_reply
 from services.csv_export import transactions_to_csv
-from services.pdf_processor import extract_text_from_pdf
+from services.pdf_processor import PdfPasswordRequired, extract_text_from_pdf
 from services.statement_agent import extract_and_categorize
 from store import (
     create_job_id,
@@ -390,6 +390,8 @@ TRIAL_LIMIT_MESSAGE = "Trial limit reached. Please log in to process more PDFs."
 INSUFFICIENT_CREDITS_CODE = "INSUFFICIENT_CREDITS"
 
 
+PDF_PASSWORD_REQUIRED_CODE = "PDF_PASSWORD_REQUIRED"
+
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
 @limiter.limit(_RATE_LIMIT_PROCESS_PDF)
 async def process_pdf(
@@ -398,6 +400,7 @@ async def process_pdf(
     scanned_method: str = Form("vision"),
     incognito_mode: str = Form("false"),
     conversion_mode: str = Form("fast"),
+    pdf_password: str | None = Form(None),
     user_id: str | None = Depends(get_current_user_optional),
 ):
     t0 = time.perf_counter()
@@ -454,8 +457,28 @@ async def process_pdf(
             raise HTTPException(400, "Empty file")
 
         t1 = time.perf_counter()
+        pdf_password_val = (pdf_password or "").strip() or None
         try:
-            raw_text = extract_text_from_pdf(content, file.filename or "statement.pdf", scanned_method=scanned_method_val, conversion_mode=conversion_mode_val)
+            raw_text = extract_text_from_pdf(
+                content,
+                file.filename or "statement.pdf",
+                scanned_method=scanned_method_val,
+                conversion_mode=conversion_mode_val,
+                password=pdf_password_val,
+            )
+        except PdfPasswordRequired:
+            raise HTTPException(
+                422,
+                detail={
+                    "detail": "This PDF is password protected. Please enter the password to unlock it.",
+                    "code": PDF_PASSWORD_REQUIRED_CODE,
+                },
+            )
+        except ValueError as e:
+            msg = str(e).strip()
+            if "password" in msg.lower() or "decrypt" in msg.lower():
+                raise HTTPException(422, detail={"detail": msg, "code": "PDF_PASSWORD_INCORRECT"})
+            raise HTTPException(422, f"PDF parsing failed: {msg}")
         except Exception as e:
             raise HTTPException(422, f"PDF parsing failed: {str(e)}")
         logger.info("process-pdf: [step 2/4] PDF text extraction done, len=%d chars (%.2f s this step, total %.2f s)", len(raw_text), time.perf_counter() - t1, time.perf_counter() - t0)
