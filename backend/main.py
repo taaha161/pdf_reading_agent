@@ -402,14 +402,19 @@ async def process_pdf(
 ):
     t0 = time.perf_counter()
     # Trial: unauthenticated and trial count at limit
+    trial_used = 0
+    try:
+        trial_used = int(request.cookies.get(TRIAL_COOKIE_NAME) or 0)
+    except ValueError:
+        trial_used = 0
+
     if user_id is None:
-        try:
-            trial_used = int(request.cookies.get(TRIAL_COOKIE_NAME) or 0)
-        except ValueError:
-            trial_used = 0
         if trial_used >= TRIAL_LIMIT:
             raise HTTPException(status_code=401, detail=TRIAL_LIMIT_MESSAGE)
         # Will run pipeline below and not call set_job; return inline csv_content/raw_text and set cookie
+
+    # Authenticated users keep their remaining trial runs (cookie tracks pre-login + post-login free runs)
+    use_free_trial = user_id is not None and trial_used < TRIAL_LIMIT
 
     # Normalize: only "ocr" or "vision" (for scanned PDFs)
     if scanned_method and scanned_method.strip().lower() == "ocr":
@@ -422,8 +427,8 @@ async def process_pdf(
         conversion_mode_val = "fast"
     logger.info("process-pdf: [step 0] request started, filename=%s, scanned_method=%s, conversion_mode=%s (elapsed 0.00 s)", file.filename or "statement.pdf", scanned_method_val, conversion_mode_val)
 
-    # Authenticated: check credits before running pipeline
-    if user_id is not None:
+    # Authenticated: check credits before running pipeline (skip if still within trial)
+    if user_id is not None and not use_free_trial:
         cost_cents = SCAN_COST_CENTS.get(conversion_mode_val, SCAN_COST_CENTS["fast"])
         billing = get_billing(user_id)
         balance_cents = billing["balance_cents"] if billing else None
@@ -511,6 +516,31 @@ async def process_pdf(
             )
             return response
         else:
+            logger.info("process-pdf: [step 4/4] finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
+            payload = ProcessPdfResponse(
+                job_id=job_id,
+                transactions=[Transaction(**t) for t in transactions],
+                summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+                csv_url=f"/api/jobs/{job_id}/csv",
+                markdown_url=f"/api/jobs/{job_id}/markdown",
+                currency=currency,
+            )
+            if use_free_trial:
+                incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
+                set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito, conversion_mode=conversion_mode_val)
+                new_count = min(trial_used + 1, TRIAL_LIMIT)
+                response = JSONResponse(content=payload.model_dump(mode="json"))
+                secure = getattr(request.url, "scheme", "http") == "https"
+                response.set_cookie(
+                    key=TRIAL_COOKIE_NAME,
+                    value=str(new_count),
+                    httponly=True,
+                    secure=secure,
+                    samesite="lax",
+                    path="/",
+                    max_age=10 * 365 * 24 * 60 * 60,
+                )
+                return response
             cost_cents = SCAN_COST_CENTS.get(conversion_mode_val, SCAN_COST_CENTS["fast"])
             new_balance = deduct_balance(user_id, cost_cents)
             if new_balance is None:
@@ -529,15 +559,7 @@ async def process_pdf(
                 logger.warning("insert_usage_log failed (continuing): %s", e)
             incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
             set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito, conversion_mode=conversion_mode_val)
-            logger.info("process-pdf: [step 4/4] finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
-            return ProcessPdfResponse(
-                job_id=job_id,
-                transactions=[Transaction(**t) for t in transactions],
-                summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
-                csv_url=f"/api/jobs/{job_id}/csv",
-                markdown_url=f"/api/jobs/{job_id}/markdown",
-                currency=currency,
-            )
+            return payload
     except HTTPException:
         raise
     except Exception as e:
