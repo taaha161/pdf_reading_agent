@@ -324,7 +324,7 @@
   .app-layout-header {
     flex-wrap: wrap;
     height: auto;
-    padding: 8px 16px 12px;
+    padding: 8px 14px 10px;
     gap: 8px;
   }
 
@@ -335,11 +335,15 @@
   .app-layout-header-actions {
     width: auto;
     margin-left: auto;
-    gap: 8px;
+    gap: 6px;
+  }
+
+  .app-layout-divider {
+    display: none;
   }
 
   .app-layout-user-lines {
-    align-items: flex-start;
+    display: none;
   }
 
   .app-layout-body {
@@ -352,6 +356,11 @@
 
   .app-layout-hamburger {
     display: inline-flex;
+    order: 1;
+  }
+
+  .app-layout-avatar {
+    order: 2;
   }
 
   .app-layout-mobile-menu {
