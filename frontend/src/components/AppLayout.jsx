@@ -46,10 +46,6 @@ export default function AppLayout({ children }) {
           </button>
           <span className="app-layout-divider" aria-hidden />
           <div className="app-layout-user-block">
-            <div className="app-layout-user-lines">
-              <span className="app-layout-user-name">{displayName}</span>
-              {email && <span className="app-layout-user-email">{email}</span>}
-            </div>
             <button
               type="button"
               className="app-layout-avatar"

@@ -141,21 +141,18 @@
 }
 
 .app-layout-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
+  padding: 0;
+  border: none;
+  background: transparent;
   display: grid;
   place-items: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: opacity 0.15s;
 }
 
 .app-layout-avatar:hover {
-  border-color: var(--color-primary-muted);
-  box-shadow: var(--shadow-sm);
+  opacity: 0.8;
 }
 
 .app-layout-avatar-dot {
@@ -361,6 +358,10 @@
 
   .app-layout-avatar {
     order: 2;
+  }
+
+  .app-layout-mobile-menu .app-layout-nav-text {
+    display: inline;
   }
 
   .app-layout-mobile-menu {
