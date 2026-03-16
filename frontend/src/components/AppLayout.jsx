@@ -30,14 +30,6 @@ export default function AppLayout({ children }) {
           <span className="app-layout-brand-name">Bank Statement Scanner</span>
         </div>
         <div className="app-layout-header-actions">
-          <button
-            type="button"
-            className="app-layout-icon-btn"
-            onClick={() => navigate("/scanner")}
-            aria-label="Upload statement"
-          >
-            <UploadIcon />
-          </button>
           <span className="app-layout-divider" aria-hidden />
           <div className="app-layout-user-block">
             <div className="app-layout-user-lines">
