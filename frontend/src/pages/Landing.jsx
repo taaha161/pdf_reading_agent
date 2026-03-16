@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import logo from "../assets/pdf_to_excel_logo.png";
@@ -14,6 +15,7 @@ export default function Landing() {
   const { user, signOut } = useAuth();
   const isLoggedIn = !!user;
   const appUrl = getCanonicalUrl("/") || (typeof window !== "undefined" ? window.location.origin : "");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -40,6 +42,17 @@ export default function Landing() {
               <img src={logo} alt="" />
             </span>
             <span className="landing-brand-name">Bank Statement Scanner</span>
+          </button>
+
+          <button
+            type="button"
+            className="landing-nav-hamburger"
+            aria-label={isMobileMenuOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((open) => !open)}
+          >
+            <span />
+            <span />
           </button>
 
           <div className="landing-nav-links" role="navigation" aria-label="Landing sections">
@@ -83,6 +96,53 @@ export default function Landing() {
             )}
           </div>
         </nav>
+
+        {isMobileMenuOpen && (
+          <div className="landing-mobile-menu" aria-label="Mobile navigation">
+            <div className="landing-mobile-menu-section">
+              <a className="landing-nav-link" href="#how-it-works" onClick={() => setIsMobileMenuOpen(false)}>How it works</a>
+              <a className="landing-nav-link" href="#results" onClick={() => setIsMobileMenuOpen(false)}>Results</a>
+              <a className="landing-nav-link" href="#pricing" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
+              <Link className="landing-nav-link" to="/blog" onClick={() => setIsMobileMenuOpen(false)}>Blog</Link>
+              <a className="landing-nav-link" href="#support" onClick={() => setIsMobileMenuOpen(false)}>Support</a>
+            </div>
+            <div className="landing-mobile-menu-section landing-mobile-menu-actions">
+              {!isLoggedIn && (
+                <button
+                  type="button"
+                  className="landing-nav-text landing-nav-login"
+                  onClick={() => { setIsMobileMenuOpen(false); navigate("/login"); }}
+                >
+                  Log in
+                </button>
+              )}
+              <button
+                type="button"
+                className="landing-nav-cta landing-nav-cta--full"
+                onClick={() => { setIsMobileMenuOpen(false); navigate(isLoggedIn ? "/dashboard" : "/scanner"); }}
+              >
+                {isLoggedIn ? "Go to dashboard" : "Get started free"}
+              </button>
+              <button
+                type="button"
+                className="landing-user-button"
+                onClick={() => { setIsMobileMenuOpen(false); navigate(isLoggedIn ? "/settings" : "/login"); }}
+                aria-label={isLoggedIn ? "Account settings" : "Log in"}
+              >
+                <img src={settingsGear} alt="" aria-hidden className="landing-user-icon" />
+              </button>
+              {isLoggedIn && (
+                <button
+                  type="button"
+                  className="landing-nav-text"
+                  onClick={() => { setIsMobileMenuOpen(false); signOut(); }}
+                >
+                  Log out
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="landing-main">
