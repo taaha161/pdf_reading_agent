@@ -143,6 +143,13 @@
   background: var(--color-primary-muted);
 }
 
+.app-layout-avatar-icon {
+  width: 18px;
+  height: 18px;
+  color: transparent;
+  object-fit: cover;
+}
+
 .app-layout-body {
   display: flex;
   flex: 1;

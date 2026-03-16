@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import logo from "../assets/pdf_to_excel_logo.png";
 import { useAuth } from "../contexts/AuthContext";
 import { getCanonicalUrl } from "../lib/seo";
+import settingsGear from "../assets/settings-gear.svg";
 import { BLOG_POSTS } from "./blogPosts";
 import "./Landing.css";
 
@@ -68,12 +69,13 @@ export default function Landing() {
             </button>
             <button
               type="button"
-              className="landing-user-button"
+          
+             // className="landing-user-button"
               onClick={() => navigate(isLoggedIn ? "/settings" : "/login")}
               aria-label={isLoggedIn ? "Account settings" : "Log in"}
               title={isLoggedIn ? (user.user_metadata?.full_name?.trim() || user.email) : "Log in"}
             >
-              <span className="landing-user-dot" aria-hidden />
+               <img src={settingsGear} alt="" aria-hidden className="app-layout-avatar-icon" />
             </button>
             {isLoggedIn && (
               <button type="button" className="landing-nav-text" onClick={() => { signOut(); }}>
