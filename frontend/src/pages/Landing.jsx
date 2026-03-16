@@ -69,13 +69,12 @@ export default function Landing() {
             </button>
             <button
               type="button"
-          
-             // className="landing-user-button"
+              className="landing-user-button"
               onClick={() => navigate(isLoggedIn ? "/settings" : "/login")}
               aria-label={isLoggedIn ? "Account settings" : "Log in"}
               title={isLoggedIn ? (user.user_metadata?.full_name?.trim() || user.email) : "Log in"}
             >
-               <img src={settingsGear} alt="" aria-hidden className="app-layout-avatar-icon" />
+              <img src={settingsGear} alt="" aria-hidden className="landing-user-icon" />
             </button>
             {isLoggedIn && (
               <button type="button" className="landing-nav-text" onClick={() => { signOut(); }}>
