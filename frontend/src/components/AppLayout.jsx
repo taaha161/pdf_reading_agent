@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import logo from "../assets/pdf_to_excel_logo.png";
 import settingsGear from "../assets/settings-gear.svg";
@@ -18,6 +19,7 @@ export default function AppLayout({ children }) {
   const freeScanLimit = 5;
   const scanProgress = Math.min(scanCount / scanLimit, 1);
   const freeScanProgress = Math.min(scanCount / freeScanLimit, 1);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   return (
     <div className="app-layout">
@@ -31,6 +33,17 @@ export default function AppLayout({ children }) {
           <span className="app-layout-brand-name">Bank Statement Scanner</span>
         </div>
         <div className="app-layout-header-actions">
+          <button
+            type="button"
+            className="app-layout-hamburger"
+            aria-label={isMobileNavOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={isMobileNavOpen}
+            onClick={() => setIsMobileNavOpen((open) => !open)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
           <span className="app-layout-divider" aria-hidden />
           <div className="app-layout-user-block">
             <div className="app-layout-user-lines">
@@ -39,7 +52,7 @@ export default function AppLayout({ children }) {
             </div>
             <button
               type="button"
-              //className="app-layout-avatar"
+              className="app-layout-avatar"
               onClick={() => navigate("/settings")}
               aria-label="Account settings"
               title={email}
@@ -97,6 +110,44 @@ export default function AppLayout({ children }) {
             </div>
           )}
         </aside>
+        {isMobileNavOpen && (
+          <nav className="app-layout-mobile-menu" aria-label="Mobile navigation">
+            <button
+              type="button"
+              className="app-layout-mobile-link"
+              onClick={() => { setIsMobileNavOpen(false); navigate("/dashboard"); }}
+            >
+              <span className="app-layout-nav-icon" aria-hidden><DashboardIcon /></span>
+              <span className="app-layout-nav-text">Dashboard</span>
+            </button>
+            <button
+              type="button"
+              className="app-layout-mobile-link"
+              onClick={() => { setIsMobileNavOpen(false); navigate("/scanner"); }}
+            >
+              <span className="app-layout-nav-icon" aria-hidden><ScanIcon /></span>
+              <span className="app-layout-nav-text">Process statement</span>
+            </button>
+            <button
+              type="button"
+              className="app-layout-mobile-link"
+              onClick={() => { setIsMobileNavOpen(false); navigate("/settings"); }}
+            >
+              <span className="app-layout-nav-icon" aria-hidden><AccountIcon /></span>
+              <span className="app-layout-nav-text">Account</span>
+            </button>
+            {isLoggedIn && (
+              <button
+                type="button"
+                className="app-layout-mobile-link app-layout-mobile-link--danger"
+                onClick={() => { setIsMobileNavOpen(false); signOut(); navigate("/"); }}
+              >
+                <span className="app-layout-nav-icon" aria-hidden><LogOutIcon /></span>
+                <span className="app-layout-nav-text">Log out</span>
+              </button>
+            )}
+          </nav>
+        )}
         <main className="app-layout-main">
           {children}
         </main>

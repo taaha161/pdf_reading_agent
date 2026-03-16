@@ -59,6 +59,28 @@
   gap: 16px;
 }
 
+.app-layout-hamburger {
+  display: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.app-layout-hamburger span {
+  display: block;
+  width: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--color-text);
+}
+
 .app-layout-icon-btn {
   width: 40px;
   height: 40px;
@@ -146,8 +168,7 @@
 .app-layout-avatar-icon {
   width: 18px;
   height: 18px;
-  color: transparent;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .app-layout-body {
@@ -312,8 +333,9 @@
   }
 
   .app-layout-header-actions {
-    width: 100%;
-    justify-content: flex-end;
+    width: auto;
+    margin-left: auto;
+    gap: 8px;
   }
 
   .app-layout-user-lines {
@@ -325,25 +347,42 @@
   }
 
   .app-layout-sidebar {
-    width: 100%;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    overflow-x: auto;
-  }
-
-  .app-layout-nav {
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .app-layout-nav-link {
-    justify-content: center;
-  }
-
-  .app-layout-nav-spacer {
     display: none;
+  }
+
+  .app-layout-hamburger {
+    display: inline-flex;
+  }
+
+  .app-layout-mobile-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 12px 10px;
+    border-bottom: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-bg) 96%, #ffffff 4%);
+  }
+
+  .app-layout-mobile-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .app-layout-mobile-link:hover {
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  .app-layout-mobile-link--danger {
+    color: var(--color-danger);
   }
 }
