@@ -7,7 +7,6 @@ import { join } from 'node:path'
 // Base path: set BASE_PATH in env (e.g. /pdf_reading_agent/ for GitHub Pages).
 // Public config is loaded at runtime from /api/config on Vercel (no env exposed to client).
 const DEFAULT_SITE_URL = 'https://bankstatementscanner.com'
-const PUBLIC_PATHS = ['/', '/login', '/signup', '/privacy-policy', '/terms-of-service', '/scanner']
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -42,12 +41,7 @@ Disallow: /settings
 Sitemap: ${baseUrl}sitemap.xml
 `
           writeFileSync(join(outDir, 'robots.txt'), robots)
-          const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${PUBLIC_PATHS.map((p) => `  <url><loc>${baseUrl.replace(/\/$/, '')}${p === '/' ? '' : p}</loc></url>`).join('\n')}
-</urlset>
-`
-          writeFileSync(join(outDir, 'sitemap.xml'), sitemap)
+          // sitemap.xml is served from public/sitemap.xml (not overwritten here)
         },
       },
     ],
