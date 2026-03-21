@@ -74,7 +74,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const [view, setView] = useState(mode); // "login" | "signup" | "forgot-password"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -85,6 +85,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
     setView(mode);
     setMessage({ type: "", text: "" });
     setSignupSuccess(false);
+    setConfirmPassword("");
   }, [mode]);
 
   // Redirect if already logged in (skip on reset-password; that page handles its own logic)
@@ -329,9 +330,22 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                     <input
                       type="password"
                       className="auth-input"
+                      name="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Min. 8 characters"
+                      required
+                      minLength={PASSWORD_MIN_LENGTH}
+                      autoComplete="new-password"
+                    />
+                    <label className="auth-label">Confirm password</label>
+                    <input
+                      type="password"
+                      className="auth-input"
+                      name="confirm-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-enter your password"
                       required
                       minLength={PASSWORD_MIN_LENGTH}
                       autoComplete="new-password"
