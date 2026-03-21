@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet-async";
 import logo from "../assets/pdf_to_excel_logo.png";
 import { useAuth } from "../contexts/AuthContext";
 import { getCanonicalUrl } from "../lib/seo";
+import { trackGetStartedClick } from "../lib/tiktokGetStarted";
 import settingsGear from "../assets/settings-gear.svg";
 import { BLOG_POSTS } from "./blogPosts";
 import "./Landing.css";
@@ -77,7 +78,10 @@ export default function Landing() {
             <button
               type="button"
               className="landing-nav-cta"
-              onClick={() => navigate(isLoggedIn ? "/dashboard" : "/scanner")}
+              onClick={() => {
+                if (!isLoggedIn) trackGetStartedClick("nav");
+                navigate(isLoggedIn ? "/dashboard" : "/scanner");
+              }}
             >
               {isLoggedIn ? "Go to dashboard" : "Get started free"}
             </button>
@@ -120,7 +124,11 @@ export default function Landing() {
               <button
                 type="button"
                 className="landing-nav-cta landing-nav-cta--full"
-                onClick={() => { setIsMobileMenuOpen(false); navigate(isLoggedIn ? "/dashboard" : "/scanner"); }}
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  if (!isLoggedIn) trackGetStartedClick("nav_mobile");
+                  navigate(isLoggedIn ? "/dashboard" : "/scanner");
+                }}
               >
                 {isLoggedIn ? "Go to dashboard" : "Get started free"}
               </button>
@@ -162,7 +170,10 @@ export default function Landing() {
               <button
                 type="button"
                 className="landing-hero-cta"
-                onClick={() => navigate("/scanner")}
+                onClick={() => {
+                  trackGetStartedClick("hero");
+                  navigate("/scanner");
+                }}
               >
                 Get started free
               </button>
@@ -429,7 +440,10 @@ export default function Landing() {
               <button
                 type="button"
                 className="landing-price-btn"
-                onClick={() => navigate(isLoggedIn ? "/settings" : "/login")}
+                onClick={() => {
+                  if (!isLoggedIn) trackGetStartedClick("pricing_monthly");
+                  navigate(isLoggedIn ? "/settings" : "/login");
+                }}
               >
                 {isLoggedIn ? "Manage subscription" : "Get started"}
               </button>
@@ -448,7 +462,10 @@ export default function Landing() {
               <button
                 type="button"
                 className="landing-price-btn landing-price-btn--outline"
-                onClick={() => navigate(isLoggedIn ? "/settings" : "/login")}
+                onClick={() => {
+                  if (!isLoggedIn) trackGetStartedClick("pricing_topup");
+                  navigate(isLoggedIn ? "/settings" : "/login");
+                }}
               >
                 {isLoggedIn ? "Add credits" : "Get started"}
               </button>
