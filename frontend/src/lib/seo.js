@@ -45,6 +45,11 @@ export const ROUTE_META = {
     title: `Terms of Service — ${APP_NAME}`,
     description: "Terms of service for Bank Statement Scanner.",
   },
+  "/contact": {
+    title: `Help Center / Contact — ${APP_NAME}`,
+    description:
+      "Contact Bank Statement Scanner for product questions, billing, technical help, or partnerships. Send a message or email team@bankstatementscanner.com.",
+  },
   "/scanner": {
     title: `Process statement — ${APP_NAME}`,
     description: "Upload a PDF statement to itemize, categorize, and validate with AI—then export to CSV.",

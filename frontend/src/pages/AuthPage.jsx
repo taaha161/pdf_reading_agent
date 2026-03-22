@@ -275,9 +275,9 @@ export default function AuthPage({ mode: initialMode = "login" }) {
             </div>
             <div className="auth-photo-card" aria-hidden />
             <footer className="auth-shell-footer">
-              <button type="button" className="auth-footer-link">Help Center</button>
+              <Link to="/contact" className="auth-footer-link">Help Center</Link>
               <button type="button" className="auth-footer-link">Security</button>
-              <button type="button" className="auth-footer-link">Contact Sales</button>
+              <Link to="/contact?topic=sales" className="auth-footer-link">Contact Sales</Link>
             </footer>
           </section>
 
@@ -502,7 +502,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
             <Link to="/privacy-policy" className="auth-footer-link">Privacy Policy</Link>
             <Link to="/terms-of-service" className="auth-footer-link">Terms of Service</Link>
             <button type="button" className="auth-footer-link">Security</button>
-            <button type="button" className="auth-footer-link">Contact Support</button>
+            <Link to="/contact" className="auth-footer-link">Contact Support</Link>
           </footer>
         </section>
 

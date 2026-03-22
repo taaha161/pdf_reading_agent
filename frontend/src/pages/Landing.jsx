@@ -502,7 +502,7 @@ export default function Landing() {
               </div>
               <div className="landing-footer-col">
                 <h3>Support</h3>
-                <a href="#help" className="landing-footer-link">Help Center</a>
+                <Link to="/contact" className="landing-footer-link">Help Center</Link>
                 <a href="mailto:team@bankstatementscanner.com" className="landing-footer-link">Email support</a>
               </div>
             </div>
