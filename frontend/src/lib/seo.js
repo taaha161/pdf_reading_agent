@@ -1,3 +1,5 @@
+import { getPostBySlug } from "../pages/blogPosts";
+
 /**
  * Route → meta map for document title and description.
  * Used by PageMeta to set <title>, <meta name="description">, and canonical per route.
@@ -6,6 +8,12 @@ const APP_NAME = "Bank Statement Scanner";
 
 const defaultDescription =
   "Upload a bank statement PDF to itemize, categorize, and validate transactions with AI—then export to CSV.";
+
+const BLOG_INDEX_META = {
+  title: `Blog — ${APP_NAME}`,
+  description:
+    "Tips and guides on using Bank Statement Scanner for accountants, small businesses, and personal finance.",
+};
 
 /** @type {Record<string, { title: string; description: string }>} */
 export const ROUTE_META = {
@@ -52,12 +60,23 @@ export const ROUTE_META = {
 };
 
 /**
- * Get meta for a path. Handles /scanner/:jobId by returning scanner meta.
+ * Get meta for a path. Handles /scanner/:jobId by returning scanner meta,
+ * /blog and /blog/:slug from blog post metadata.
  */
 export function getMetaForPath(pathname) {
   if (ROUTE_META[pathname]) return ROUTE_META[pathname];
-  if (pathname.startsWith("/scanner/"))
-    return ROUTE_META["/scanner"];
+  if (pathname.startsWith("/scanner/")) return ROUTE_META["/scanner"];
+  if (pathname === "/blog") return BLOG_INDEX_META;
+  if (pathname.startsWith("/blog/")) {
+    const slug = pathname.slice("/blog/".length).split("/")[0];
+    const post = slug ? getPostBySlug(slug) : null;
+    if (post) {
+      return {
+        title: `${post.title} | ${APP_NAME} Blog`,
+        description: post.excerpt,
+      };
+    }
+  }
   return ROUTE_META["/"] ?? { title: APP_NAME, description: defaultDescription };
 }
 

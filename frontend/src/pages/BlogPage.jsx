@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import { BLOG_POSTS } from "./blogPosts";
 import "./BlogPage.css";
 
@@ -8,10 +7,6 @@ const PLACEHOLDER_IMAGE = "/blog/images/placeholder.svg";
 export default function BlogPage() {
   return (
     <div className="blog-page">
-      <Helmet>
-        <title>Blog | Bank Statement Scanner</title>
-        <meta name="description" content="Tips and guides on using Bank Statement Scanner for accountants, small businesses, and personal finance." />
-      </Helmet>
       <header className="blog-header">
         <Link to="/" className="blog-back">
           ← Back to home
