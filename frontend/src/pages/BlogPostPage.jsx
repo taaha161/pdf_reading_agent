@@ -1,5 +1,7 @@
 import { Link, useParams, Navigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { getPostBySlug } from "./blogPosts";
+import { getCanonicalUrl } from "../lib/seo";
 import "./BlogPage.css";
 
 const PLACEHOLDER_IMAGE = "/blog/images/placeholder.svg";
@@ -259,8 +261,32 @@ export default function BlogPostPage() {
     return <Navigate to="/blog" replace />;
   }
 
+  const siteOrigin = getCanonicalUrl("").replace(/\/$/, "");
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: content.title,
+    description: postMeta.excerpt,
+    datePublished: content.date,
+    image: postMeta.image ? `${siteOrigin}${postMeta.image}` : undefined,
+    author: {
+      "@type": "Organization",
+      name: "Bank Statement Scanner",
+      url: siteOrigin,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Bank Statement Scanner",
+      url: siteOrigin,
+    },
+    url: `${siteOrigin}/blog/${postMeta.slug}`,
+  };
+
   return (
     <div className="blog-page blog-post-page">
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(articleJsonLd)}</script>
+      </Helmet>
       <header className="blog-header">
         <Link to="/blog" className="blog-back">
           ← Back to blog

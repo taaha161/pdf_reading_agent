@@ -37,6 +37,10 @@ export default defineConfig(({ mode }) => {
 Allow: /
 Disallow: /dashboard
 Disallow: /settings
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
 
 Sitemap: ${baseUrl}sitemap.xml
 `

@@ -79,6 +79,9 @@ export function getMetaForPath(pathname) {
       return {
         title: `${post.title} | ${APP_NAME} Blog`,
         description: post.excerpt,
+        image: post.image,
+        type: "article",
+        publishedTime: post.date,
       };
     }
   }

@@ -18,20 +18,91 @@ export default function Landing() {
   const appUrl = getCanonicalUrl("/") || (typeof window !== "undefined" ? window.location.origin : "");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    name: "Bank Statement Scanner",
-    description: "Turn messy bank statements into structured data in seconds. Upload a PDF and export clean, categorized transactions to CSV or Excel.",
-    applicationCategory: "FinanceApplication",
-    url: appUrl,
-  };
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      name: "Bank Statement Scanner",
+      description: "Turn messy bank statements into structured data in seconds. Upload a PDF and export clean, categorized transactions to CSV or Excel.",
+      applicationCategory: "FinanceApplication",
+      url: appUrl,
+      offers: {
+        "@type": "Offer",
+        price: "10.00",
+        priceCurrency: "USD",
+        priceSpecification: {
+          "@type": "UnitPriceSpecification",
+          price: "10.00",
+          priceCurrency: "USD",
+          unitText: "month",
+        },
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "Bank Statement Scanner",
+      url: appUrl,
+      contactPoint: {
+        "@type": "ContactPoint",
+        email: "team@bankstatementscanner.com",
+        contactType: "customer support",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "How does Bank Statement Scanner work?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Upload any bank or credit card statement PDF. Our AI extracts transaction dates, descriptions, and amounts, applies smart categorization, and lets you export clean, structured data to CSV or Excel in seconds.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Which banks and institutions are supported?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Bank Statement Scanner supports Chase, Wells Fargo, American Express, and 100+ other banks and card issuers. It handles both digital PDFs and scanned paper statements.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "What export formats are available?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "You can export your extracted, categorized transactions as CSV (ideal for importing into QuickBooks, Xero, or other tools) or Excel (XLSX) for review, annotation, and analysis.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How much does Bank Statement Scanner cost?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Bank Statement Scanner offers a $10/month subscription that adds $10 in credits each billing cycle. Credits are used per scan, from less than 1¢ to $1.50 depending on mode. You can also add one-time credit top-ups. No credit card required to try.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Is my financial data secure?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. Bank Statement Scanner uses bank-grade security. You can also use incognito mode to process statements without saving them to your account.",
+          },
+        },
+      ],
+    },
+  ];
 
   return (
     <div className="landing">
       <Helmet>
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
+
       <header className="landing-header">
         <nav className="landing-nav" aria-label="Primary">
           <button
@@ -159,8 +230,9 @@ export default function Landing() {
           <div className="landing-hero-copy">
             <p className="landing-pill">AI-powered bank statement scanner</p>
             <h1 className="landing-title">
-              Turn messy bank statements into{" "}
-              <span className="landing-accent">structured data</span> in seconds.
+              Turn bank statement PDFs into{" "}
+              <span className="landing-accent">clean, categorized data</span>{" "}
+              in seconds.
             </h1>
             <p className="landing-subtitle">
               AI-powered extraction and smart categorization turn any bank, credit card, or PDF statement into

@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://bankstatementscanner.com/</loc></url>
-  <url><loc>https://bankstatementscanner.com/login</loc></url>
-  <url><loc>https://bankstatementscanner.com/signup</loc></url>
-  <url><loc>https://bankstatementscanner.com/privacy-policy</loc></url>
-  <url><loc>https://bankstatementscanner.com/terms-of-service</loc></url>
-  <url><loc>https://bankstatementscanner.com/contact</loc></url>
-  <url><loc>https://bankstatementscanner.com/scanner</loc></url>
-  <url><loc>https://bankstatementscanner.com/blog</loc></url>
-  <url><loc>https://bankstatementscanner.com/blog/pdf-bank-statement-to-csv-or-excel</loc></url>
-  <url><loc>https://bankstatementscanner.com/blog/speed-up-month-end-with-bank-statement-automation</loc></url>
-  <url><loc>https://bankstatementscanner.com/blog/bank-statement-pdf-layouts-and-extraction</loc></url>
-  <url><loc>https://bankstatementscanner.com/blog/bank-statement-scanner-for-accountants</loc></url>
-  <url><loc>https://bankstatementscanner.com/blog/bank-statement-scanner-for-small-businesses</loc></url>
-  <url><loc>https://bankstatementscanner.com/blog/bank-statement-scanner-for-personal-finance</loc></url>
+  <url><loc>https://bankstatementscanner.com/</loc><lastmod>2026-03-22</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://bankstatementscanner.com/privacy-policy</loc><lastmod>2026-01-01</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://bankstatementscanner.com/terms-of-service</loc><lastmod>2026-01-01</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://bankstatementscanner.com/contact</loc><lastmod>2026-03-22</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://bankstatementscanner.com/blog</loc><lastmod>2026-03-18</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://bankstatementscanner.com/blog/pdf-bank-statement-to-csv-or-excel</loc><lastmod>2026-03-18</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://bankstatementscanner.com/blog/speed-up-month-end-with-bank-statement-automation</loc><lastmod>2026-03-15</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://bankstatementscanner.com/blog/bank-statement-pdf-layouts-and-extraction</loc><lastmod>2026-03-12</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://bankstatementscanner.com/blog/bank-statement-scanner-for-accountants</loc><lastmod>2025-03-10</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://bankstatementscanner.com/blog/bank-statement-scanner-for-small-businesses</loc><lastmod>2025-03-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://bankstatementscanner.com/blog/bank-statement-scanner-for-personal-finance</loc><lastmod>2025-03-05</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
 </urlset>
