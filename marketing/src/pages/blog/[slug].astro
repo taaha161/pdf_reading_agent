@@ -1,0 +1,126 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { SITE_URL, SITE_NAME, OG_IMAGE, canonical } from '../../consts';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const { data } = post;
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+const isoDate = data.date.toISOString().slice(0, 10);
+const url = canonical(`/blog/${post.id}`);
+const imageAbs = `${SITE_URL}${data.image}`;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: data.title,
+    description: data.excerpt,
+    datePublished: isoDate,
+    dateModified: isoDate,
+    image: imageAbs,
+    author: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: { '@type': 'ImageObject', url: OG_IMAGE },
+    },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+    url,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: canonical('/') },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: canonical('/blog') },
+      { '@type': 'ListItem', position: 3, name: data.title, item: url },
+    ],
+  },
+];
+---
+
+<Base
+  title={data.title}
+  description={data.excerpt}
+  path={`/blog/${post.id}`}
+  ogType="article"
+  ogImage={imageAbs}
+  jsonLd={jsonLd}
+>
+  <article class="container post">
+    <nav class="post-crumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span aria-hidden="true">/</span>
+      <a href="/blog">Blog</a>
+    </nav>
+
+    <div class="post-image">
+      <img src={data.image} alt="" width="1120" height="560" fetchpriority="high" />
+    </div>
+
+    <div class="post-meta">
+      <span class="post-cat">{data.category}</span>
+      <time datetime={isoDate}>{fmt(data.date)}</time>
+      <span class="post-read">{data.readTime}</span>
+    </div>
+
+    <h1 class="post-title">{data.title}</h1>
+
+    <div class="post-body">
+      <Content />
+    </div>
+
+    <nav class="post-foot" aria-label="Blog navigation">
+      <a href="/blog">← All posts</a>
+      <a href="/scanner" class="post-foot-cta">Convert a statement →</a>
+    </nav>
+  </article>
+</Base>
+
+<style>
+  .post { max-width: 760px; padding-block: 40px 24px; }
+  .post-crumbs {
+    display: flex; gap: 8px; align-items: center; font-size: 14px;
+    color: var(--color-text-muted); margin-bottom: 24px;
+  }
+  .post-crumbs span { color: var(--color-border); }
+  .post-image {
+    border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 28px;
+    aspect-ratio: 2 / 1; background: var(--color-primary-subtle);
+  }
+  .post-image img { width: 100%; height: 100%; object-fit: cover; }
+  .post-meta {
+    display: flex; align-items: center; gap: 14px; font-size: 14px;
+    color: var(--color-text-muted); margin-bottom: 12px;
+  }
+  .post-cat { color: var(--color-primary); font-weight: 600; }
+  .post-title { font-size: clamp(28px, 4.5vw, 40px); margin: 0 0 28px; }
+
+  .post-body { font-size: 18px; line-height: 1.72; color: #1e293b; }
+  .post-body :global(h2) {
+    font-size: 25px; margin: 40px 0 12px; line-height: 1.25;
+  }
+  .post-body :global(p) { margin: 0 0 20px; }
+  .post-body :global(strong) { color: var(--color-text); }
+
+  .post-foot {
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--color-border);
+  }
+  .post-foot a { font-weight: 600; }
+  .post-foot-cta {
+    background: var(--color-primary); color: var(--color-on-primary);
+    padding: 10px 18px; border-radius: var(--radius-md);
+  }
+  .post-foot-cta:hover { background: var(--color-primary-hover); color: var(--color-on-primary); }
+</style>

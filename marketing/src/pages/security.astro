@@ -1,0 +1,92 @@
+---
+import Base from '../layouts/Base.astro';
+import { SUPPORT_EMAIL } from '../consts';
+
+const measures = [
+  {
+    title: 'Encrypted in transit',
+    body: 'Every upload and download happens over HTTPS (TLS). Your statement data is encrypted between your browser and our servers.',
+  },
+  {
+    title: 'Incognito mode',
+    body: 'Process a statement without saving it to your account. In incognito mode your file and its extracted data are not retained after your session.',
+  },
+  {
+    title: 'You control retention',
+    body: 'Saved jobs stay in your account until you delete them. Request full deletion of your data at any time by emailing our team.',
+  },
+  {
+    title: 'Payments handled by Stripe',
+    body: 'We never see or store your card number. All billing is processed by Stripe, a PCI-DSS Level 1 certified payment provider.',
+  },
+  {
+    title: 'Minimal data collection',
+    body: 'We collect what is needed to run the service and nothing more. What we collect, why, and how long we keep it is detailed in our Privacy Policy.',
+  },
+  {
+    title: 'Your files, your export',
+    body: 'Extracted data is yours to export as CSV or Excel. The original PDF remains your system of record; we help you produce the structured copy.',
+  },
+];
+---
+
+<Base
+  title="Security & Privacy"
+  description="How Bank Statement Scanner protects your financial data: encryption in transit, incognito processing, retention controls, and Stripe-handled payments."
+  path="/security"
+>
+  <section class="container sec">
+    <nav class="sec-crumbs" aria-label="Breadcrumb"><a href="/">← Back to home</a></nav>
+    <header class="sec-head">
+      <p class="eyebrow">Trust</p>
+      <h1>Security &amp; privacy</h1>
+      <p class="lede">
+        Bank statements are sensitive. Here is plainly how we handle your data when you
+        convert a statement with Bank Statement Scanner.
+      </p>
+    </header>
+
+    <div class="sec-grid">
+      {
+        measures.map((m) => (
+          <article class="sec-card">
+            <h2>{m.title}</h2>
+            <p>{m.body}</p>
+          </article>
+        ))
+      }
+    </div>
+
+    <div class="sec-foot">
+      <p>
+        Have a security question, need a data-deletion request, or want details for a vendor
+        review? Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> or
+        <a href="/contact">contact support</a>. For the full legal detail, see our
+        <a href="/privacy-policy">Privacy Policy</a>.
+      </p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .sec { max-width: 900px; padding-block: 40px 24px; }
+  .sec-crumbs { margin-bottom: 24px; font-size: 14px; }
+  .sec-head { max-width: 640px; margin-bottom: 40px; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 13px; font-weight: 600; color: var(--color-primary); margin: 0 0 10px; }
+  .sec-head h1 { font-size: clamp(30px, 5vw, 44px); margin: 0; }
+  .lede { color: var(--color-text-muted); font-size: 18px; margin-top: 14px; }
+
+  .sec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .sec-card {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);
+  }
+  .sec-card h2 { font-size: 19px; margin: 0 0 8px; }
+  .sec-card p { color: var(--color-text-muted); font-size: 15px; margin: 0; line-height: 1.6; }
+
+  .sec-foot {
+    margin-top: 36px; padding: 22px 24px; background: var(--color-primary-subtle);
+    border-radius: var(--radius-lg); font-size: 16px;
+  }
+  .sec-foot p { margin: 0; }
+</style>

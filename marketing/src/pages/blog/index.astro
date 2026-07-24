@@ -1,0 +1,111 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { SITE_URL, SITE_NAME, canonical } from '../../consts';
+
+const posts = (await getCollection('blog')).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: `${SITE_NAME} Blog`,
+    url: canonical('/blog'),
+    blogPost: posts.map((p) => ({
+      '@type': 'BlogPosting',
+      headline: p.data.title,
+      url: canonical(`/blog/${p.id}`),
+      datePublished: p.data.date.toISOString().slice(0, 10),
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: canonical('/') },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: canonical('/blog') },
+    ],
+  },
+];
+---
+
+<Base
+  title="Blog"
+  description="Guides on converting bank statement PDFs to CSV and Excel, month-end close automation, and bookkeeping workflows for accountants, small businesses, and personal finance."
+  path="/blog"
+  jsonLd={jsonLd}
+>
+  <section class="container blog-index">
+    <header class="blog-index-head">
+      <p class="eyebrow">The Blog</p>
+      <h1>Bank statement workflows, extraction, and export</h1>
+      <p class="lede">
+        Practical guides on turning statement PDFs into clean, categorized data
+        you can actually reconcile, budget with, and file taxes from.
+      </p>
+    </header>
+
+    <ul class="post-grid" role="list">
+      {
+        posts.map((post) => (
+          <li class="post-card">
+            <a href={`/blog/${post.id}`} class="post-card-link">
+              <div class="post-card-image">
+                <img src={post.data.image} alt="" loading="lazy" width="640" height="360" />
+              </div>
+              <div class="post-card-body">
+                <div class="post-card-meta">
+                  <span class="post-card-cat">{post.data.category}</span>
+                  <time datetime={post.data.date.toISOString().slice(0, 10)}>
+                    {fmt(post.data.date)}
+                  </time>
+                </div>
+                <h2 class="post-card-title">{post.data.title}</h2>
+                <p class="post-card-excerpt">{post.data.excerpt}</p>
+                <span class="post-card-read">{post.data.readTime}</span>
+              </div>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .blog-index { padding-block: 56px 24px; }
+  .blog-index-head { max-width: 640px; margin-bottom: 44px; }
+  .eyebrow {
+    text-transform: uppercase; letter-spacing: 0.14em; font-size: 13px;
+    font-weight: 600; color: var(--color-primary); margin: 0 0 10px;
+  }
+  .blog-index-head h1 { font-size: clamp(30px, 5vw, 44px); margin: 0; }
+  .lede { color: var(--color-text-muted); font-size: 18px; margin-top: 14px; }
+
+  .post-grid {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 26px;
+  }
+  .post-card {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.18s ease, transform 0.18s ease;
+  }
+  .post-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+  .post-card-link { display: flex; flex-direction: column; height: 100%; color: inherit; }
+  .post-card-image { aspect-ratio: 16 / 9; background: var(--color-primary-subtle); overflow: hidden; }
+  .post-card-image img { width: 100%; height: 100%; object-fit: cover; }
+  .post-card-body { padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .post-card-meta {
+    display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--color-text-muted);
+  }
+  .post-card-cat { color: var(--color-primary); font-weight: 600; }
+  .post-card-title { font-size: 20px; margin: 0; }
+  .post-card-excerpt { color: var(--color-text-muted); font-size: 15px; margin: 0; flex: 1; }
+  .post-card-read { font-size: 13px; color: var(--color-text-muted); }
+</style>
