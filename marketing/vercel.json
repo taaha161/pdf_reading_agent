@@ -5,6 +5,8 @@
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://app.bankstatementscanner.com/api/:path*" },
     { "source": "/assets/:path*", "destination": "https://app.bankstatementscanner.com/assets/:path*" },
+    { "source": "/auth-avatars/:path*", "destination": "https://app.bankstatementscanner.com/auth-avatars/:path*" },
+    { "source": "/auth-illustration.svg", "destination": "https://app.bankstatementscanner.com/auth-illustration.svg" },
     { "source": "/scanner", "destination": "https://app.bankstatementscanner.com/scanner" },
     { "source": "/scanner/:path*", "destination": "https://app.bankstatementscanner.com/scanner/:path*" },
     { "source": "/dashboard", "destination": "https://app.bankstatementscanner.com/dashboard" },
