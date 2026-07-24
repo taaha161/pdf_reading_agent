@@ -1,0 +1,14 @@
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://pdftoexcelconverter.io/api/:path*" },
+    { "source": "/assets/:path*", "destination": "https://pdftoexcelconverter.io/assets/:path*" },
+    { "source": "/scanner", "destination": "https://pdftoexcelconverter.io/scanner" },
+    { "source": "/scanner/:path*", "destination": "https://pdftoexcelconverter.io/scanner/:path*" },
+    { "source": "/dashboard", "destination": "https://pdftoexcelconverter.io/dashboard" },
+    { "source": "/settings", "destination": "https://pdftoexcelconverter.io/settings" },
+    { "source": "/login", "destination": "https://pdftoexcelconverter.io/login" },
+    { "source": "/signup", "destination": "https://pdftoexcelconverter.io/signup" },
+    { "source": "/forgot-password", "destination": "https://pdftoexcelconverter.io/forgot-password" },
+    { "source": "/reset-password", "destination": "https://pdftoexcelconverter.io/reset-password" }
+  ]
+}
