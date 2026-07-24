@@ -1,0 +1,115 @@
+---
+import logo from '../assets/pdf_to_excel_logo.png';
+import { Image } from 'astro:assets';
+import { SUPPORT_EMAIL } from '../consts';
+const year = new Date().getFullYear();
+---
+
+<footer class="mkt-footer">
+  <div class="container mkt-footer-inner">
+    <div class="mkt-footer-top">
+      <div class="mkt-footer-brand">
+        <span class="mkt-footer-icon" aria-hidden="true">
+          <Image src={logo} alt="" width={32} height={32} />
+        </span>
+        <div class="mkt-footer-brand-text">
+          <span>Bank Statement Scanner</span>
+          <p>Turn messy bank statements into structured data in seconds.</p>
+        </div>
+      </div>
+      <div class="mkt-footer-columns">
+        <div class="mkt-footer-col">
+          <h3>Product</h3>
+          <a href="/#how-it-works">How it works</a>
+          <a href="/#results">Results</a>
+          <a href="/#pricing">Pricing</a>
+          <a href="/blog">Blog</a>
+        </div>
+        <div class="mkt-footer-col">
+          <h3>Legal</h3>
+          <a href="/privacy-policy">Privacy Policy</a>
+          <a href="/terms-of-service">Terms of Service</a>
+          <a href="/security">Security</a>
+        </div>
+        <div class="mkt-footer-col">
+          <h3>Support</h3>
+          <a href="/contact">Help Center</a>
+          <a href={`mailto:${SUPPORT_EMAIL}`}>Email support</a>
+        </div>
+      </div>
+    </div>
+    <div class="mkt-footer-meta">
+      © {year} Bank Statement Scanner. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+<style>
+  .mkt-footer {
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    margin-top: 80px;
+  }
+  .mkt-footer-inner {
+    padding-block: 48px 32px;
+  }
+  .mkt-footer-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+  .mkt-footer-brand {
+    display: flex;
+    gap: 12px;
+    max-width: 300px;
+  }
+  .mkt-footer-icon {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+  .mkt-footer-brand-text span {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    display: block;
+  }
+  .mkt-footer-brand-text p {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    margin: 6px 0 0;
+  }
+  .mkt-footer-columns {
+    display: flex;
+    gap: 56px;
+    flex-wrap: wrap;
+  }
+  .mkt-footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .mkt-footer-col h3 {
+    font-family: var(--font-body);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    margin: 0 0 4px;
+  }
+  .mkt-footer-col a {
+    color: var(--color-text);
+    font-size: 15px;
+  }
+  .mkt-footer-col a:hover {
+    color: var(--color-primary);
+  }
+  .mkt-footer-meta {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: 14px;
+  }
+</style>
