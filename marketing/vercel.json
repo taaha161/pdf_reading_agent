@@ -1,14 +1,17 @@
 {
+  "redirects": [
+    { "source": "/sitemap.xml", "destination": "/sitemap-index.xml", "permanent": true }
+  ],
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://pdftoexcelconverter.io/api/:path*" },
-    { "source": "/assets/:path*", "destination": "https://pdftoexcelconverter.io/assets/:path*" },
-    { "source": "/scanner", "destination": "https://pdftoexcelconverter.io/scanner" },
-    { "source": "/scanner/:path*", "destination": "https://pdftoexcelconverter.io/scanner/:path*" },
-    { "source": "/dashboard", "destination": "https://pdftoexcelconverter.io/dashboard" },
-    { "source": "/settings", "destination": "https://pdftoexcelconverter.io/settings" },
-    { "source": "/login", "destination": "https://pdftoexcelconverter.io/login" },
-    { "source": "/signup", "destination": "https://pdftoexcelconverter.io/signup" },
-    { "source": "/forgot-password", "destination": "https://pdftoexcelconverter.io/forgot-password" },
-    { "source": "/reset-password", "destination": "https://pdftoexcelconverter.io/reset-password" }
+    { "source": "/api/:path*", "destination": "https://app.bankstatementscanner.com/api/:path*" },
+    { "source": "/assets/:path*", "destination": "https://app.bankstatementscanner.com/assets/:path*" },
+    { "source": "/scanner", "destination": "https://app.bankstatementscanner.com/scanner" },
+    { "source": "/scanner/:path*", "destination": "https://app.bankstatementscanner.com/scanner/:path*" },
+    { "source": "/dashboard", "destination": "https://app.bankstatementscanner.com/dashboard" },
+    { "source": "/settings", "destination": "https://app.bankstatementscanner.com/settings" },
+    { "source": "/login", "destination": "https://app.bankstatementscanner.com/login" },
+    { "source": "/signup", "destination": "https://app.bankstatementscanner.com/signup" },
+    { "source": "/forgot-password", "destination": "https://app.bankstatementscanner.com/forgot-password" },
+    { "source": "/reset-password", "destination": "https://app.bankstatementscanner.com/reset-password" }
   ]
 }
