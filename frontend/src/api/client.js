@@ -103,6 +103,19 @@ export async function getBillingBalance() {
   return res.json();
 }
 
+export async function getUsage() {
+  const res = await fetch(`${API_BASE}/api/usage`, {
+    headers: authHeaders(),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Failed to load usage");
+  }
+  return res.json();
+}
+
 export async function createCheckoutSession(mode, email = null) {
   const body = { mode };
   if (email) body.email = email;

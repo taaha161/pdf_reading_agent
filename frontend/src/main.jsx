@@ -5,6 +5,7 @@ import { HelmetProvider } from 'react-helmet-async'
 import './index.css'
 import { AuthProvider } from './contexts/AuthContext'
 import { JobsProvider } from './contexts/JobsContext'
+import { UsageProvider } from './contexts/UsageContext'
 import App from './App.jsx'
 import { loadConfig } from './lib/config'
 import { initSupabase } from './lib/supabase'
@@ -37,7 +38,9 @@ function BootstrappedApp() {
     <HelmetProvider>
       <AuthProvider>
         <JobsProvider>
-          <App />
+          <UsageProvider>
+            <App />
+          </UsageProvider>
         </JobsProvider>
       </AuthProvider>
     </HelmetProvider>

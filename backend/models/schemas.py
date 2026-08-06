@@ -77,6 +77,16 @@ class BillingBalanceResponse(BaseModel):
     subscription_active: bool
 
 
+class UsageResponse(BaseModel):
+    """Scan-limit state for the sidebar counter (works for trial + authenticated users)."""
+    authenticated: bool
+    trial_used: int
+    trial_limit: int
+    trial_remaining: int
+    balance_cents: Optional[int] = None  # only for authenticated users
+    subscription_active: bool = False
+
+
 class CheckoutSessionRequest(BaseModel):
     mode: str  # "subscription" | "topup"
     email: Optional[str] = None  # optional, for Stripe Customer

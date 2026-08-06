@@ -7,6 +7,7 @@ import SummaryTable from "../components/SummaryTable";
 import ResultsTable from "../components/ResultsTable";
 import ChatPanel from "../components/ChatPanel";
 import { useAuth } from "../contexts/AuthContext";
+import { useUsage } from "../contexts/UsageContext";
 import { processPdf, getJob, updateJobTransactions } from "../api/client";
 import "./ScannerPage.css";
 
@@ -84,6 +85,7 @@ function transactionsToCsvBrowser(transactions) {
 
 export default function ScannerPage() {
   const { user } = useAuth();
+  const { refreshUsage } = useUsage();
   const navigate = useNavigate();
   const { jobId: routeJobId } = useParams();
   const [jobId, setJobId] = useState(null);
@@ -154,6 +156,7 @@ export default function ScannerPage() {
       setCurrency(data.currency ?? null);
       setDataStatus(null);
       setTrialCsvContent(data.csv_content ?? null);
+      refreshUsage();
     } catch (e) {
       if (e.isPdfPasswordRequired) {
         setPendingPasswordFile(file);
@@ -211,6 +214,7 @@ export default function ScannerPage() {
       setCurrency(data?.currency ?? null);
       setDataStatus(null);
       setTrialCsvContent(data?.csv_content ?? null);
+      refreshUsage();
     } catch (e) {
       if (e.isPdfPasswordIncorrect) {
         setPasswordError("Incorrect password. Please try again.");
