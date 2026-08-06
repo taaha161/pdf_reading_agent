@@ -216,16 +216,34 @@ def delete_user_data(user_id: str) -> None:
         cur.execute("DELETE FROM jobs WHERE user_id = %s", (user_id,))
 
 
-def record_trial_run(job_id: str) -> None:
-    """Insert a row into trial_runs for analytics (no PDF/transaction data stored)."""
+def record_trial_run(job_id: str, client_ip_hash: str | None = None) -> None:
+    """Insert a row into trial_runs for analytics + durable trial counting.
+
+    ``client_ip_hash`` is a salted one-way hash of the client IP (never the raw
+    IP); it lets us count a client's anonymous trial runs server-side so the
+    limit survives cookie clearing. No PDF/transaction data is stored.
+    """
     with _cursor() as cur:
         cur.execute(
             """
-            INSERT INTO trial_runs (job_id, created_at)
-            VALUES (%s, NOW())
+            INSERT INTO trial_runs (job_id, client_ip_hash, created_at)
+            VALUES (%s, %s, NOW())
             """,
-            (job_id,),
+            (job_id, client_ip_hash),
         )
+
+
+def count_trial_runs_by_ip(client_ip_hash: str) -> int:
+    """Number of anonymous trial runs recorded for this client IP hash."""
+    if not client_ip_hash:
+        return 0
+    with _cursor() as cur:
+        cur.execute(
+            "SELECT COUNT(*) AS n FROM trial_runs WHERE client_ip_hash = %s",
+            (client_ip_hash,),
+        )
+        row = cur.fetchone()
+    return int(row["n"]) if row else 0
 
 
 def update_job_transactions(job_id: str, user_id: str, transactions: list[dict[str, Any]]) -> None:
