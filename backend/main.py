@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import logging
 import os
 import time
@@ -59,6 +61,7 @@ from store import (
     purge_job_data,
     purge_jobs_data,
     record_trial_run,
+    count_trial_runs_by_ip,
     set_job,
     update_job_transactions,
 )
@@ -394,6 +397,45 @@ INSUFFICIENT_CREDITS_CODE = "INSUFFICIENT_CREDITS"
 PDF_PASSWORD_REQUIRED_CODE = "PDF_PASSWORD_REQUIRED"
 
 
+_TRIAL_IP_SALT = os.environ.get("TRIAL_IP_SALT", "").strip()
+
+
+def _client_ip(request: Request) -> str | None:
+    """Best-effort client IP, honoring the proxy's X-Forwarded-For (Render/Vercel)."""
+    xff = request.headers.get("x-forwarded-for", "")
+    if xff:
+        return xff.split(",")[0].strip() or None
+    client = getattr(request, "client", None)
+    return getattr(client, "host", None) if client else None
+
+
+def _client_ip_hash(request: Request) -> str | None:
+    """Salted one-way hash of the client IP for durable trial counting (never stores the raw IP)."""
+    ip = _client_ip(request)
+    if not ip or not _TRIAL_IP_SALT:
+        return None
+    return hmac.new(_TRIAL_IP_SALT.encode(), ip.encode(), hashlib.sha256).hexdigest()
+
+
+def _trial_used(request: Request) -> int:
+    """Anonymous trial count: the max of the cookie and the server-side per-IP
+    count, so clearing the cross-site cookie can't reset the free-scan limit."""
+    try:
+        cookie_used = int(request.cookies.get(TRIAL_COOKIE_NAME) or 0)
+    except ValueError:
+        cookie_used = 0
+    cookie_used = max(0, cookie_used)
+    ip_hash = _client_ip_hash(request)
+    ip_used = 0
+    if ip_hash:
+        try:
+            ip_used = count_trial_runs_by_ip(ip_hash)
+        except Exception as e:
+            # e.g. migration not yet applied — fall back to the cookie count.
+            logger.warning("trial IP count failed (using cookie only): %s", e)
+    return min(max(cookie_used, ip_used), TRIAL_LIMIT)
+
+
 def _set_trial_cookie(response, request: Request, new_count: int) -> None:
     """Persist the trial counter.
 
@@ -425,12 +467,9 @@ async def process_pdf(
     user_id: str | None = Depends(get_current_user_optional),
 ):
     t0 = time.perf_counter()
-    # Trial: unauthenticated and trial count at limit
-    trial_used = 0
-    try:
-        trial_used = int(request.cookies.get(TRIAL_COOKIE_NAME) or 0)
-    except ValueError:
-        trial_used = 0
+    # Trial usage: max(cookie, server-side per-IP count) so clearing the
+    # cross-site cookie can't reset the free-scan limit.
+    trial_used = _trial_used(request)
 
     if user_id is None:
         if trial_used >= TRIAL_LIMIT:
@@ -525,9 +564,10 @@ async def process_pdf(
         is_trial = user_id is None
 
         if is_trial:
-            # Record trial run for analytics (no PDF/transaction data)
+            # Record trial run for analytics + durable per-IP trial counting
+            # (no PDF/transaction data; only a salted IP hash is stored).
             try:
-                record_trial_run(job_id)
+                record_trial_run(job_id, _client_ip_hash(request))
             except Exception as e:
                 logger.warning("trial_runs insert failed (continuing): %s", e)
             # Return inline csv_content and raw_text; set cookie
@@ -686,11 +726,7 @@ def get_usage(
     so the frontend can only get the real count from the server. Authenticated
     users also consume the free trial runs first, then draw down credits.
     """
-    try:
-        trial_used = int(request.cookies.get(TRIAL_COOKIE_NAME) or 0)
-    except ValueError:
-        trial_used = 0
-    trial_used = max(0, min(trial_used, TRIAL_LIMIT))
+    trial_used = _trial_used(request)
 
     balance_cents = None
     subscription_active = False
