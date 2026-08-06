@@ -45,17 +45,10 @@ const jsonLd = [
     applicationCategory: 'FinanceApplication',
     operatingSystem: 'Web',
     url: `${SITE_URL}/`,
-    offers: {
-      '@type': 'Offer',
-      price: '10.00',
-      priceCurrency: 'USD',
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '10.00',
-        priceCurrency: 'USD',
-        unitText: 'month',
-      },
-    },
+    // No `offers` here: a SoftwareApplication/WebApplication with offers is
+    // required by Google/Semrush to also carry aggregateRating or review, and
+    // we won't fabricate ratings. Pricing is communicated in the visible
+    // pricing section instead.
   },
   {
     '@context': 'https://schema.org',
@@ -176,7 +169,7 @@ const jsonLd = [
           <div class="usecard-body">
             <h3>{u.label}</h3>
             <p>{u.post.data.excerpt}</p>
-            <a class="usecard-link" href={`/blog/${u.slug}`}>Learn more →</a>
+            <a class="usecard-link" href={`/blog/${u.slug}`}>Read the {u.label.replace(/^For /, '')} guide →</a>
           </div>
         </article>
       ))

@@ -57,6 +57,39 @@ const measures = [
       }
     </div>
 
+    <div class="sec-detail">
+      <h2>How a conversion is handled</h2>
+      <p>
+        When you upload a statement, the file is sent over an encrypted HTTPS connection and
+        processed to extract transaction dates, descriptions, and amounts. The AI reads only the
+        document you provide—it does not connect to your bank and never asks for online-banking
+        credentials. Once extraction finishes, you review the results and export them to CSV or
+        Excel. That export is the point of the product: you keep a clean, structured copy while
+        the original PDF stays your system of record.
+      </p>
+      <p>
+        If you use incognito mode, the uploaded file and its extracted data are not retained after
+        your session ends, so nothing is written to your account history. When you are signed in,
+        saved jobs remain available until you delete them—so you decide how long anything is kept.
+        You can request full deletion of your account and its data at any time.
+      </p>
+      <h2>Questions we are asked most</h2>
+      <p>
+        <strong>Do you sell or share my data?</strong> No. We do not sell your financial data or
+        share it for advertising. We collect only what is needed to run the service, as described
+        in our Privacy Policy.
+      </p>
+      <p>
+        <strong>Who processes payments?</strong> All billing runs through Stripe, a PCI-DSS
+        Level 1 certified provider. We never see or store your full card number.
+      </p>
+      <p>
+        <strong>Can I use this for client work?</strong> Yes. Accountants and bookkeepers use it
+        on client statements every day; retention controls and incognito mode let you match your
+        own data-handling policies.
+      </p>
+    </div>
+
     <div class="sec-foot">
       <p>
         Have a security question, need a data-deletion request, or want details for a vendor
@@ -83,6 +116,11 @@ const measures = [
   }
   .sec-card h2 { font-size: 19px; margin: 0 0 8px; }
   .sec-card p { color: var(--color-text-muted); font-size: 15px; margin: 0; line-height: 1.6; }
+
+  .sec-detail { margin-top: 40px; max-width: 720px; }
+  .sec-detail h2 { font-size: 22px; margin: 28px 0 12px; }
+  .sec-detail p { color: var(--color-text-muted); font-size: 16px; line-height: 1.7; margin: 0 0 14px; }
+  .sec-detail strong { color: var(--color-text); }
 
   .sec-foot {
     margin-top: 36px; padding: 22px 24px; background: var(--color-primary-subtle);

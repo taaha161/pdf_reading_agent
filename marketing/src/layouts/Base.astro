@@ -11,6 +11,12 @@ interface Props {
   ogImage?: string;
   ogType?: 'website' | 'article';
   noindex?: boolean;
+  /**
+   * Append " — {SITE_NAME}" when the title lacks the brand. Pages that supply a
+   * pre-composed, length-tuned SEO title (e.g. blog posts) pass false to keep the
+   * title tag short and avoid the long-title flag.
+   */
+  appendSiteName?: boolean;
   /** Array of JSON-LD objects rendered server-side into <head>. */
   jsonLd?: Record<string, unknown>[];
 }
@@ -22,11 +28,13 @@ const {
   ogImage = OG_IMAGE,
   ogType = 'website',
   noindex = false,
+  appendSiteName = true,
   jsonLd = [],
 } = Astro.props;
 
 const canonicalUrl = canonical(path);
-const fullTitle = title.includes(SITE_NAME) ? title : `${title} — ${SITE_NAME}`;
+const fullTitle =
+  appendSiteName && !title.includes(SITE_NAME) ? `${title} — ${SITE_NAME}` : title;
 ---
 
 <!doctype html>

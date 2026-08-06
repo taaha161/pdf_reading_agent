@@ -1,5 +1,6 @@
 ---
 title: "Why Bank Statement PDFs Look Different—and How Consistent Extraction Still Works"
+seoTitle: "Bank Statement PDF Layouts & Reliable Extraction"
 excerpt: "Why bank PDFs look different by issuer, common layout traps, scans vs digital PDFs, and how normalized extraction plus categorization gets you to CSV or Excel you can trust."
 date: 2026-03-12
 category: "Product"

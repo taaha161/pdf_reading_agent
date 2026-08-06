@@ -1,5 +1,6 @@
 ---
 title: "How Bank Statement Scanner Saves Accountants Hours Every Month"
+seoTitle: "Bank Statement Scanner for Accountants"
 excerpt: "For accountants and bookkeepers: cut client statement re-keying with AI extraction and smart categorization, fit exports into QuickBooks or Excel, scale recurring close work, and reduce transcription errors."
 date: 2025-03-10
 category: "For professionals"
