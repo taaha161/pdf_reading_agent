@@ -393,6 +393,26 @@ INSUFFICIENT_CREDITS_CODE = "INSUFFICIENT_CREDITS"
 
 PDF_PASSWORD_REQUIRED_CODE = "PDF_PASSWORD_REQUIRED"
 
+
+def _set_trial_cookie(response, request: Request, new_count: int) -> None:
+    """Persist the trial counter.
+
+    The SPA calls this API cross-site (different host), so the cookie must be
+    SameSite=None + Secure to be sent back on later requests; SameSite=Lax would
+    never return, leaving the counter stuck and the trial limit unenforced. Fall
+    back to Lax for local http dev where None/Secure can't be set.
+    """
+    secure = getattr(request.url, "scheme", "http") == "https"
+    response.set_cookie(
+        key=TRIAL_COOKIE_NAME,
+        value=str(new_count),
+        httponly=True,
+        secure=secure,
+        samesite="none" if secure else "lax",
+        path="/",
+        max_age=10 * 365 * 24 * 60 * 60,
+    )
+
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
 @limiter.limit(_RATE_LIMIT_PROCESS_PDF)
 async def process_pdf(
@@ -511,6 +531,7 @@ async def process_pdf(
             except Exception as e:
                 logger.warning("trial_runs insert failed (continuing): %s", e)
             # Return inline csv_content and raw_text; set cookie
+            new_count = min(trial_used + 1, TRIAL_LIMIT)
             payload = ProcessPdfResponse(
                 job_id=job_id,
                 transactions=[Transaction(**t) for t in transactions],
@@ -520,24 +541,13 @@ async def process_pdf(
                 currency=currency,
                 csv_content=csv_content,
                 raw_text=raw_text,
+                trial_used=new_count,
+                trial_limit=TRIAL_LIMIT,
+                trial_remaining=max(0, TRIAL_LIMIT - new_count),
             )
             logger.info("process-pdf: [step 4/4] trial finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
             response = JSONResponse(content=payload.model_dump(mode="json"))
-            secure = getattr(request.url, "scheme", "http") == "https"
-            try:
-                trial_used = int(request.cookies.get(TRIAL_COOKIE_NAME) or 0)
-            except ValueError:
-                trial_used = 0
-            new_count = min(trial_used + 1, TRIAL_LIMIT)
-            response.set_cookie(
-                key=TRIAL_COOKIE_NAME,
-                value=str(new_count),
-                httponly=True,
-                secure=secure,
-                samesite="lax",
-                path="/",
-                max_age=10 * 365 * 24 * 60 * 60,
-            )
+            _set_trial_cookie(response, request, new_count)
             return response
         else:
             logger.info("process-pdf: [step 4/4] finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
@@ -553,17 +563,11 @@ async def process_pdf(
                 incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
                 set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito, conversion_mode=conversion_mode_val)
                 new_count = min(trial_used + 1, TRIAL_LIMIT)
+                payload.trial_used = new_count
+                payload.trial_limit = TRIAL_LIMIT
+                payload.trial_remaining = max(0, TRIAL_LIMIT - new_count)
                 response = JSONResponse(content=payload.model_dump(mode="json"))
-                secure = getattr(request.url, "scheme", "http") == "https"
-                response.set_cookie(
-                    key=TRIAL_COOKIE_NAME,
-                    value=str(new_count),
-                    httponly=True,
-                    secure=secure,
-                    samesite="lax",
-                    path="/",
-                    max_age=10 * 365 * 24 * 60 * 60,
-                )
+                _set_trial_cookie(response, request, new_count)
                 return response
             cost_cents = SCAN_COST_CENTS.get(conversion_mode_val, SCAN_COST_CENTS["fast"])
             new_balance = deduct_balance(user_id, cost_cents)
@@ -583,6 +587,10 @@ async def process_pdf(
                 logger.warning("insert_usage_log failed (continuing): %s", e)
             incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
             set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito, conversion_mode=conversion_mode_val)
+            payload.trial_used = min(trial_used, TRIAL_LIMIT)
+            payload.trial_limit = TRIAL_LIMIT
+            payload.trial_remaining = max(0, TRIAL_LIMIT - trial_used)
+            payload.balance_cents = new_balance
             return payload
     except HTTPException:
         raise
