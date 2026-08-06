@@ -3,22 +3,25 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import logo from "../assets/pdf_to_excel_logo.png";
 import settingsGear from "../assets/settings-gear.svg";
 import { useAuth } from "../contexts/AuthContext";
-import { useJobs } from "../contexts/JobsContext";
+import { useUsage } from "../contexts/UsageContext";
 import "./AppLayout.css";
 
 export default function AppLayout({ children }) {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { jobs } = useJobs();
-  const displayName = user?.user_metadata?.full_name?.trim() || user?.email || "Account";
+  const { usage } = useUsage();
   const email = user?.email ?? "";
-  const jobsWithPayload = jobs.filter((j) => j.has_payload);
-  const scanCount = jobsWithPayload.length;
-  const scanLimit = 20;
   const isLoggedIn = user != null;
-  const freeScanLimit = 5;
-  const scanProgress = Math.min(scanCount / scanLimit, 1);
-  const freeScanProgress = Math.min(scanCount / freeScanLimit, 1);
+
+  // Real scan-limit numbers come from the server (trial count lives in an
+  // httponly cookie; credits live in billing). Counting local jobs — the old
+  // behavior — never moved for anonymous trial users and ignored credits.
+  const trialUsed = usage?.trial_used ?? 0;
+  const trialLimit = usage?.trial_limit ?? 5;
+  const trialRemaining = usage?.trial_remaining ?? trialLimit;
+  const freeScanProgress = trialLimit > 0 ? Math.min(trialUsed / trialLimit, 1) : 0;
+  const balanceCents = usage?.balance_cents ?? null;
+
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   return (
@@ -86,23 +89,19 @@ export default function AppLayout({ children }) {
             </button>
             )}
           </nav>
-         {isLoggedIn && (
-          <div className="app-layout-summary-card">
-            <p className="app-layout-summary-label">Monthly Scan Limit</p>
-              <div className="app-layout-summary-bar-wrap">
-                <div className="app-layout-summary-bar" style={{ width: `${scanProgress * 100}%` }} />
-              </div>
-              <p className="app-layout-summary-value">{scanCount} / {scanLimit} Statements</p>
-              <Link to="/scanner" className="app-layout-summary-cta">Process statement</Link>
-            </div>
-          )}
-          {!isLoggedIn && (
+          {usage && (
             <div className="app-layout-summary-card">
-            <p className="app-layout-summary-label">Free Scan Limit</p>
-            <div className="app-layout-summary-bar-wrap">
-              <div className="app-layout-summary-bar" style={{ width: `${freeScanProgress * 100}%` }} />
-            </div>
-            <p className="app-layout-summary-value">{scanCount} / {freeScanLimit} Statements</p>
+              <p className="app-layout-summary-label">Free Scan Limit</p>
+              <div className="app-layout-summary-bar-wrap">
+                <div className="app-layout-summary-bar" style={{ width: `${freeScanProgress * 100}%` }} />
+              </div>
+              <p className="app-layout-summary-value">{trialUsed} / {trialLimit} free scans used</p>
+              {isLoggedIn && balanceCents != null && trialRemaining === 0 && (
+                <p className="app-layout-summary-value">Credits: ${(balanceCents / 100).toFixed(2)}</p>
+              )}
+              {isLoggedIn && (
+                <Link to="/scanner" className="app-layout-summary-cta">Process statement</Link>
+              )}
             </div>
           )}
         </aside>

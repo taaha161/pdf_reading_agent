@@ -28,6 +28,7 @@ from slowapi.util import get_remote_address
 from auth import get_current_user, get_current_user_optional
 from models.schemas import (
     BillingBalanceResponse,
+    UsageResponse,
     CategorySummary,
     ChatRequest,
     ChatResponse,
@@ -664,6 +665,40 @@ def get_billing_balance(user_id: str = Depends(get_current_user)):
     balance_cents = billing["balance_cents"] if billing else 0
     subscription_active = bool(billing and billing.get("stripe_subscription_id"))
     return BillingBalanceResponse(balance_cents=balance_cents, subscription_active=subscription_active)
+
+
+@app.get("/api/usage", response_model=UsageResponse)
+def get_usage(
+    request: Request,
+    user_id: str | None = Depends(get_current_user_optional),
+):
+    """Scan-limit state for the sidebar counter.
+
+    Trial usage lives in the httponly ``trial_pdf_used`` cookie (unreadable by JS),
+    so the frontend can only get the real count from the server. Authenticated
+    users also consume the free trial runs first, then draw down credits.
+    """
+    try:
+        trial_used = int(request.cookies.get(TRIAL_COOKIE_NAME) or 0)
+    except ValueError:
+        trial_used = 0
+    trial_used = max(0, min(trial_used, TRIAL_LIMIT))
+
+    balance_cents = None
+    subscription_active = False
+    if user_id is not None:
+        billing = get_billing(user_id)
+        balance_cents = billing["balance_cents"] if billing else 0
+        subscription_active = bool(billing and billing.get("stripe_subscription_id"))
+
+    return UsageResponse(
+        authenticated=user_id is not None,
+        trial_used=trial_used,
+        trial_limit=TRIAL_LIMIT,
+        trial_remaining=max(0, TRIAL_LIMIT - trial_used),
+        balance_cents=balance_cents,
+        subscription_active=subscription_active,
+    )
 
 
 @app.post("/api/billing/checkout-session", response_model=CheckoutSessionResponse)
