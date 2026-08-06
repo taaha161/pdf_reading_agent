@@ -85,7 +85,7 @@ function transactionsToCsvBrowser(transactions) {
 
 export default function ScannerPage() {
   const { user } = useAuth();
-  const { refreshUsage } = useUsage();
+  const { refreshUsage, applyUsage } = useUsage();
   const navigate = useNavigate();
   const { jobId: routeJobId } = useParams();
   const [jobId, setJobId] = useState(null);
@@ -156,6 +156,7 @@ export default function ScannerPage() {
       setCurrency(data.currency ?? null);
       setDataStatus(null);
       setTrialCsvContent(data.csv_content ?? null);
+      applyUsage(data);
       refreshUsage();
     } catch (e) {
       if (e.isPdfPasswordRequired) {
@@ -214,6 +215,7 @@ export default function ScannerPage() {
       setCurrency(data?.currency ?? null);
       setDataStatus(null);
       setTrialCsvContent(data?.csv_content ?? null);
+      applyUsage(data);
       refreshUsage();
     } catch (e) {
       if (e.isPdfPasswordIncorrect) {
