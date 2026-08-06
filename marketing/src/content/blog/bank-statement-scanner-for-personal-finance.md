@@ -1,5 +1,6 @@
 ---
 title: "Take Control of Your Personal Finances with Your Bank Statements"
+seoTitle: "Bank Statement Scanner for Personal Finance"
 excerpt: "Personal finance: extract and categorize bank and card PDFs, export to Excel or CSV, spot subscriptions and spending patterns, and simplify tax prep—same workflow for every institution."
 date: 2025-03-05
 category: "Personal finance"

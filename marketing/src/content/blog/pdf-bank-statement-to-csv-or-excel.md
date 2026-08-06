@@ -1,5 +1,6 @@
 ---
 title: "From PDF Bank Statement to CSV or Excel: What to Export and When"
+seoTitle: "PDF Bank Statement to CSV or Excel: A Guide"
 excerpt: "Compare CSV vs Excel for bank statement exports: when to use each, UTF-8 and import tips, and how clean AI extraction from PDFs makes both formats usable for bookkeeping and taxes."
 date: 2026-03-18
 category: "Guides"

@@ -1,0 +1,29 @@
+# Bank Statement Scanner
+
+> AI-powered tool that turns bank, credit card, and PDF statements into clean, categorized transaction data you can export to CSV or Excel. Upload a statement (digital or scanned), extract itemized transactions with dates, descriptions, and amounts, apply smart categorization, and export in seconds.
+
+## Pages
+
+- [Home](https://bankstatementscanner.com/): Product overview, features, pricing, and FAQ.
+- [Scanner](https://bankstatementscanner.com/scanner): The app — upload a statement PDF and export structured data.
+- [Blog](https://bankstatementscanner.com/blog): Guides on statement extraction, CSV/Excel export, and bookkeeping workflows.
+- [Security](https://bankstatementscanner.com/security): How financial data is protected — encryption, incognito processing, retention controls, Stripe payments.
+- [Contact](https://bankstatementscanner.com/contact): Support and general enquiries.
+
+## Guides
+
+- [Bank statement PDF layouts and extraction](https://bankstatementscanner.com/blog/bank-statement-pdf-layouts-and-extraction)
+- [Bank Statement Scanner for accountants](https://bankstatementscanner.com/blog/bank-statement-scanner-for-accountants)
+- [Bank Statement Scanner for personal finance](https://bankstatementscanner.com/blog/bank-statement-scanner-for-personal-finance)
+- [Bank Statement Scanner for small businesses](https://bankstatementscanner.com/blog/bank-statement-scanner-for-small-businesses)
+- [PDF bank statement to CSV or Excel](https://bankstatementscanner.com/blog/pdf-bank-statement-to-csv-or-excel)
+- [Speed up month-end with bank statement automation](https://bankstatementscanner.com/blog/speed-up-month-end-with-bank-statement-automation)
+
+## Legal
+
+- [Privacy Policy](https://bankstatementscanner.com/privacy-policy)
+- [Terms of Service](https://bankstatementscanner.com/terms-of-service)
+
+## Contact
+
+- Email: team@bankstatementscanner.com
