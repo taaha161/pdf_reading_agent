@@ -26,6 +26,13 @@ class ProcessPdfResponse(BaseModel):
     currency: Optional[str] = None  # Inferred from statement (e.g. USD, PKR); None if unknown
     csv_content: Optional[str] = None  # Set for trial (no job stored); client uses for download
     raw_text: Optional[str] = None  # Set for trial; client uses for markdown download
+    # Fresh scan-limit state so the client can update the counter immediately,
+    # without a follow-up /api/usage call (the trial cookie is cross-site and may
+    # be blocked, so we can't rely on it being read back).
+    trial_used: Optional[int] = None
+    trial_limit: Optional[int] = None
+    trial_remaining: Optional[int] = None
+    balance_cents: Optional[int] = None
 
 
 class ChatRequest(BaseModel):
