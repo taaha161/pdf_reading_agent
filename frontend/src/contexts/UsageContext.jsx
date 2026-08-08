@@ -21,6 +21,22 @@ export function UsageProvider({ children }) {
       });
   }, []);
 
+  // Merge fresh usage returned inline by /api/process-pdf. The trial cookie is
+  // cross-site and can be blocked, so a follow-up /api/usage fetch may read a
+  // stale 0 — updating straight from the scan response keeps the counter correct.
+  const applyUsage = useCallback((data) => {
+    if (!data || data.trial_used == null) return;
+    setUsage((prev) => ({
+      authenticated: prev?.authenticated ?? false,
+      subscription_active: prev?.subscription_active ?? false,
+      ...prev,
+      trial_used: data.trial_used,
+      trial_limit: data.trial_limit ?? prev?.trial_limit ?? 5,
+      trial_remaining: data.trial_remaining ?? prev?.trial_remaining ?? 0,
+      ...(data.balance_cents != null ? { balance_cents: data.balance_cents } : {}),
+    }));
+  }, []);
+
   // Refetch whenever auth state changes (login/logout) so the counter reflects
   // the current user (or the anonymous trial cookie).
   useEffect(() => {
@@ -28,7 +44,7 @@ export function UsageProvider({ children }) {
   }, [accessToken, refreshUsage]);
 
   return (
-    <UsageContext.Provider value={{ usage, refreshUsage }}>
+    <UsageContext.Provider value={{ usage, refreshUsage, applyUsage }}>
       {children}
     </UsageContext.Provider>
   );
