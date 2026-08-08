@@ -12,6 +12,8 @@ const blog = defineCollection({
     category: z.string(),
     readTime: z.string(),
     image: z.string(),
+    /** SEO keyword tags for the post; optional so hand-written posts stay valid. */
+    tags: z.array(z.string()).optional(),
   }),
 });
 

@@ -1,0 +1,28 @@
+# Daily SEO blog: hit the backend endpoint that generates + commits a post.
+# Backend does the Gemini + Pixabay + GitHub-commit work; this just triggers it.
+name: Daily SEO Blog
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # 09:00 UTC daily
+  workflow_dispatch: {} # allow manual "Run workflow"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger blog generation
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/out.json -w '%{http_code}' \
+            -X POST "$BACKEND_URL/admin/generate-blog" \
+            -H "Authorization: Bearer $API_AUTH_SECRET" \
+            --max-time 300)
+          echo "HTTP $code"
+          cat /tmp/out.json
+          echo
+          test "$code" = "200"
+        env:
+          # Settings -> Secrets and variables -> Actions
+          BACKEND_URL: ${{ secrets.BACKEND_URL }} # e.g. https://pdf-statement-api.onrender.com
+          API_AUTH_SECRET: ${{ secrets.API_AUTH_SECRET }}

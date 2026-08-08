@@ -756,6 +756,37 @@ def create_billing_checkout_session(body: CheckoutSessionRequest, user_id: str =
     return CheckoutSessionResponse(url=result["url"], sessionId=result.get("sessionId"))
 
 
+_ADMIN_SECRET = os.environ.get("API_AUTH_SECRET", "").strip()
+
+
+def _require_admin(request: Request) -> None:
+    """Guard admin endpoints with a shared secret in the Authorization header."""
+    if not _ADMIN_SECRET:
+        raise HTTPException(503, "Admin endpoints disabled: API_AUTH_SECRET not set")
+    header = request.headers.get("Authorization", "")
+    token = header[7:].strip() if header.lower().startswith("bearer ") else ""
+    if not token or not hmac.compare_digest(token, _ADMIN_SECRET):
+        raise HTTPException(401, "Invalid admin credentials")
+
+
+@app.post("/admin/generate-blog")
+def admin_generate_blog(request: Request):
+    """Generate one SEO blog post with Gemini + Pixabay and commit it to the repo.
+
+    Triggered daily by a GitHub Actions cron. Protected by API_AUTH_SECRET.
+    """
+    _require_admin(request)
+    from services.blog_generator import generate_and_publish
+
+    try:
+        result = generate_and_publish()
+    except Exception as e:  # noqa: BLE001
+        logger.exception("Blog generation failed")
+        raise HTTPException(502, f"Blog generation failed: {e}")
+    logger.info("Blog generated: %s", result.get("slug"))
+    return result
+
+
 @app.post("/api/billing/webhook")
 async def stripe_webhook(request: Request):
     """Stripe webhook: verify signature and process invoice/subscription events."""
