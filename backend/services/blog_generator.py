@@ -136,13 +136,53 @@ def _existing_slugs(repo: str, branch: str) -> set[str]:
         return set()
 
 
-def _gh_put_file(repo: str, branch: str, path: str, content_b64: str, message: str) -> dict:
-    url = f"https://api.github.com/repos/{repo}/contents/{path}"
-    body = {"message": message, "content": content_b64, "branch": branch}
-    r = httpx.put(url, headers=_gh_headers(), json=body, timeout=30)
+def _gh_api(method: str, repo: str, path: str, **kwargs) -> dict:
+    url = f"https://api.github.com/repos/{repo}/{path}"
+    r = httpx.request(method, url, headers=_gh_headers(), timeout=30, **kwargs)
     if r.status_code not in (200, 201):
-        raise RuntimeError(f"GitHub PUT {path} failed: {r.status_code} {r.text[:300]}")
+        raise RuntimeError(f"GitHub {method} {path} failed: {r.status_code} {r.text[:300]}")
     return r.json()
+
+
+def _gh_commit_files(
+    repo: str, branch: str, files: list[tuple[str, bytes]], message: str
+) -> dict:
+    """Commit multiple files as ONE commit via the Git Data API.
+
+    A single commit to `branch` means Vercel rebuilds once per post, and the site
+    never sees an intermediate state (e.g. markdown pushed before its image).
+    """
+    # 1. Current tip of the branch and its tree.
+    ref = _gh_api("GET", repo, f"git/ref/heads/{branch}")
+    base_commit_sha = ref["object"]["sha"]
+    base_commit = _gh_api("GET", repo, f"git/commits/{base_commit_sha}")
+    base_tree_sha = base_commit["tree"]["sha"]
+
+    # 2. Upload each file as a blob (base64 handles binary + text uniformly).
+    tree_entries = []
+    for path, content in files:
+        blob = _gh_api(
+            "POST", repo, "git/blobs",
+            json={"content": base64.b64encode(content).decode(), "encoding": "base64"},
+        )
+        tree_entries.append(
+            {"path": path, "mode": "100644", "type": "blob", "sha": blob["sha"]}
+        )
+
+    # 3. New tree, new commit, then move the branch ref to it.
+    tree = _gh_api(
+        "POST", repo, "git/trees",
+        json={"base_tree": base_tree_sha, "tree": tree_entries},
+    )
+    commit = _gh_api(
+        "POST", repo, "git/commits",
+        json={"message": message, "tree": tree["sha"], "parents": [base_commit_sha]},
+    )
+    _gh_api(
+        "PATCH", repo, f"git/refs/heads/{branch}",
+        json={"sha": commit["sha"], "force": False},
+    )
+    return commit
 
 
 # --- Pixabay ------------------------------------------------------------------
@@ -339,13 +379,15 @@ def generate_and_publish() -> dict:
         img_bytes = _fetch_finance_image()
         md = _build_markdown(data, image_path, today)
 
-        _gh_put_file(
-            repo, branch, f"{IMAGE_DIR}/{slug}.jpg",
-            base64.b64encode(img_bytes).decode(), f"blog: image for {slug}",
-        )
-        commit = _gh_put_file(
-            repo, branch, f"{CONTENT_DIR}/{slug}.md",
-            base64.b64encode(md.encode()).decode(), f"blog: {data['title']}",
+        # One atomic commit (markdown + image) => a single Vercel rebuild.
+        commit = _gh_commit_files(
+            repo,
+            branch,
+            [
+                (f"{CONTENT_DIR}/{slug}.md", md.encode()),
+                (f"{IMAGE_DIR}/{slug}.jpg", img_bytes),
+            ],
+            f"blog: {data['title']}",
         )
 
         words = len(re.findall(r"\w+", data["body_markdown"]))
@@ -357,7 +399,7 @@ def generate_and_publish() -> dict:
             "word_count": words,
             "tags": data.get("tags") or [],
             "url": f"{site_url}/blog/{slug}",
-            "commit_url": (commit.get("commit") or {}).get("html_url"),
+            "commit_url": commit.get("html_url"),
         }
 
     raise RuntimeError(f"All keywords failed to generate. Last error: {last_err}")

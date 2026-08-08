@@ -124,8 +124,9 @@ A clean build ends with `[build] Complete!` and renders `/blog/<slug>/index.html
 - **Keyword rotation, not dedup.** Posts rotate by day-of-year over `KEYWORDS`; the job
   lists existing repo slugs and appends the date to a slug on collision. It does not
   guarantee topical uniqueness over long horizons.
-- **Two commits per post.** Image first, then markdown — so a post never references a
-  missing image mid-rebuild.
+- **One atomic commit per post.** `_gh_commit_files` uses the Git Data API (blobs →
+  tree → commit → move ref) to put the markdown + image in a single commit, so Vercel
+  rebuilds once and never sees markdown referencing a not-yet-pushed image.
 
 ## Troubleshooting
 
