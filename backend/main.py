@@ -27,7 +27,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from auth import get_current_user, get_current_user_optional
+from auth import get_current_claims, get_current_user, get_current_user_optional
 from models.schemas import (
     BillingBalanceResponse,
     UsageResponse,
@@ -48,6 +48,7 @@ from models.schemas import (
 from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
 from services.chat_service import get_reply
 from services.csv_export import transactions_to_csv
+from services.notifications import notify_login, notify_scan, notify_signup
 from services.pdf_processor import PdfPasswordRequired, extract_text_from_pdf
 from services.statement_agent import extract_and_categorize
 from store import (
@@ -563,6 +564,19 @@ async def process_pdf(
         summary = _summary_by_category(transactions)
         is_trial = user_id is None
 
+        # Owner notification (best-effort, non-blocking): a PDF was scanned.
+        try:
+            notify_scan(
+                email=None,
+                user_id=user_id,
+                is_trial=is_trial,
+                transaction_count=len(transactions),
+                conversion_mode=conversion_mode_val,
+                filename=file.filename,
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning("scan notification failed (continuing): %s", e)
+
         if is_trial:
             # Record trial run for analytics + durable per-IP trial counting
             # (no PDF/transaction data; only a salted IP hash is stored).
@@ -785,6 +799,48 @@ def admin_generate_blog(request: Request):
         raise HTTPException(502, f"Blog generation failed: {e}")
     logger.info("Blog generated: %s", result.get("slug"))
     return result
+
+
+@app.post("/api/events/login")
+def event_login(claims: dict = Depends(get_current_claims)):
+    """Frontend calls this on a real SIGNED_IN so the owner gets a login email.
+
+    Auth is the user's own verified Supabase JWT; email is read from the token.
+    The frontend dedupes to avoid firing on token refresh / initial session.
+    """
+    try:
+        notify_login(email=claims.get("email"), user_id=claims.get("sub"))
+    except Exception as e:  # noqa: BLE001
+        logger.warning("login notification failed (continuing): %s", e)
+    return {"ok": True}
+
+
+_NOTIFY_WEBHOOK_SECRET = os.environ.get("NOTIFY_WEBHOOK_SECRET", "").strip()
+
+
+@app.post("/api/hooks/user-created")
+async def hook_user_created(request: Request):
+    """Supabase Database Webhook on INSERT into auth.users -> owner signup email.
+
+    Configure in Supabase (Database → Webhooks): table auth.users, event Insert,
+    HTTP POST to this URL, with header 'X-Webhook-Secret: <NOTIFY_WEBHOOK_SECRET>'.
+    """
+    if not _NOTIFY_WEBHOOK_SECRET:
+        raise HTTPException(503, "Signup webhook disabled: NOTIFY_WEBHOOK_SECRET not set")
+    provided = request.headers.get("X-Webhook-Secret", "").strip()
+    if not provided or not hmac.compare_digest(provided, _NOTIFY_WEBHOOK_SECRET):
+        raise HTTPException(401, "Invalid webhook secret")
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    record = body.get("record") if isinstance(body, dict) else None
+    record = record if isinstance(record, dict) else {}
+    try:
+        notify_signup(email=record.get("email"), user_id=record.get("id"))
+    except Exception as e:  # noqa: BLE001
+        logger.warning("signup notification failed (continuing): %s", e)
+    return {"ok": True}
 
 
 @app.post("/api/billing/webhook")

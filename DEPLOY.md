@@ -122,4 +122,22 @@ If you prefer one URL and one deployment:
 | `VITE_API_URL`    | Frontend  | Backend API URL. Set at **build** time. |
 | `VITE_SUPABASE_URL` | Frontend | Supabase project URL (same as backend). |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Frontend | Supabase Publishable key (`sb_publishable_...`). |
+| `RESEND_API_KEY`  | Backend   | Resend API key for owner notifications (signup/login/scan). Blank disables all notifications. |
+| `NOTIFY_EMAIL_TO` | Backend   | Notification recipient. Default `team@bankstatementscanner.com`. |
+| `NOTIFY_EMAIL_FROM` | Backend | Verified Resend sender. Default `BankStatementScanner <notifications@bankstatementscanner.com>`. |
+| `NOTIFY_WEBHOOK_SECRET` | Backend | Shared secret for the Supabase signup webhook (`X-Webhook-Secret` header). Blank disables signup emails. |
 | `PORT`            | Backend   | Set by Render/Railway; no need to set yourself. |
+
+---
+
+## Owner notifications (email on signup / login / scan)
+
+An email goes to `NOTIFY_EMAIL_TO` on each event. All sends are best-effort — they never block or fail a user request.
+
+1. **Resend**: create an account at [resend.com](https://resend.com), verify the sending domain (`bankstatementscanner.com`), and set `RESEND_API_KEY` on the backend. Set `NOTIFY_EMAIL_FROM` to an address on the verified domain.
+2. **Scan** emails work immediately — fired server-side from `POST /api/process-pdf`.
+3. **Login** emails: the frontend calls `POST /api/events/login` on a real sign-in (deduped per browser session). No config beyond `RESEND_API_KEY`.
+4. **Signup** emails: set `NOTIFY_WEBHOOK_SECRET` on the backend, then in Supabase → **Database → Webhooks** create a webhook:
+   - Table: `auth.users`, Events: **Insert**
+   - Type: **HTTP Request**, Method: `POST`, URL: `https://<backend-url>/api/hooks/user-created`
+   - HTTP Header: `X-Webhook-Secret: <same value as NOTIFY_WEBHOOK_SECRET>`

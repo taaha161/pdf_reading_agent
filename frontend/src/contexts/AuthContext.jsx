@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { notifyLogin } from "../api/client";
 
 const AuthContext = createContext(null);
 
@@ -19,10 +20,23 @@ export function AuthProvider({ children }) {
     loadSession();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => {
+    } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       setLoading(false);
+      // Owner login notification: only on a real SIGNED_IN (not INITIAL_SESSION
+      // or TOKEN_REFRESHED), deduped to once per browser session per user.
+      if (event === "SIGNED_IN" && s?.user?.id && s?.access_token) {
+        const key = `login_notified:${s.user.id}`;
+        try {
+          if (!sessionStorage.getItem(key)) {
+            sessionStorage.setItem(key, "1");
+            void notifyLogin(s.access_token);
+          }
+        } catch {
+          void notifyLogin(s.access_token);
+        }
+      }
     });
     return () => subscription.unsubscribe();
   }, [loadSession]);

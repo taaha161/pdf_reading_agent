@@ -103,6 +103,19 @@ export async function getBillingBalance() {
   return res.json();
 }
 
+/** Notify backend of a real login (owner email). Best-effort; token passed explicitly. */
+export async function notifyLogin(token) {
+  try {
+    await fetch(`${API_BASE}/api/events/login`, {
+      method: "POST",
+      headers: authHeaders(token),
+      credentials: "include",
+    });
+  } catch {
+    // best-effort: never surface login-notification failures to the user
+  }
+}
+
 export async function getUsage() {
   const res = await fetch(`${API_BASE}/api/usage`, {
     headers: authHeaders(),

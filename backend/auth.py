@@ -134,3 +134,19 @@ def get_current_user_optional(
         return str(sub)
     except HTTPException:
         return None
+
+
+def get_current_claims(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_HTTP_BEARER)],
+) -> dict:
+    """Like get_current_user but returns the full verified JWT payload (includes sub, email)."""
+    if not credentials or not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    payload = _decode_supabase_jwt(credentials.credentials)
+    if not payload.get("sub"):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+    return payload
