@@ -272,3 +272,28 @@ export async function updateJobTransactions(jobId, transactions) {
   }
   return res.json();
 }
+
+/** Anonymous trial: email the converted CSV to the user and capture their email. */
+export async function emailSpreadsheet(jobId, email, csvContent, marketingOptIn) {
+  const res = await fetch(`${API_BASE}/api/email-spreadsheet`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      job_id: jobId,
+      email,
+      csv_content: csvContent,
+      marketing_opt_in: marketingOptIn,
+    }),
+  });
+  if (!res.ok) {
+    if (res.status === 422) throw new Error("Please enter a valid email address.");
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    const detail = err.detail || err.error;
+    if (res.status === 429 && typeof detail !== "string") {
+      throw new Error("Too many requests. Please try again later.");
+    }
+    throw new Error(typeof detail === "string" ? detail : "Failed to send email");
+  }
+  return res.json();
+}

@@ -246,6 +246,47 @@ def count_trial_runs_by_ip(client_ip_hash: str) -> int:
     return int(row["n"]) if row else 0
 
 
+def trial_run_exists(job_id: str, client_ip_hash: str | None) -> bool:
+    """True if this anonymous trial job was run in the last day (by the same client, when hashed)."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            SELECT 1 FROM trial_runs
+            WHERE job_id = %s
+              AND created_at > NOW() - INTERVAL '1 day'
+              AND (%s::text IS NULL OR client_ip_hash IS NULL OR client_ip_hash = %s)
+            LIMIT 1
+            """,
+            (job_id, client_ip_hash, client_ip_hash),
+        )
+        return cur.fetchone() is not None
+
+
+def count_email_captures_for_job(job_id: str) -> int:
+    with _cursor() as cur:
+        cur.execute("SELECT COUNT(*) AS n FROM email_captures WHERE job_id = %s", (job_id,))
+        row = cur.fetchone()
+    return int(row["n"]) if row else 0
+
+
+def record_email_capture(
+    email: str,
+    job_id: str | None,
+    marketing_opt_in: bool,
+    client_ip_hash: str | None = None,
+    source: str = "email_spreadsheet",
+) -> None:
+    """Store an email captured from an anonymous user (no transaction data)."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO email_captures (email, source, job_id, marketing_opt_in, client_ip_hash, created_at)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+            """,
+            (email, source, job_id, marketing_opt_in, client_ip_hash),
+        )
+
+
 def update_job_transactions(job_id: str, user_id: str, transactions: list[dict[str, Any]]) -> None:
     """Update stored transactions for a job owned by the user. No-op for incognito/purged jobs (no payload row)."""
     payload_json = json.dumps(transactions)

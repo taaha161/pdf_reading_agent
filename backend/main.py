@@ -1,7 +1,10 @@
+import csv
 import hashlib
 import hmac
+import io
 import logging
 import os
+import re
 import time
 import uuid
 from pathlib import Path
@@ -37,6 +40,7 @@ from models.schemas import (
     CheckoutSessionRequest,
     CheckoutSessionResponse,
     DashboardStats,
+    EmailSpreadsheetRequest,
     JobDetailResponse,
     JobListItem,
     JobListResponse,
@@ -48,7 +52,13 @@ from models.schemas import (
 from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
 from services.chat_service import get_reply
 from services.csv_export import transactions_to_csv
-from services.notifications import notify_login, notify_scan, notify_signup
+from services.notifications import (
+    notify_email_capture,
+    notify_login,
+    notify_scan,
+    notify_signup,
+    send_spreadsheet_email,
+)
 from services.pdf_processor import PdfPasswordRequired, extract_text_from_pdf
 from services.statement_agent import extract_and_categorize
 from store import (
@@ -63,6 +73,9 @@ from store import (
     purge_jobs_data,
     record_trial_run,
     count_trial_runs_by_ip,
+    count_email_captures_for_job,
+    record_email_capture,
+    trial_run_exists,
     set_job,
     update_job_transactions,
 )
@@ -299,6 +312,11 @@ async def preflight_account(request: Request):
     return await _preflight_response(request)
 
 
+@app.options("/api/email-spreadsheet")
+async def preflight_email_spreadsheet(request: Request):
+    return await _preflight_response(request)
+
+
 @app.delete("/api/account")
 async def delete_account(user_id: str = Depends(get_current_user)):
     """Delete current user's app data and Supabase Auth user. Requires SUPABASE_SERVICE_ROLE_KEY."""
@@ -387,6 +405,7 @@ def update_job_detail(
 
 _RATE_LIMIT_PROCESS_PDF = os.environ.get("RATE_LIMIT_PROCESS_PDF", "10/minute")
 _RATE_LIMIT_CHAT = os.environ.get("RATE_LIMIT_CHAT", "30/minute")
+_RATE_LIMIT_EMAIL_SPREADSHEET = os.environ.get("RATE_LIMIT_EMAIL_SPREADSHEET", "5/hour")
 
 
 TRIAL_COOKIE_NAME = "trial_pdf_used"
@@ -651,6 +670,73 @@ async def process_pdf(
     except Exception as e:
         logger.exception("PDF processing error: %s", e)
         raise HTTPException(500, GENERIC_500_MESSAGE)
+
+
+MAX_SPREADSHEET_EMAILS_PER_JOB = 2
+_CSV_FIELDS = ["date", "description", "amount", "type", "category"]
+_AMOUNT_RE = re.compile(r"^-?[\d,]*\.?\d*$")
+
+
+def _sanitize_trial_csv(csv_content: str) -> str | None:
+    """Re-serialize client-supplied CSV through our own writer.
+
+    Only the expected columns survive, and cells that a spreadsheet would run as
+    a formula are neutralized, so the endpoint can't be used to mail arbitrary
+    content. Returns None if the CSV doesn't have our header.
+    """
+    reader = csv.DictReader(io.StringIO(csv_content))
+    if [f.strip().lower() for f in (reader.fieldnames or [])] != _CSV_FIELDS:
+        return None
+    rows = []
+    for row in reader:
+        clean = {}
+        for field in _CSV_FIELDS:
+            value = str(row.get(field) or "").strip()
+            if field == "amount" and _AMOUNT_RE.match(value):
+                clean[field] = value
+            elif value[:1] in ("=", "+", "-", "@", "\t", "\r"):
+                clean[field] = "'" + value
+            else:
+                clean[field] = value
+        rows.append(clean)
+    return transactions_to_csv(rows)
+
+
+@app.post("/api/email-spreadsheet")
+@limiter.limit(_RATE_LIMIT_EMAIL_SPREADSHEET)
+def email_spreadsheet(request: Request, body: EmailSpreadsheetRequest):
+    """Email an anonymous trial user their converted CSV and store their email.
+
+    Trial results aren't stored server-side, so the client sends the CSV back.
+    To stop this being an open mail relay, the job must be a recent trial run
+    from the same client, each job can be emailed at most twice, and the CSV is
+    re-serialized (see _sanitize_trial_csv).
+    """
+    job_id = str(body.job_id)
+    email = body.email.strip().lower()
+    ip_hash = _client_ip_hash(request)
+
+    if not trial_run_exists(job_id, ip_hash):
+        raise HTTPException(404, "Scan not found or expired. Please scan your statement again.")
+    if count_email_captures_for_job(job_id) >= MAX_SPREADSHEET_EMAILS_PER_JOB:
+        raise HTTPException(429, "This spreadsheet has already been emailed. Check your inbox and spam folder.")
+
+    csv_clean = _sanitize_trial_csv(body.csv_content)
+    if csv_clean is None:
+        raise HTTPException(400, "Invalid spreadsheet data.")
+
+    if not send_spreadsheet_email(email, csv_clean):
+        raise HTTPException(502, "Couldn't send the email right now. Please download the CSV instead.")
+
+    try:
+        record_email_capture(email, job_id, body.marketing_opt_in, ip_hash)
+    except Exception as e:
+        logger.warning("email_captures insert failed (continuing): %s", e)
+    try:
+        notify_email_capture(email, body.marketing_opt_in)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("email capture notification failed (continuing): %s", e)
+    return {"ok": True}
 
 
 @app.delete("/api/jobs/{job_id}/data")

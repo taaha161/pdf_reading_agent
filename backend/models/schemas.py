@@ -106,3 +106,10 @@ class CheckoutSessionResponse(BaseModel):
 
 class PurgeJobsDataRequest(BaseModel):
     job_ids: list[str]
+
+
+class EmailSpreadsheetRequest(BaseModel):
+    job_id: uuid.UUID
+    email: str = Field(..., min_length=3, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    csv_content: str = Field(..., min_length=1, max_length=2_000_000)
+    marketing_opt_in: bool = False

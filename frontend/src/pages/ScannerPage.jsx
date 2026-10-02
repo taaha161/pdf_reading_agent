@@ -6,6 +6,7 @@ import Loader from "../components/Loader";
 import SummaryTable from "../components/SummaryTable";
 import ResultsTable from "../components/ResultsTable";
 import ChatPanel from "../components/ChatPanel";
+import EmailSpreadsheet from "../components/EmailSpreadsheet";
 import { useAuth } from "../contexts/AuthContext";
 import { useUsage } from "../contexts/UsageContext";
 import { processPdf, getJob, updateJobTransactions } from "../api/client";
@@ -404,6 +405,9 @@ export default function ScannerPage() {
                   onTransactionChange={handleTransactionChange}
                   onSaveTransaction={handleSaveTransaction}
                 />
+                {!isLoggedIn && jobId && trialCsvContent && (
+                  <EmailSpreadsheet key={jobId} jobId={jobId} csvContent={trialCsvContent} />
+                )}
               </div>
             </div>
 

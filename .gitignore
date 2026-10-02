@@ -40,3 +40,7 @@ Thumbs.db
 # Logs / cache
 *.log
 .cache/
+
+
+# scripts
+/scripts/
