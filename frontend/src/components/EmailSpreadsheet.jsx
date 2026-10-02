@@ -49,9 +49,33 @@ function CloseIcon() {
   );
 }
 
+/** Two-option pill toggle (radio group). */
+function Segmented({ label, name, value, options, onChange, disabled }) {
+  return (
+    <fieldset className="email-sheet-segment" disabled={disabled}>
+      <legend className="email-sheet-segment-label">{label}</legend>
+      <div className="email-sheet-segment-track">
+        {options.map((opt) => (
+          <label key={String(opt.value)} className={`email-sheet-segment-option ${value === opt.value ? "is-active" : ""}`}>
+            <input
+              type="radio"
+              name={name}
+              checked={value === opt.value}
+              onChange={() => onChange(opt.value)}
+            />
+            {opt.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 /** Anonymous trial: "Email me the spreadsheet" popup shown after a scan. */
-export default function EmailSpreadsheet({ jobId, csvContent, transactionCount, onClose }) {
+export default function EmailSpreadsheet({ jobId, transactions, onClose }) {
   const [email, setEmail] = useState("");
+  const [format, setFormat] = useState("xlsx");
+  const [includeCategories, setIncludeCategories] = useState(true);
   const [optIn, setOptIn] = useState(false);
   const [sending, setSending] = useState(false);
   const [sentTo, setSentTo] = useState(null);
@@ -93,11 +117,11 @@ export default function EmailSpreadsheet({ jobId, csvContent, transactionCount, 
       inputRef.current?.focus();
       return;
     }
-    if (!jobId || !csvContent || sending) return;
+    if (!jobId || !transactions?.length || sending) return;
     setError(null);
     setSending(true);
     try {
-      await emailSpreadsheet(jobId, address, csvContent, optIn);
+      await emailSpreadsheet(jobId, address, transactions, { format, includeCategories, marketingOptIn: optIn });
       setSentTo(address);
     } catch (err) {
       setError(err.message || "Failed to send email");
@@ -106,7 +130,9 @@ export default function EmailSpreadsheet({ jobId, csvContent, transactionCount, 
     }
   };
 
-  const rows = transactionCount === 1 ? "1 transaction" : `${transactionCount ?? 0} transactions`;
+  const count = transactions?.length ?? 0;
+  const rows = count === 1 ? "1 transaction" : `${count} transactions`;
+  const filename = `statement${includeCategories ? "" : "-uncategorized"}.${format}`;
 
   return (
     <>
@@ -130,7 +156,7 @@ export default function EmailSpreadsheet({ jobId, csvContent, transactionCount, 
             </div>
             <h2 id="email-sheet-title" className="email-sheet-title">It's in your inbox</h2>
             <p id="email-sheet-desc" className="email-sheet-desc">
-              We sent <strong>statement.csv</strong> to <strong>{sentTo}</strong>. Not there in a minute? Check spam.
+              We sent <strong>{filename}</strong> to <strong>{sentTo}</strong>. Not there in a minute? Check spam.
             </p>
             <div className="email-sheet-upsell">
               <p className="email-sheet-upsell-title">Converting more than one statement?</p>
@@ -153,7 +179,7 @@ export default function EmailSpreadsheet({ jobId, csvContent, transactionCount, 
                   <FileIcon />
                 </span>
                 <span className="email-sheet-file-meta">
-                  <span className="email-sheet-file-name">statement.csv</span>
+                  <span className="email-sheet-file-name">{filename}</span>
                   <span className="email-sheet-file-rows">{rows} · ready</span>
                 </span>
                 <span className="email-sheet-file-check">
@@ -167,6 +193,31 @@ export default function EmailSpreadsheet({ jobId, csvContent, transactionCount, 
               <p id="email-sheet-desc" className="email-sheet-desc">
                 Your converted statement, ready whenever you need it. Opens in Excel, Google Sheets or Numbers.
               </p>
+
+              <div className="email-sheet-options">
+                <Segmented
+                  label="Format"
+                  name="email-sheet-format"
+                  value={format}
+                  onChange={setFormat}
+                  disabled={sending}
+                  options={[
+                    { value: "xlsx", label: "Excel" },
+                    { value: "csv", label: "CSV" },
+                  ]}
+                />
+                <Segmented
+                  label="Categories"
+                  name="email-sheet-categories"
+                  value={includeCategories}
+                  onChange={setIncludeCategories}
+                  disabled={sending}
+                  options={[
+                    { value: true, label: "Included" },
+                    { value: false, label: "None" },
+                  ]}
+                />
+              </div>
 
               <label htmlFor="email-sheet-input" className="email-sheet-label">
                 Email address

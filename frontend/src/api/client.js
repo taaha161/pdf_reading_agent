@@ -222,17 +222,35 @@ export async function getJob(jobId) {
   return res.json();
 }
 
-export async function downloadCsv(jobId) {
-  const res = await fetch(`${API_BASE}/api/jobs/${jobId}/csv`, { headers: authHeaders() });
+/** Only the fields the export endpoint accepts (rows may carry UI-only extras). */
+function exportRows(transactions) {
+  return (transactions || []).map(({ date, description, amount, type, category }) => ({
+    date, description, amount, type, category,
+  }));
+}
+
+/**
+ * Download the current transactions as CSV or Excel, with or without the category column.
+ * @param {"csv"|"xlsx"} format
+ */
+export async function exportTransactions(transactions, { format = "csv", includeCategories = true } = {}) {
+  const res = await fetch(`${API_BASE}/api/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transactions: exportRows(transactions), format, include_categories: includeCategories }),
+  });
   if (!res.ok) {
     if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
-    throw new Error("Failed to download CSV");
+    throw new Error("Failed to download file");
   }
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const filename = /filename="([^"]+)"/.exec(disposition)?.[1]
+    || `statement${includeCategories ? "" : "-uncategorized"}.${format}`;
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "statement.csv";
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -273,8 +291,8 @@ export async function updateJobTransactions(jobId, transactions) {
   return res.json();
 }
 
-/** Anonymous trial: email the converted CSV to the user and capture their email. */
-export async function emailSpreadsheet(jobId, email, csvContent, marketingOptIn) {
+/** Anonymous trial: email the spreadsheet (CSV or Excel) to the user and capture their email. */
+export async function emailSpreadsheet(jobId, email, transactions, { format = "xlsx", includeCategories = true, marketingOptIn = false } = {}) {
   const res = await fetch(`${API_BASE}/api/email-spreadsheet`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -282,7 +300,9 @@ export async function emailSpreadsheet(jobId, email, csvContent, marketingOptIn)
     body: JSON.stringify({
       job_id: jobId,
       email,
-      csv_content: csvContent,
+      transactions: exportRows(transactions),
+      format,
+      include_categories: includeCategories,
       marketing_opt_in: marketingOptIn,
     }),
   });

@@ -111,7 +111,7 @@ export default function ScannerPage() {
   const [emailPopupOpen, setEmailPopupOpen] = useState(false);
   const emailPopupShownFor = useRef(null);
   const isLoggedIn = !!user;
-  const canEmailSpreadsheet = !isLoggedIn && !!jobId && !!trialCsvContent;
+  const canEmailSpreadsheet = !isLoggedIn && !!jobId && !!trialCsvContent && transactions.length > 0;
 
   // Anonymous trial: pop up "Email me this spreadsheet" shortly after results load (once per scan).
   useEffect(() => {
@@ -422,7 +422,6 @@ export default function ScannerPage() {
                 <ResultsTable
                   transactions={transactions}
                   jobId={jobId}
-                  csvContent={trialCsvContent}
                   onDownloadError={setDownloadError}
                   onTransactionChange={handleTransactionChange}
                   onSaveTransaction={handleSaveTransaction}
@@ -483,8 +482,7 @@ export default function ScannerPage() {
         <EmailSpreadsheet
           key={jobId}
           jobId={jobId}
-          csvContent={trialCsvContent}
-          transactionCount={transactions.length}
+          transactions={transactions}
           onClose={() => setEmailPopupOpen(false)}
         />
       )}

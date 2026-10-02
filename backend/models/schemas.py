@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -108,8 +108,31 @@ class PurgeJobsDataRequest(BaseModel):
     job_ids: list[str]
 
 
+ExportFormat = Literal["csv", "xlsx"]
+MAX_EXPORT_TRANSACTIONS = 20_000
+
+
+class ExportTransaction(BaseModel):
+    """Lenient transaction row for exports (client-side rows may have blanks/nulls)."""
+    date: Optional[str] = ""
+    description: Optional[str] = Field("", max_length=2000)
+    amount: Optional[str] = ""
+    type: Optional[str] = ""
+    category: Optional[str] = ""
+
+
+class ExportRequest(BaseModel):
+    transactions: list[ExportTransaction] = Field(..., max_length=MAX_EXPORT_TRANSACTIONS)
+    format: ExportFormat = "csv"
+    include_categories: bool = True
+
+
 class EmailSpreadsheetRequest(BaseModel):
     job_id: uuid.UUID
     email: str = Field(..., min_length=3, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-    csv_content: str = Field(..., min_length=1, max_length=2_000_000)
+    # New clients send transactions; csv_content is kept for clients deployed before export options.
+    transactions: Optional[list[ExportTransaction]] = Field(None, max_length=MAX_EXPORT_TRANSACTIONS)
+    csv_content: Optional[str] = Field(None, min_length=1, max_length=2_000_000)
+    format: ExportFormat = "csv"
+    include_categories: bool = True
     marketing_opt_in: bool = False

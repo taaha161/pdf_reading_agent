@@ -1,16 +1,6 @@
 import { useState, useEffect } from "react";
-import { downloadCsv } from "../api/client";
+import DownloadMenu from "./DownloadMenu";
 import "./ResultsTable.css";
-
-function downloadBlob(content, filename, mimeType) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 const CATEGORY_COLORS = [
   "results-chip--income",
@@ -108,7 +98,6 @@ function validateTransactionDraft(draft) {
 export default function ResultsTable({
   transactions,
   jobId,
-  csvContent,
   onDownloadError,
   onTransactionChange,
   onSaveTransaction,
@@ -174,27 +163,13 @@ export default function ResultsTable({
     closeEditCard();
   };
 
-  const handleDownloadCsv = async () => {
-    try {
-      if (csvContent != null) {
-        downloadBlob(csvContent, "statement.csv", "text/csv");
-      } else {
-        await downloadCsv(jobId);
-      }
-    } catch (e) {
-      onDownloadError?.(e.message);
-    }
-  };
-
   return (
     <section className="results-section">
       <div className="results-header">
         <h2>Transactions</h2>
         <div className="results-header-actions">
           {transactions?.length > 0 && (
-            <button type="button" onClick={handleDownloadCsv} className="download-btn">
-              Download CSV
-            </button>
+            <DownloadMenu transactions={transactions} onError={onDownloadError} />
           )}
         </div>
       </div>

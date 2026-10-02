@@ -68,7 +68,7 @@ def _app_url() -> str:
 
 _SPREADSHEET_EMAIL_TEXT = """Hi,
 
-Your converted bank statement is attached as a CSV file. It opens directly in Excel, Google Sheets or Numbers.
+Your converted bank statement is attached ({filename}). It opens directly in Excel, Google Sheets or Numbers.
 
 Want to keep a history of your statements, merge months together, or convert more? Create a free account:
 {signup_url}
@@ -80,8 +80,8 @@ Founder, BankStatementScanner
 """
 
 
-def send_spreadsheet_email(to: str, csv_content: str, filename: str = "statement.csv") -> bool:
-    """Email a converted statement CSV to a user. Blocking; returns True on success.
+def send_spreadsheet_email(to: str, content: bytes, filename: str = "statement.csv") -> bool:
+    """Email a converted statement (CSV or Excel) to a user. Blocking; returns True on success.
 
     Unlike owner notifications, the caller needs the result to tell the user
     whether the email went out.
@@ -99,11 +99,11 @@ def send_spreadsheet_email(to: str, csv_content: str, filename: str = "statement
                 "to": [to],
                 "reply_to": _to_addr(),
                 "subject": "Your converted bank statement",
-                "text": _SPREADSHEET_EMAIL_TEXT.format(signup_url=f"{_app_url()}/signup"),
+                "text": _SPREADSHEET_EMAIL_TEXT.format(filename=filename, signup_url=f"{_app_url()}/signup"),
                 "attachments": [
                     {
                         "filename": filename,
-                        "content": base64.b64encode(csv_content.encode("utf-8")).decode("ascii"),
+                        "content": base64.b64encode(content).decode("ascii"),
                     }
                 ],
                 "tags": [{"name": "category", "value": "email_spreadsheet"}],

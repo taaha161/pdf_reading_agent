@@ -41,6 +41,7 @@ from models.schemas import (
     CheckoutSessionResponse,
     DashboardStats,
     EmailSpreadsheetRequest,
+    ExportRequest,
     JobDetailResponse,
     JobListItem,
     JobListResponse,
@@ -52,6 +53,7 @@ from models.schemas import (
 from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
 from services.chat_service import get_reply
 from services.csv_export import transactions_to_csv
+from services.xlsx_export import XLSX_MIME, transactions_to_xlsx
 from services.notifications import (
     notify_email_capture,
     notify_login,
@@ -317,6 +319,11 @@ async def preflight_email_spreadsheet(request: Request):
     return await _preflight_response(request)
 
 
+@app.options("/api/export")
+async def preflight_export(request: Request):
+    return await _preflight_response(request)
+
+
 @app.delete("/api/account")
 async def delete_account(user_id: str = Depends(get_current_user)):
     """Delete current user's app data and Supabase Auth user. Requires SUPABASE_SERVICE_ROLE_KEY."""
@@ -406,6 +413,7 @@ def update_job_detail(
 _RATE_LIMIT_PROCESS_PDF = os.environ.get("RATE_LIMIT_PROCESS_PDF", "10/minute")
 _RATE_LIMIT_CHAT = os.environ.get("RATE_LIMIT_CHAT", "30/minute")
 _RATE_LIMIT_EMAIL_SPREADSHEET = os.environ.get("RATE_LIMIT_EMAIL_SPREADSHEET", "5/hour")
+_RATE_LIMIT_EXPORT = os.environ.get("RATE_LIMIT_EXPORT", "30/minute")
 
 
 TRIAL_COOKIE_NAME = "trial_pdf_used"
@@ -672,23 +680,20 @@ async def process_pdf(
         raise HTTPException(500, GENERIC_500_MESSAGE)
 
 
-MAX_SPREADSHEET_EMAILS_PER_JOB = 2
+# Each scan can be emailed in a few formats (CSV/Excel, with/without categories).
+MAX_SPREADSHEET_EMAILS_PER_JOB = 4
 _CSV_FIELDS = ["date", "description", "amount", "type", "category"]
 _AMOUNT_RE = re.compile(r"^-?[\d,]*\.?\d*$")
 
 
-def _sanitize_trial_csv(csv_content: str) -> str | None:
-    """Re-serialize client-supplied CSV through our own writer.
+def _sanitize_rows(rows: list[dict]) -> list[dict]:
+    """Keep only our columns and neutralize cells a spreadsheet would run as a formula.
 
-    Only the expected columns survive, and cells that a spreadsheet would run as
-    a formula are neutralized, so the endpoint can't be used to mail arbitrary
-    content. Returns None if the CSV doesn't have our header.
+    Used for client-supplied data that we email, so the endpoint can't be used
+    to mail arbitrary content.
     """
-    reader = csv.DictReader(io.StringIO(csv_content))
-    if [f.strip().lower() for f in (reader.fieldnames or [])] != _CSV_FIELDS:
-        return None
-    rows = []
-    for row in reader:
+    clean_rows = []
+    for row in rows:
         clean = {}
         for field in _CSV_FIELDS:
             value = str(row.get(field) or "").strip()
@@ -698,19 +703,53 @@ def _sanitize_trial_csv(csv_content: str) -> str | None:
                 clean[field] = "'" + value
             else:
                 clean[field] = value
-        rows.append(clean)
-    return transactions_to_csv(rows)
+        clean_rows.append(clean)
+    return clean_rows
+
+
+def _rows_from_trial_csv(csv_content: str) -> list[dict] | None:
+    """Parse CSV sent by older clients; None if it doesn't have our header."""
+    reader = csv.DictReader(io.StringIO(csv_content))
+    if [f.strip().lower() for f in (reader.fieldnames or [])] != _CSV_FIELDS:
+        return None
+    return list(reader)
+
+
+def _build_export(rows: list[dict], fmt: str, include_categories: bool) -> tuple[bytes, str, str]:
+    """Return (file bytes, filename, media type) for a CSV or Excel export."""
+    suffix = "" if include_categories else "-uncategorized"
+    if fmt == "xlsx":
+        return transactions_to_xlsx(rows, include_categories), f"statement{suffix}.xlsx", XLSX_MIME
+    content = transactions_to_csv(rows, include_categories).encode("utf-8")
+    return content, f"statement{suffix}.csv", "text/csv; charset=utf-8"
+
+
+@app.post("/api/export")
+@limiter.limit(_RATE_LIMIT_EXPORT)
+def export_transactions(request: Request, body: ExportRequest):
+    """Build a CSV or Excel file (with or without categories) from the client's current rows.
+
+    Stateless: it only formats the transactions the client sends (including any
+    edits), so it serves both logged-in and anonymous trial users.
+    """
+    rows = [t.model_dump() for t in body.transactions]
+    content, filename, media_type = _build_export(rows, body.format, body.include_categories)
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.post("/api/email-spreadsheet")
 @limiter.limit(_RATE_LIMIT_EMAIL_SPREADSHEET)
 def email_spreadsheet(request: Request, body: EmailSpreadsheetRequest):
-    """Email an anonymous trial user their converted CSV and store their email.
+    """Email an anonymous trial user their spreadsheet (CSV or Excel) and store their email.
 
-    Trial results aren't stored server-side, so the client sends the CSV back.
+    Trial results aren't stored server-side, so the client sends the rows back.
     To stop this being an open mail relay, the job must be a recent trial run
-    from the same client, each job can be emailed at most twice, and the CSV is
-    re-serialized (see _sanitize_trial_csv).
+    from the same client, each job can be emailed a limited number of times,
+    and the rows are sanitized (see _sanitize_rows).
     """
     job_id = str(body.job_id)
     email = body.email.strip().lower()
@@ -721,12 +760,18 @@ def email_spreadsheet(request: Request, body: EmailSpreadsheetRequest):
     if count_email_captures_for_job(job_id) >= MAX_SPREADSHEET_EMAILS_PER_JOB:
         raise HTTPException(429, "This spreadsheet has already been emailed. Check your inbox and spam folder.")
 
-    csv_clean = _sanitize_trial_csv(body.csv_content)
-    if csv_clean is None:
+    if body.transactions is not None:
+        rows = [t.model_dump() for t in body.transactions]
+    elif body.csv_content is not None:
+        rows = _rows_from_trial_csv(body.csv_content)
+    else:
+        rows = None
+    if rows is None:
         raise HTTPException(400, "Invalid spreadsheet data.")
 
-    if not send_spreadsheet_email(email, csv_clean):
-        raise HTTPException(502, "Couldn't send the email right now. Please download the CSV instead.")
+    content, filename, _ = _build_export(_sanitize_rows(rows), body.format, body.include_categories)
+    if not send_spreadsheet_email(email, content, filename):
+        raise HTTPException(502, "Couldn't send the email right now. Please download the file instead.")
 
     try:
         record_email_capture(email, job_id, body.marketing_opt_in, ip_hash)

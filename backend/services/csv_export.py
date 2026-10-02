@@ -3,27 +3,20 @@ import csv
 import io
 from typing import Any
 
+FIELDS = ["date", "description", "amount", "type", "category"]
 
-def transactions_to_csv(transactions: list[dict[str, Any]]) -> str:
-    """Return CSV string with columns: date, description, amount, type, category."""
-    if not transactions:
-        return "date,description,amount,type,category\n"
 
+def export_fields(include_categories: bool = True) -> list[str]:
+    """Columns for an export; the uncategorized variant drops the category column."""
+    return FIELDS if include_categories else [f for f in FIELDS if f != "category"]
+
+
+def transactions_to_csv(transactions: list[dict[str, Any]], include_categories: bool = True) -> str:
+    """Return CSV string with columns: date, description, amount, type[, category]."""
+    fields = export_fields(include_categories)
     out = io.StringIO()
-    writer = csv.DictWriter(
-        out,
-        fieldnames=["date", "description", "amount", "type", "category"],
-        extrasaction="ignore",
-    )
+    writer = csv.DictWriter(out, fieldnames=fields, extrasaction="ignore")
     writer.writeheader()
     for row in transactions:
-        writer.writerow(
-            {
-                "date": row.get("date", ""),
-                "description": row.get("description", ""),
-                "amount": row.get("amount", ""),
-                "type": row.get("type", ""),
-                "category": row.get("category", ""),
-            }
-        )
+        writer.writerow({f: row.get(f) or "" for f in fields})
     return out.getvalue()
