@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import FileUpload from "../components/FileUpload";
@@ -108,7 +108,20 @@ export default function ScannerPage() {
   const [pendingPasswordFile, setPendingPasswordFile] = useState(null);
   const [passwordError, setPasswordError] = useState(null);
   const [passwordInput, setPasswordInput] = useState("");
+  const [emailPopupOpen, setEmailPopupOpen] = useState(false);
+  const emailPopupShownFor = useRef(null);
   const isLoggedIn = !!user;
+  const canEmailSpreadsheet = !isLoggedIn && !!jobId && !!trialCsvContent;
+
+  // Anonymous trial: pop up "Email me this spreadsheet" shortly after results load (once per scan).
+  useEffect(() => {
+    if (!canEmailSpreadsheet || emailPopupShownFor.current === jobId) return;
+    const timer = setTimeout(() => {
+      emailPopupShownFor.current = jobId;
+      setEmailPopupOpen(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [canEmailSpreadsheet, jobId]);
 
   // Load existing job when opening from dashboard (e.g. /scanner/:jobId)
   useEffect(() => {
@@ -395,6 +408,11 @@ export default function ScannerPage() {
         {hasResults && (
           <>
             <div className="scanner-results">
+              {canEmailSpreadsheet && !emailPopupOpen && (
+                <button type="button" className="email-sheet-reopen" onClick={() => setEmailPopupOpen(true)}>
+                  ✉️ Email me this spreadsheet
+                </button>
+              )}
               <div className="scanner-results-tables">
                 <SummaryTable summaryByCategory={summaryByCategory} currency={currency} />
                 <ResultsTable
@@ -405,9 +423,6 @@ export default function ScannerPage() {
                   onTransactionChange={handleTransactionChange}
                   onSaveTransaction={handleSaveTransaction}
                 />
-                {!isLoggedIn && jobId && trialCsvContent && (
-                  <EmailSpreadsheet key={jobId} jobId={jobId} csvContent={trialCsvContent} />
-                )}
               </div>
             </div>
 
@@ -459,6 +474,15 @@ export default function ScannerPage() {
         )}
         </div>
       </div>
+
+      {emailPopupOpen && canEmailSpreadsheet && (
+        <EmailSpreadsheet
+          key={jobId}
+          jobId={jobId}
+          csvContent={trialCsvContent}
+          onClose={() => setEmailPopupOpen(false)}
+        />
+      )}
 
       {showPasswordModal && (
         <div className="scanner-password-modal-backdrop" onClick={handlePasswordModalClose} aria-hidden />

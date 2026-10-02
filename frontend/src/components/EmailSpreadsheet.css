@@ -1,40 +1,58 @@
-.email-sheet {
-  padding: 1rem 1.25rem;
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+.email-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
 }
 
-.email-sheet--sent {
-  border-color: var(--color-success);
-  background: var(--color-success-muted);
+.email-sheet {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
+  width: 90%;
+  max-width: 26rem;
+  padding: 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.email-sheet-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.email-sheet-close:hover:not(:disabled) {
+  color: var(--color-text);
 }
 
 .email-sheet-title {
-  margin: 0;
+  margin: 0 1.5rem 0 0;
+  font-size: 1.15rem;
   font-weight: 600;
   color: var(--color-text);
 }
 
 .email-sheet-hint {
-  margin: 0.25rem 0 0.75rem 0;
+  margin: 0.35rem 0 1rem 0;
   font-size: 0.9rem;
   color: var(--color-text-muted);
 }
 
-.email-sheet--sent .email-sheet-hint {
-  margin-bottom: 0;
-}
-
-.email-sheet-row {
-  display: flex;
-  gap: 0.5rem;
-}
-
 .email-sheet-input {
-  flex: 1;
-  min-width: 0;
+  box-sizing: border-box;
+  width: 100%;
   padding: 0.6rem 0.75rem;
   font-size: 0.95rem;
   font-family: inherit;
@@ -48,27 +66,6 @@
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-subtle);
-}
-
-.email-sheet-button {
-  padding: 0.6rem 1.25rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  font-family: inherit;
-  color: var(--color-on-primary);
-  background: var(--color-primary);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-
-.email-sheet-button:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.email-sheet-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .email-sheet-optin {
@@ -87,8 +84,63 @@
   color: var(--color-error);
 }
 
-@media (max-width: 480px) {
-  .email-sheet-row {
-    flex-direction: column;
-  }
+.email-sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.email-sheet-button {
+  padding: 0.6rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.email-sheet-button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.email-sheet-button.secondary {
+  color: var(--color-text-muted);
+  background: transparent;
+  border-color: var(--color-border);
+}
+
+.email-sheet-button.secondary:hover:not(:disabled) {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.email-sheet-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.email-sheet-button--full {
+  width: 100%;
+}
+
+/* Reopen link shown above results after the popup is dismissed */
+.email-sheet-reopen {
+  margin: 0 0 1rem 0;
+  padding: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--color-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.email-sheet-reopen:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
 }
