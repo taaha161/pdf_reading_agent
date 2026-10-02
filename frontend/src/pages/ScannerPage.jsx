@@ -410,7 +410,11 @@ export default function ScannerPage() {
             <div className="scanner-results">
               {canEmailSpreadsheet && !emailPopupOpen && (
                 <button type="button" className="email-sheet-reopen" onClick={() => setEmailPopupOpen(true)}>
-                  ✉️ Email me this spreadsheet
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                    <path d="m3.5 6.5 8.5 6 8.5-6" />
+                  </svg>
+                  Email me this spreadsheet
                 </button>
               )}
               <div className="scanner-results-tables">
@@ -480,6 +484,7 @@ export default function ScannerPage() {
           key={jobId}
           jobId={jobId}
           csvContent={trialCsvContent}
+          transactionCount={transactions.length}
           onClose={() => setEmailPopupOpen(false)}
         />
       )}
