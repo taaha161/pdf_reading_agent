@@ -58,6 +58,7 @@ Sitemap: ${baseUrl}sitemap.xml
         'import.meta.env.PUBLIC_SUPABASE_URL': JSON.stringify(env.SUPABASE_URL ?? ''),
         'import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY': JSON.stringify(env.SUPABASE_PUBLISHABLE_KEY ?? env.SUPABASE_ANON_KEY ?? ''),
         'import.meta.env.PUBLIC_SUPABASE_ANON_KEY': JSON.stringify(env.SUPABASE_ANON_KEY ?? ''),
+        'import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY': JSON.stringify(env.RECAPTCHA_SITE_KEY ?? ''),
       }),
     },
   }

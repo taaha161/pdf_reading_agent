@@ -5,9 +5,8 @@ import { getUsage } from "../api/client";
 const UsageContext = createContext(null);
 
 /**
- * Scan-limit state for the sidebar counter. The real trial count lives in an
- * httponly cookie on the server, so it can only come from /api/usage — the
- * frontend cannot read it directly. Refetched on auth change and after each scan.
+ * Scan-limit state for the sidebar counter. The real trial count is tracked
+ * server-side per client IP, so it can only come from /api/usage. Refetched on auth change and after each scan.
  */
 export function UsageProvider({ children }) {
   const { accessToken } = useAuth();
@@ -21,9 +20,8 @@ export function UsageProvider({ children }) {
       });
   }, []);
 
-  // Merge fresh usage returned inline by /api/process-pdf. The trial cookie is
-  // cross-site and can be blocked, so a follow-up /api/usage fetch may read a
-  // stale 0 — updating straight from the scan response keeps the counter correct.
+  // Merge fresh usage returned inline by /api/process-pdf so the counter
+  // updates immediately, without waiting on a follow-up /api/usage fetch.
   const applyUsage = useCallback((data) => {
     if (!data || data.trial_used == null) return;
     setUsage((prev) => ({
@@ -38,7 +36,7 @@ export function UsageProvider({ children }) {
   }, []);
 
   // Refetch whenever auth state changes (login/logout) so the counter reflects
-  // the current user (or the anonymous trial cookie).
+  // the current user (or the anonymous per-IP trial).
   useEffect(() => {
     refreshUsage();
   }, [accessToken, refreshUsage]);

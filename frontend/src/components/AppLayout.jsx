@@ -13,8 +13,8 @@ export default function AppLayout({ children }) {
   const email = user?.email ?? "";
   const isLoggedIn = user != null;
 
-  // Real scan-limit numbers come from the server (trial count lives in an
-  // httponly cookie; credits live in billing). Counting local jobs — the old
+  // Real scan-limit numbers come from the server (trial count is per client
+  // IP; credits live in billing). Counting local jobs — the old
   // behavior — never moved for anonymous trial users and ignored credits.
   const trialUsed = usage?.trial_used ?? 0;
   const trialLimit = usage?.trial_limit ?? 5;

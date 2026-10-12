@@ -28,7 +28,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 
 from auth import get_current_claims, get_current_user, get_current_user_optional
 from models.schemas import (
@@ -62,6 +61,7 @@ from services.notifications import (
     send_spreadsheet_email,
 )
 from services.pdf_processor import PdfPasswordRequired, extract_text_from_pdf
+from services.recaptcha import verify_recaptcha
 from services.statement_agent import extract_and_categorize
 from store import (
     create_job_id,
@@ -87,8 +87,40 @@ try:
 except ImportError:
     psycopg2 = None
 
+# Header carrying the real client IP. Render sits behind Cloudflare, which sets
+# CF-Connecting-IP and overwrites any client-supplied value. The left-most
+# X-Forwarded-For entry is client-controlled, so it is only a last resort.
+_CLIENT_IP_HEADER = os.environ.get("CLIENT_IP_HEADER", "cf-connecting-ip").strip().lower()
+
+_TRIAL_IP_SALT = os.environ.get("TRIAL_IP_SALT", "").strip()
+if not _TRIAL_IP_SALT:
+    logger.warning("TRIAL_IP_SALT not set — using an insecure default salt for IP hashing")
+    _TRIAL_IP_SALT = "bss-default-trial-salt"
+
+
+def _client_ip(request: Request) -> str | None:
+    """Best-effort real client IP behind Cloudflare/Render."""
+    ip = request.headers.get(_CLIENT_IP_HEADER, "").strip()
+    if ip:
+        return ip
+    xff = request.headers.get("x-forwarded-for", "")
+    if xff:
+        return xff.split(",")[0].strip() or None
+    client = getattr(request, "client", None)
+    return getattr(client, "host", None) if client else None
+
+
+def _client_ip_hash(request: Request) -> str | None:
+    """Salted one-way hash of the client IP for durable trial counting (never stores the raw IP)."""
+    ip = _client_ip(request)
+    if not ip:
+        return None
+    return hmac.new(_TRIAL_IP_SALT.encode(), ip.encode(), hashlib.sha256).hexdigest()
+
+
 _REDIS_URL = os.environ.get("REDIS_URL", "").strip()
-_limiter_kwargs = {"key_func": get_remote_address}
+# Key rate limits on the real client IP, not the proxy's address.
+_limiter_kwargs = {"key_func": lambda request: _client_ip(request) or "unknown"}
 if _REDIS_URL:
     _limiter_kwargs["storage_uri"] = _REDIS_URL
 limiter = Limiter(**_limiter_kwargs)
@@ -416,72 +448,30 @@ _RATE_LIMIT_EMAIL_SPREADSHEET = os.environ.get("RATE_LIMIT_EMAIL_SPREADSHEET", "
 _RATE_LIMIT_EXPORT = os.environ.get("RATE_LIMIT_EXPORT", "30/minute")
 
 
-TRIAL_COOKIE_NAME = "trial_pdf_used"
 TRIAL_LIMIT = 5  # Number of free statements for unauthenticated users
 TRIAL_LIMIT_MESSAGE = "Trial limit reached. Please log in to process more PDFs."
 INSUFFICIENT_CREDITS_CODE = "INSUFFICIENT_CREDITS"
+RECAPTCHA_FAILED_CODE = "RECAPTCHA_FAILED"
 
 
 PDF_PASSWORD_REQUIRED_CODE = "PDF_PASSWORD_REQUIRED"
 
 
-_TRIAL_IP_SALT = os.environ.get("TRIAL_IP_SALT", "").strip()
-
-
-def _client_ip(request: Request) -> str | None:
-    """Best-effort client IP, honoring the proxy's X-Forwarded-For (Render/Vercel)."""
-    xff = request.headers.get("x-forwarded-for", "")
-    if xff:
-        return xff.split(",")[0].strip() or None
-    client = getattr(request, "client", None)
-    return getattr(client, "host", None) if client else None
-
-
-def _client_ip_hash(request: Request) -> str | None:
-    """Salted one-way hash of the client IP for durable trial counting (never stores the raw IP)."""
-    ip = _client_ip(request)
-    if not ip or not _TRIAL_IP_SALT:
-        return None
-    return hmac.new(_TRIAL_IP_SALT.encode(), ip.encode(), hashlib.sha256).hexdigest()
-
-
 def _trial_used(request: Request) -> int:
-    """Anonymous trial count: the max of the cookie and the server-side per-IP
-    count, so clearing the cross-site cookie can't reset the free-scan limit."""
-    try:
-        cookie_used = int(request.cookies.get(TRIAL_COOKIE_NAME) or 0)
-    except ValueError:
-        cookie_used = 0
-    cookie_used = max(0, cookie_used)
-    ip_hash = _client_ip_hash(request)
-    ip_used = 0
-    if ip_hash:
-        try:
-            ip_used = count_trial_runs_by_ip(ip_hash)
-        except Exception as e:
-            # e.g. migration not yet applied — fall back to the cookie count.
-            logger.warning("trial IP count failed (using cookie only): %s", e)
-    return min(max(cookie_used, ip_used), TRIAL_LIMIT)
+    """Free scans used by this client, counted server-side per IP (no cookies,
+    so clearing cookies / incognito can't reset the limit).
 
-
-def _set_trial_cookie(response, request: Request, new_count: int) -> None:
-    """Persist the trial counter.
-
-    The SPA calls this API cross-site (different host), so the cookie must be
-    SameSite=None + Secure to be sent back on later requests; SameSite=Lax would
-    never return, leaving the counter stuck and the trial limit unenforced. Fall
-    back to Lax for local http dev where None/Secure can't be set.
+    Fails closed: if the count can't be read, treat the trial as used up.
     """
-    secure = getattr(request.url, "scheme", "http") == "https"
-    response.set_cookie(
-        key=TRIAL_COOKIE_NAME,
-        value=str(new_count),
-        httponly=True,
-        secure=secure,
-        samesite="none" if secure else "lax",
-        path="/",
-        max_age=10 * 365 * 24 * 60 * 60,
-    )
+    ip_hash = _client_ip_hash(request)
+    if not ip_hash:
+        logger.warning("trial: no client IP; treating trial as exhausted")
+        return TRIAL_LIMIT
+    try:
+        return min(count_trial_runs_by_ip(ip_hash), TRIAL_LIMIT)
+    except Exception as e:
+        logger.error("trial IP count failed; treating trial as exhausted: %s", e)
+        return TRIAL_LIMIT
 
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
 @limiter.limit(_RATE_LIMIT_PROCESS_PDF)
@@ -492,19 +482,26 @@ async def process_pdf(
     incognito_mode: str = Form("false"),
     conversion_mode: str = Form("fast"),
     pdf_password: str | None = Form(None),
+    recaptcha_token: str | None = Form(None),
     user_id: str | None = Depends(get_current_user_optional),
 ):
     t0 = time.perf_counter()
-    # Trial usage: max(cookie, server-side per-IP count) so clearing the
-    # cross-site cookie can't reset the free-scan limit.
+    # Bot check before any (paid) processing, for every scan — anonymous or not.
+    if not await verify_recaptcha(recaptcha_token, _client_ip(request)):
+        raise HTTPException(
+            status_code=403,
+            detail={"detail": "reCAPTCHA verification failed. Please refresh and try again.", "code": RECAPTCHA_FAILED_CODE},
+        )
+
+    # Free-scan usage is counted server-side per client IP.
     trial_used = _trial_used(request)
 
     if user_id is None:
         if trial_used >= TRIAL_LIMIT:
             raise HTTPException(status_code=401, detail=TRIAL_LIMIT_MESSAGE)
-        # Will run pipeline below and not call set_job; return inline csv_content/raw_text and set cookie
+        # Will run pipeline below and not call set_job; return inline csv_content/raw_text
 
-    # Authenticated users keep their remaining trial runs (cookie tracks pre-login + post-login free runs)
+    # Authenticated users share the same per-IP free scans before drawing down credits
     use_free_trial = user_id is not None and trial_used < TRIAL_LIMIT
 
     # Normalize: only "ocr" or "vision" (for scanned PDFs)
@@ -604,14 +601,16 @@ async def process_pdf(
         except Exception as e:  # noqa: BLE001
             logger.warning("scan notification failed (continuing): %s", e)
 
-        if is_trial:
-            # Record trial run for analytics + durable per-IP trial counting
+        if is_trial or use_free_trial:
+            # Record free run for analytics + durable per-IP trial counting
             # (no PDF/transaction data; only a salted IP hash is stored).
             try:
                 record_trial_run(job_id, _client_ip_hash(request))
             except Exception as e:
                 logger.warning("trial_runs insert failed (continuing): %s", e)
-            # Return inline csv_content and raw_text; set cookie
+
+        if is_trial:
+            # Return inline csv_content and raw_text
             new_count = min(trial_used + 1, TRIAL_LIMIT)
             payload = ProcessPdfResponse(
                 job_id=job_id,
@@ -627,9 +626,7 @@ async def process_pdf(
                 trial_remaining=max(0, TRIAL_LIMIT - new_count),
             )
             logger.info("process-pdf: [step 4/4] trial finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
-            response = JSONResponse(content=payload.model_dump(mode="json"))
-            _set_trial_cookie(response, request, new_count)
-            return response
+            return payload
         else:
             logger.info("process-pdf: [step 4/4] finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
             payload = ProcessPdfResponse(
@@ -647,9 +644,7 @@ async def process_pdf(
                 payload.trial_used = new_count
                 payload.trial_limit = TRIAL_LIMIT
                 payload.trial_remaining = max(0, TRIAL_LIMIT - new_count)
-                response = JSONResponse(content=payload.model_dump(mode="json"))
-                _set_trial_cookie(response, request, new_count)
-                return response
+                return payload
             cost_cents = SCAN_COST_CENTS.get(conversion_mode_val, SCAN_COST_CENTS["fast"])
             new_balance = deduct_balance(user_id, cost_cents)
             if new_balance is None:
@@ -867,8 +862,8 @@ def get_usage(
 ):
     """Scan-limit state for the sidebar counter.
 
-    Trial usage lives in the httponly ``trial_pdf_used`` cookie (unreadable by JS),
-    so the frontend can only get the real count from the server. Authenticated
+    Free-scan usage is counted server-side per client IP, so the frontend can
+    only get the real count from the server. Authenticated
     users also consume the free trial runs first, then draw down credits.
     """
     trial_used = _trial_used(request)

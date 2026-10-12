@@ -1,3 +1,5 @@
+import { getRecaptchaToken } from "../lib/recaptcha";
+
 let API_BASE = "http://localhost:8000";
 
 export function setApiBase(url) {
@@ -40,6 +42,8 @@ export async function processPdf(file, options = {}) {
   }
   const mode = options.conversionMode && ["fast", "balanced", "accurate"].includes(options.conversionMode) ? options.conversionMode : "fast";
   form.append("conversion_mode", mode);
+  const recaptchaToken = await getRecaptchaToken("scan_pdf");
+  if (recaptchaToken) form.append("recaptcha_token", recaptchaToken);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
   let res;
@@ -76,6 +80,9 @@ export async function processPdf(file, options = {}) {
     const detail = err.detail;
     const msg = Array.isArray(detail) ? detail.map((d) => d.msg || d).join(", ") : (typeof detail === "object" && detail?.detail ? detail.detail : detail || res.statusText);
     const e = new Error(msg);
+    if (res.status === 403 && typeof detail === "object" && detail?.code === "RECAPTCHA_FAILED") {
+      e.isRecaptchaFailed = true;
+    }
     if (res.status === 401 && msg && msg.toLowerCase().includes("trial limit")) {
       e.isTrialLimit = true;
     }

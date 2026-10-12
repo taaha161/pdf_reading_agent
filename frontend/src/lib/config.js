@@ -14,6 +14,7 @@ export async function loadConfig() {
         apiUrl: data.apiUrl || "",
         supabaseUrl: data.supabaseUrl,
         supabasePublishableKey: data.supabasePublishableKey || "",
+        recaptchaSiteKey: data.recaptchaSiteKey || "",
       };
       return cached;
     }
@@ -42,6 +43,7 @@ export async function loadConfig() {
         : "http://localhost:8000",
     supabaseUrl,
     supabasePublishableKey,
+    recaptchaSiteKey: import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY || "",
   };
   return cached;
 }
