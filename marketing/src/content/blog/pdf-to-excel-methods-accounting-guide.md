@@ -5,7 +5,7 @@ excerpt: "Learn how to convert PDF to Excel accurately. Discover native methods,
 date: 2026-10-15
 category: "Guides"
 readTime: "10 min read"
-image: "marketing/public/blog/images/pdf-to-excel-methods-accounting-guide.jpg"
+image: "blog/images/pdf-to-excel-methods-accounting-guide.jpg"
 tags:
   - "pdf to excel"
   - "accounting workflows"
