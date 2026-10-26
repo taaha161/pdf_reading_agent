@@ -99,6 +99,15 @@ const jsonLd = [
           <span class="dot" aria-hidden="true"></span>
           <span>Upload up to 5 statements free</span>
         </p>
+        <div class="hero-trust">
+          <div class="hero-avatars" aria-hidden="true">
+            <img src="/avatars/avatar-1.jpg" alt="" width="36" height="36" />
+            <img src="/avatars/avatar-2.jpg" alt="" width="36" height="36" />
+            <img src="/avatars/avatar-3.jpg" alt="" width="36" height="36" />
+            <span class="hero-avatars-badge">10k+</span>
+          </div>
+          <span class="hero-trust-label">Trusted by 10,000+ finance professionals</span>
+        </div>
       </div>
 
       <div class="hero-mock">
@@ -127,7 +136,7 @@ const jsonLd = [
   <!-- Results / stats -->
   <section class="results" id="results" aria-label="Results">
     <div class="container stats">
-      <div><div class="stat-value">12k+</div><div class="stat-label">Finance teams</div></div>
+      <div><div class="stat-value">10k+</div><div class="stat-label">Finance professionals</div></div>
       <div><div class="stat-value">8 hrs</div><div class="stat-label">Saved per client</div></div>
       <div><div class="stat-value">Up to 100%</div><div class="stat-label">Extraction accuracy</div></div>
     </div>
@@ -183,7 +192,7 @@ const jsonLd = [
   <section class="cta-band" aria-label="Call to action">
     <div class="container cta-band-inner">
       <h2>Ready to stop manual data entry?</h2>
-      <p>Join thousands of firms who turn messy statements into clean, structured data with Bank Statement Scanner.</p>
+      <p>Join 10,000+ finance professionals who turn messy statements into clean, structured data with Bank Statement Scanner.</p>
       <div class="cta-band-actions">
         <a class="btn btn-invert" href="/scanner">Start scanning now</a>
         <span class="cta-band-note">No credit card required.</span>
@@ -279,6 +288,19 @@ const jsonLd = [
   .accent { color: var(--color-primary); }
   .hero-sub { font-size: 18px; color: var(--color-text-muted); margin-top: 20px; max-width: 54ch; }
   .hero-actions { display: flex; gap: 14px; margin-top: 28px; flex-wrap: wrap; }
+  .hero-trust { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 22px; }
+  .hero-avatars { display: inline-flex; align-items: center; }
+  .hero-avatars img {
+    width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+    border: 2px solid var(--color-surface); box-shadow: var(--shadow-sm);
+  }
+  .hero-avatars img + img, .hero-avatars-badge { margin-left: -10px; }
+  .hero-avatars-badge {
+    display: inline-grid; place-items: center; height: 36px; min-width: 36px; padding: 0 9px;
+    border-radius: 999px; border: 2px solid var(--color-surface);
+    background: var(--color-primary); color: var(--color-on-primary); font-size: 12px; font-weight: 700;
+  }
+  .hero-trust-label { font-size: 15px; font-weight: 600; color: var(--color-text); }
   .hero-meta { display: flex; align-items: center; gap: 12px; color: var(--color-text-muted); font-size: 14px; margin-top: 22px; }
   .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--color-border); display: inline-block; }
 
