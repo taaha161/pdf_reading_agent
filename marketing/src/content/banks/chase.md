@@ -12,7 +12,7 @@ downloadSteps:
   - "Sign in at chase.com on a desktop browser."
   - "Select the account, then open Statements & documents."
   - "Pick the statement month and click the download icon. The file saves as a PDF."
-  - "Repeat for each month you need. Each statement is its own PDF, and you can upload several at once."
+  - "Repeat for each month you need. Each statement is its own PDF, so convert them one after another."
 layoutNotes:
   - title: "Summary block above the transactions"
     body: "Checking statements open with beginning balance, deposits and additions, withdrawals, fees, and ending balance. These are totals, not transactions, so they're left out of your rows. They're still useful for checking your export afterwards."

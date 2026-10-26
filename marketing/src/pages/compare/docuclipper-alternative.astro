@@ -1,0 +1,76 @@
+---
+import ComparePage from '../../components/ComparePage.astro';
+---
+
+<ComparePage
+  path="/compare/docuclipper-alternative"
+  seoTitle="DocuClipper Alternative With No Annual Contract"
+  description="Comparing Bank Statement Scanner and DocuClipper: pricing, contracts, exports, and security. Pay per statement from $10 a month and cancel anytime."
+  crumb="DocuClipper alternative"
+  eyebrow="DocuClipper alternative"
+  h1="A DocuClipper alternative with no annual contract"
+  intro={[
+    'DocuClipper is a capable tool, built for accounting firms that convert statements every day and need QuickBooks or Xero sync and SOC 2 paperwork. If you convert statements in bursts, such as at tax season, in a catch-up job, or for a single loan file, a page plan that renews whether you use it or not can be more than you need.',
+    'Bank Statement Scanner charges per statement from a $10 monthly credit. There is no annual plan and you can cancel anytime. Here is an honest comparison, including where DocuClipper is the better choice.',
+  ]}
+  themName="DocuClipper"
+  rows={[
+    { label: 'Starting price', us: '$10/month, added to your account as $10 of credit', them: 'Starter from $20.30/month billed annually (60 pages); monthly billing costs about 30% more' },
+    { label: 'How you pay', us: 'Per statement: fast mode under 1¢, balanced $1, accurate $1.50', them: 'A monthly page allowance; unused pages don’t carry over to the next cycle' },
+    { label: 'Commitment', us: 'Monthly only. Cancel anytime', them: 'Monthly or annual billing' },
+    { label: 'Free trial', us: '5 statements free, no card', them: '14 days, no card, up to 120 pages' },
+    { label: 'Export formats', us: 'CSV, Excel (XLSX)', them: 'Excel, CSV, QuickBooks, Xero' },
+    { label: 'Balance check', us: 'Not automatic yet. Compare totals with the statement yourself', them: 'Checks each statement against its printed balances' },
+    { label: 'Security', us: 'HTTPS, incognito mode that stores no transaction data, Stripe payments', them: 'SOC 2 Type II audited' },
+    { label: 'Scanned statements', us: 'Yes, with an accurate mode for poor scans', them: 'Yes' },
+  ]}
+  tableNote="DocuClipper prices are from its pricing page in USD and may have changed. Bank Statement Scanner credit prices are per statement, not per page."
+  sections={[
+    {
+      heading: 'What DocuClipper users complain about',
+      paras: [
+        'Reviews are mixed depending on where you look. DocuClipper shows a 4.7/5 G2 rating on its own site. On Trustpilot it has a 1.4/5 TrustScore from 38 reviews, and most of the recent low ratings describe billing problems rather than the conversion itself: reviewers who thought they were on a monthly plan finding a 12-month commitment, and charges continuing after they tried to cancel.',
+        'In its replies, DocuClipper says those charges followed the plan the customer chose, that cancellation is available in account settings, and that it has since retired that "annual billed monthly" plan. Read the reviews yourself and decide. Either way, check the billing terms of any converter before you enter a card.',
+      ],
+    },
+    {
+      heading: 'How Bank Statement Scanner handles billing',
+      bullets: [
+        'One monthly subscription of $10, which adds $10 of credit to your account each billing cycle.',
+        'Credits are used per statement, and the conversion mode sets the price: fast mode under 1¢, balanced $1, accurate $1.50.',
+        'One-time top-ups if you need more in a busy month, with or without the subscription.',
+        'No annual plan. Cancel anytime, and payments run through Stripe, so we never see your card number.',
+      ],
+    },
+  ]}
+  fit={{
+    us: [
+      'You convert statements occasionally or in bursts',
+      'You want no contract and a low monthly cost',
+      'You need CSV or Excel with automatic categorization',
+      'You want to convert without saving anything (incognito mode)',
+      'Your statements are password-protected',
+    ],
+    them: [
+      'Your firm needs a SOC 2 Type II report from vendors',
+      'You want direct QuickBooks or Xero export',
+      'You process hundreds of pages a month, where its larger plans get cheaper per page',
+      'You want each statement checked against its printed balances automatically',
+      'You want unlimited team members on one plan',
+    ],
+  }}
+  faqs={[
+    { q: 'Is Bank Statement Scanner cheaper than DocuClipper?', a: 'For occasional use, usually yes: there is no annual plan, and a statement costs from under 1¢ to $1.50 depending on mode. At high volume, DocuClipper’s larger page plans can work out cheaper per page.' },
+    { q: 'Can I export to QuickBooks or Xero?', a: 'Export to CSV and use the bank-statement import in QuickBooks or Xero. Direct QBO and Xero export isn’t available yet. DocuClipper offers it.' },
+    { q: 'Is there a contract?', a: 'No. The subscription is monthly and you can cancel anytime. There is no annual plan.' },
+    { q: 'Can I try it before paying?', a: 'Yes. Your first 5 statements are free, and you don’t need a credit card.' },
+    { q: 'Does it work with my bank?', a: 'It works with statement PDFs from 100+ banks and card issuers, including scanned and password-protected files. See the supported banks page for bank-specific guides.' },
+  ]}
+  sources={[
+    { label: 'DocuClipper pricing', url: 'https://www.docuclipper.com/pricing/' },
+    { label: 'DocuClipper homepage (features, G2 rating, SOC 2)', url: 'https://www.docuclipper.com/' },
+    { label: 'Trustpilot: DocuClipper reviews', url: 'https://www.trustpilot.com/review/docuclipper.com' },
+  ]}
+  checked="2026-10-26"
+  disclaimer="DocuClipper is a trademark of its owner. Bank Statement Scanner isn't affiliated with DocuClipper."
+/>

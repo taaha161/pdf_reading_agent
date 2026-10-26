@@ -12,7 +12,7 @@ downloadSteps:
   - "Sign in to Wells Fargo Online."
   - "Go to Statements & documents."
   - "Select the account and the statement you need. Statements open as PDFs you can save."
-  - "Download one PDF per month and upload them together."
+  - "Download one PDF per month, then convert each one."
 layoutNotes:
   - title: "Deposits and withdrawals in separate columns"
     body: "Wells Fargo statements list credits and debits in their own columns next to a balance column. Your export marks every row as credit or debit, so money in and money out stay clear."

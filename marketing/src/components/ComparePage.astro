@@ -1,0 +1,241 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE_NAME, canonical } from '../consts';
+
+/**
+ * Shared layout for /compare pages. Every claim about another product must be
+ * sourced (see `sources`) and dated (`checked`); include where they win too.
+ */
+interface Row { label: string; us: string; them: string }
+interface Section { heading: string; paras?: string[]; bullets?: string[] }
+interface Props {
+  path: string;
+  seoTitle: string;
+  description: string;
+  crumb: string;
+  eyebrow: string;
+  h1: string;
+  intro: string[];
+  themName: string;
+  rows: Row[];
+  tableNote?: string;
+  sections: Section[];
+  /** Two side-by-side "choose X if" lists. */
+  fit: { us: string[]; them: string[] };
+  faqs: { q: string; a: string }[];
+  sources: { label: string; url: string }[];
+  checked: string;
+  disclaimer: string;
+}
+
+const p = Astro.props;
+const url = canonical(p.path);
+const checkedLabel = new Date(p.checked).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: p.seoTitle,
+    description: p.description,
+    url,
+    dateModified: p.checked,
+    isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: canonical('/') },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: canonical('/') },
+      { '@type': 'ListItem', position: 2, name: 'Compare', item: canonical('/compare') },
+      { '@type': 'ListItem', position: 3, name: p.crumb, item: url },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: p.faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
+---
+
+<Base title={p.seoTitle} description={p.description} path={p.path} jsonLd={jsonLd}>
+  <article class="container cmp">
+    <nav class="cmp-crumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span aria-hidden="true">/</span>
+      <a href="/compare">Compare</a>
+      <span aria-hidden="true">/</span>
+      <span class="cmp-here">{p.crumb}</span>
+    </nav>
+
+    <header class="cmp-hero">
+      <p class="cmp-eyebrow">{p.eyebrow}</p>
+      <h1>{p.h1}</h1>
+      {p.intro.map((t) => <p class="cmp-intro">{t}</p>)}
+      <div class="cmp-cta-row">
+        <a class="cmp-btn" href="/scanner">Convert a statement free</a>
+        <span class="cmp-note">5 statements free · No credit card · Cancel anytime</span>
+      </div>
+    </header>
+
+    <section class="cmp-section">
+      <h2>{SITE_NAME} vs {p.themName} at a glance</h2>
+      <div class="cmp-table-wrap">
+        <table class="cmp-table">
+          <thead>
+            <tr><th scope="col"></th><th scope="col">{SITE_NAME}</th><th scope="col">{p.themName}</th></tr>
+          </thead>
+          <tbody>
+            {
+              p.rows.map((r) => (
+                <tr>
+                  <th scope="row">{r.label}</th>
+                  <td>{r.us}</td>
+                  <td>{r.them}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      {p.tableNote && <p class="cmp-small">{p.tableNote}</p>}
+    </section>
+
+    {
+      p.sections.map((s) => (
+        <section class="cmp-section">
+          <h2>{s.heading}</h2>
+          {s.paras?.map((t) => <p>{t}</p>)}
+          {s.bullets && (
+            <ul class="cmp-list">
+              {s.bullets.map((b) => <li>{b}</li>)}
+            </ul>
+          )}
+        </section>
+      ))
+    }
+
+    <section class="cmp-section">
+      <h2>Which one should you pick?</h2>
+      <div class="cmp-fit">
+        <div class="cmp-fit-col cmp-fit-us">
+          <h3>Choose {SITE_NAME} if</h3>
+          <ul>{p.fit.us.map((t) => <li>{t}</li>)}</ul>
+        </div>
+        <div class="cmp-fit-col">
+          <h3>Choose {p.themName} if</h3>
+          <ul>{p.fit.them.map((t) => <li>{t}</li>)}</ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="cmp-section">
+      <h2>FAQ</h2>
+      <div class="cmp-faq">
+        {
+          p.faqs.map((f) => (
+            <details>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="cmp-final">
+      <h2>Try it on your own statement</h2>
+      <p>Your first 5 statements are free. No card, no contract. Use incognito mode if you don't want anything saved.</p>
+      <a class="cmp-btn" href="/scanner">Upload a statement</a>
+    </section>
+
+    <footer class="cmp-foot">
+      <h2>Sources</h2>
+      <p class="cmp-small">
+        Details about {p.themName} were checked on <time datetime={p.checked}>{checkedLabel}</time> from the
+        sources below and may have changed since. {p.disclaimer}
+      </p>
+      <ul>
+        {p.sources.map((s) => <li><a href={s.url} rel="nofollow noopener" target="_blank">{s.label}</a></li>)}
+      </ul>
+    </footer>
+  </article>
+</Base>
+
+<style>
+  .cmp { max-width: 860px; padding-block: 40px 24px; }
+  .cmp-crumbs {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px;
+    color: var(--color-text-muted); margin-bottom: 28px;
+  }
+  .cmp-crumbs span[aria-hidden] { color: var(--color-border); }
+  .cmp-here { color: var(--color-text); }
+
+  .cmp-hero { display: flex; flex-direction: column; gap: 14px; }
+  .cmp-eyebrow {
+    margin: 0; color: var(--color-primary); font-weight: 600; font-size: 14px;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .cmp-hero h1 { font-size: clamp(30px, 5vw, 44px); margin: 0; }
+  .cmp-intro { font-size: 18px; line-height: 1.65; color: #1e293b; margin: 0; }
+  .cmp-cta-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 6px; }
+  .cmp-note { font-size: 14px; color: var(--color-text-muted); }
+  .cmp-btn {
+    display: inline-block; font-weight: 600; font-size: 16px; padding: 12px 22px;
+    border-radius: var(--radius-md); text-decoration: none;
+    background: var(--color-primary); color: var(--color-on-primary);
+  }
+  .cmp-btn:hover { background: var(--color-primary-hover); color: var(--color-on-primary); }
+
+  .cmp-section { margin-top: 48px; }
+  .cmp-section h2, .cmp-final h2 { font-size: 26px; margin: 0 0 14px; line-height: 1.25; }
+  .cmp-section p { font-size: 17px; line-height: 1.7; margin: 0 0 14px; color: #1e293b; }
+  .cmp-small { font-size: 14px !important; color: var(--color-text-muted) !important; }
+  .cmp-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 17px; line-height: 1.6; }
+
+  .cmp-table-wrap {
+    overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md);
+    background: var(--color-surface); margin-bottom: 10px;
+  }
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.5; min-width: 560px; }
+  .cmp-table th, .cmp-table td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--color-border); }
+  .cmp-table tbody tr:last-child th, .cmp-table tbody tr:last-child td { border-bottom: none; }
+  .cmp-table thead th { font-size: 14px; background: var(--color-bg); }
+  .cmp-table thead th:nth-child(2) { color: var(--color-primary); }
+  .cmp-table tbody th { font-weight: 600; width: 24%; color: var(--color-text); }
+  .cmp-table td:nth-child(2) { background: var(--color-primary-subtle); }
+
+  .cmp-fit { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .cmp-fit-col {
+    padding: 20px; border: 1px solid var(--color-border); border-radius: var(--radius-md);
+    background: var(--color-surface); min-width: 0;
+  }
+  .cmp-fit-us { border-color: var(--color-primary); }
+  .cmp-fit-col h3 { font-family: var(--font-body); font-size: 17px; margin: 0 0 10px; }
+  .cmp-fit-col ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 15.5px; line-height: 1.55; }
+
+  .cmp-faq { display: flex; flex-direction: column; }
+  .cmp-faq details { border-bottom: 1px solid var(--color-border); padding: 14px 0; }
+  .cmp-faq summary { cursor: pointer; font-weight: 600; font-size: 17px; }
+  .cmp-faq details p { margin: 10px 0 0 !important; }
+
+  .cmp-final {
+    margin-top: 56px; padding: 32px; text-align: center; border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border); background: var(--color-surface);
+  }
+  .cmp-final p { color: var(--color-text-muted); margin: 0 auto 18px; max-width: 520px; }
+
+  .cmp-foot { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--color-border); }
+  .cmp-foot h2 { font-size: 18px; margin: 0 0 10px; }
+  .cmp-foot ul { margin: 8px 0 0; padding-left: 20px; font-size: 14px; display: grid; gap: 4px; }
+  .cmp-foot a { overflow-wrap: anywhere; }
+</style>

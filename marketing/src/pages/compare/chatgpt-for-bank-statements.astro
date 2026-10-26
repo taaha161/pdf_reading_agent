@@ -1,0 +1,78 @@
+---
+import ComparePage from '../../components/ComparePage.astro';
+---
+
+<ComparePage
+  path="/compare/chatgpt-for-bank-statements"
+  seoTitle="ChatGPT for Bank Statements: Can It Convert to Excel?"
+  description="Can ChatGPT turn a bank statement PDF into Excel? Often, yes. Here's where it goes wrong, how to check the output, and when a dedicated converter is the better tool."
+  crumb="ChatGPT for bank statements"
+  eyebrow="ChatGPT vs a statement converter"
+  h1="Can ChatGPT convert bank statements to Excel?"
+  intro={[
+    'Often, yes. Upload a clean digital statement, ask for a table of date, description, and amount, and ChatGPT will usually produce one, and can give you a CSV to download. For a single statement you only need once, that may be all you need.',
+    'The trouble is the errors you can’t see: a row dropped at a page break, a credit read as a debit, a total that no longer matches. A dedicated converter, Bank Statement Scanner included, is also built on AI. The difference is a document pipeline built for statements, the same output columns every time, and one-click export.',
+  ]}
+  themName="ChatGPT"
+  rows={[
+    { label: 'Cost', us: 'From $10/month in credits; 5 statements free', them: 'Included in a ChatGPT plan you may already have' },
+    { label: 'Setup', us: 'Upload, review, export', them: 'Write a prompt each time and ask for the format you want' },
+    { label: 'Output columns', us: 'Always date, description, amount, credit/debit, category', them: 'Whatever you ask for. Can differ between chats' },
+    { label: 'Export', us: 'CSV or Excel in one click', them: 'Ask it to create a CSV or Excel file' },
+    { label: 'Scanned statements', us: 'Document OCR, with an accurate mode for poor scans', them: 'Reads images, with quality depending on the scan and model' },
+    { label: 'Password-protected PDFs', us: 'Enter the password in the app', them: 'Usually need the password removed first' },
+    { label: 'Your data', us: 'Not sold or used for advertising. Incognito mode stores no transaction data', them: 'Personal plans may use chats for training unless you turn off “Improve the model for everyone”' },
+  ]}
+  tableNote="ChatGPT behavior varies by plan and model. Check OpenAI's current documentation for your account."
+  sections={[
+    {
+      heading: 'Where ChatGPT goes wrong on bank statements',
+      bullets: [
+        'Dropped rows. Transactions that straddle a page break are easy to lose, and the table still looks complete.',
+        'Flipped signs. A deposit and a withdrawal in neighbouring columns can be swapped, which throws off every total after it.',
+        'Summary lines counted as transactions. Opening balance, totals, and "balance forward" lines can end up in the rows.',
+        'Year-less dates. Statements print "03 Jan" or 01/03, so a December–January statement can be assigned the wrong year.',
+        'Long statements. Very long documents may be summarized or cut short instead of listed in full. Ask for every row, and check.',
+      ],
+    },
+    {
+      heading: 'If you use ChatGPT, use it carefully',
+      paras: [
+        'Ask for a strict format, for example: "Extract every transaction from this statement as a table with columns Date, Description, Amount, Type (credit or debit). Include every row on every page. Do not include opening balance, closing balance, or totals. Do not guess or fill in missing values; mark unclear rows instead."',
+        'Then check the result. Opening balance + credits − debits should equal the closing balance printed on the statement. If it doesn’t, compare the row count with the statement. That check takes a minute, and you should run it on any converter’s output, ours included.',
+        'Bank statements are sensitive. On personal ChatGPT plans, turn off "Improve the model for everyone" under Settings → Data Controls if you don’t want your chats used for training.',
+      ],
+    },
+  ]}
+  fit={{
+    us: [
+      'You convert statements regularly and want the same columns every time',
+      'You need CSV or Excel ready for QuickBooks, Xero, or a spreadsheet',
+      'Your statements are scanned or password-protected',
+      'You want transactions categorized automatically',
+      'You want to convert without anything being saved',
+    ],
+    them: [
+      'You have one clean, digital statement to convert, once',
+      'You already pay for ChatGPT and don’t mind writing the prompt',
+      'You want to ask questions about your spending in the same chat',
+      'You will check the totals yourself afterwards',
+    ],
+  }}
+  faqs={[
+    { q: 'Is ChatGPT accurate for bank statements?', a: 'It is often right on clean digital statements, but it can drop rows or swap credits and debits without any sign of an error. Always check that opening balance + credits − debits equals the closing balance.' },
+    { q: 'Does Bank Statement Scanner use AI too?', a: 'Yes. The difference is the pipeline around it: document OCR, a fixed set of output columns, automatic categorization, and one-click CSV or Excel export.' },
+    { q: 'Is it safe to upload bank statements to ChatGPT?', a: 'That depends on your plan and settings. On personal plans, chats may be used to improve models unless you turn that off in Data Controls. Check OpenAI’s documentation and your firm’s data policy.' },
+    { q: 'Can ChatGPT read scanned statements?', a: 'Current models can read images, but accuracy depends on scan quality. A dedicated converter uses document OCR and lets you pick a slower, more accurate mode for poor scans.' },
+    { q: 'How much does Bank Statement Scanner cost?', a: 'Your first 5 statements are free. After that, a $10 monthly subscription adds $10 of credit, and each statement costs from under 1¢ to $1.50 depending on mode.' },
+  ]}
+  sources={[
+    { label: 'OpenAI Help: Data Controls settings', url: 'https://help.openai.com/en/articles/8983077-what-are-the-data-controls-settings' },
+    { label: 'OpenAI Help: Data Controls FAQ', url: 'https://help.openai.com/en/articles/7730893-data-controls-faq' },
+    { label: 'Evolution AI: Extracting data from financial statements with AI', url: 'https://www.evolution.ai/post/how-to-extract-data-from-financial-statements-using-ai-for-f' },
+    { label: 'DEV Community: Why ChatGPT will silently get your bank statement wrong (written by a converter maker)', url: 'https://dev.to/poskono_99425db14ac67774/why-chatgpt-will-silently-lie-about-your-bank-statement-and-how-to-catch-it-13mb' },
+    { label: 'Zemith: Checking a converted bank statement', url: 'https://www.zemith.com/contents/convert-bank-statement-pdf-to-excel-ai' },
+  ]}
+  checked="2026-10-26"
+  disclaimer="ChatGPT is a trademark of OpenAI. Bank Statement Scanner isn't affiliated with OpenAI."
+/>

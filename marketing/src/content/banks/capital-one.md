@@ -12,14 +12,14 @@ downloadSteps:
   - "Sign in to Capital One on a desktop browser."
   - "Open the card or 360 account and go to Statements."
   - "Choose the statement month and download the PDF."
-  - "Upload card and 360 statements together to get them in matching columns."
+  - "Convert card and 360 statements the same way. Both export in matching columns."
 layoutNotes:
   - title: "Card activity grouped by type"
     body: "Credit card statements split payments, credits, and purchases into separate groups, and may show transactions per cardholder. Rows from every group go into one table, with a type column marking each as credit or debit."
   - title: "360 statements list balances"
     body: "360 Checking and Savings statements run in date order with balances. Opening and closing balances are left out of the rows, but you can use them to check that the totals match."
   - title: "One PDF per month"
-    body: "Each statement is its own file, so a year means 12 uploads. Drop them in together rather than one at a time."
+    body: "Each statement is its own file, so a year of history means 12 PDFs to download and convert."
   - title: "Choosing a sign for amounts"
     body: "On card statements a purchase increases what you owe, while on 360 accounts a debit reduces your balance. Check how your accounting tool expects the signs before you import."
 faqs:

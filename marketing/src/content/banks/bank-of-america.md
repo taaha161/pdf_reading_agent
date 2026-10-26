@@ -25,8 +25,8 @@ layoutNotes:
 faqs:
   - q: "Why not use the Bank of America CSV download?"
     a: "It works for recent activity, but guides report it reaches back about 18 months and leaves out running balances and statement totals. For older periods, or a statement-accurate record, convert the PDF statements."
-  - q: "Can I convert several months at once?"
-    a: "Yes. Upload multiple Bank of America statement PDFs together and export each one to CSV or Excel."
+  - q: "Can I convert several months of statements?"
+    a: "Yes. Convert each month's Bank of America statement PDF one after another, and export each to CSV or Excel."
   - q: "Does it work with Bank of America business statements?"
     a: "Yes. Business statement PDFs, including longer multi-page statements, are supported. Use accurate mode for scanned copies."
   - q: "Is my Bank of America statement stored?"

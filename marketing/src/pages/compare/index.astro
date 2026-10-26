@@ -1,0 +1,54 @@
+---
+import Base from '../../layouts/Base.astro';
+
+const pages = [
+  {
+    href: '/compare/docuclipper-alternative',
+    title: 'Bank Statement Scanner vs DocuClipper',
+    body: 'Pay per statement with no annual contract, and when DocuClipper is the better fit.',
+  },
+  {
+    href: '/compare/chatgpt-for-bank-statements',
+    title: 'Bank Statement Scanner vs ChatGPT',
+    body: 'Can ChatGPT convert bank statements to Excel? Where it goes wrong and how to check it.',
+  },
+];
+---
+
+<Base
+  title="Compare Bank Statement Converters"
+  description="Honest comparisons of Bank Statement Scanner with DocuClipper and ChatGPT for converting bank statements to Excel and CSV."
+  path="/compare"
+>
+  <section class="container cmpi">
+    <h1>Compare bank statement converters</h1>
+    <p class="cmpi-lede">Side-by-side comparisons covering pricing, contracts, exports, and accuracy, including where the other option wins.</p>
+    <ul class="cmpi-grid" role="list">
+      {
+        pages.map((p) => (
+          <li>
+            <a href={p.href}>
+              <span class="cmpi-title">{p.title}</span>
+              <span class="cmpi-body">{p.body}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .cmpi { max-width: 900px; padding-block: 48px 24px; }
+  .cmpi h1 { font-size: clamp(30px, 5vw, 42px); margin: 0 0 14px; }
+  .cmpi-lede { font-size: 18px; line-height: 1.65; color: var(--color-text-muted); max-width: 640px; margin: 0 0 32px; }
+  .cmpi-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .cmpi-grid a {
+    display: flex; flex-direction: column; gap: 6px; padding: 20px; height: 100%;
+    border: 1px solid var(--color-border); border-radius: var(--radius-md);
+    background: var(--color-surface); color: var(--color-text); text-decoration: none;
+  }
+  .cmpi-grid a:hover { border-color: var(--color-primary); box-shadow: var(--shadow-sm); }
+  .cmpi-title { font-family: var(--font-heading); font-size: 21px; font-weight: 600; }
+  .cmpi-body { font-size: 15px; color: var(--color-text-muted); line-height: 1.55; }
+</style>
