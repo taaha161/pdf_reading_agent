@@ -47,13 +47,22 @@ def dry_run() -> int:
         return 1
 
     today = datetime.now(timezone.utc).date()
-    kw = b.KEYWORDS[today.timetuple().tm_yday % len(b.KEYWORDS)]
-    model = os.environ.get("GEMINI_BLOG_MODEL", "gemini-2.5-flash")
-    print(f"→ keyword: {kw!r}  model: {model}")
+    posts = b.local_posts(str(BACKEND.parent / b.CONTENT_DIR))
+    topic, skipped = b.pick_topic(posts)
+    for reason in skipped:
+        print(f"  skip {reason}")
+    if topic is None:
+        print("No uncovered topics left; add entries to TOPICS in blog_generator.py")
+        return 0
+    model = os.environ.get("GEMINI_BLOG_MODEL", "gemini-flash-latest")
+    print(f"→ topic: {topic['slug']!r}  keyword: {topic['keyword']!r}  model: {model}")
 
-    data = b._generate_post(kw, "https://bankstatementscanner.com", model)
-    slug = b._slugify(data["slug"]) or b._slugify(kw)
-    md = b._build_markdown(data, f"/blog/images/{slug}.jpg", today)
+    data = b._generate_post(topic, posts, model)
+    slug = topic["slug"]
+    clash = b._title_clash(data["title"], posts)
+    if clash:
+        print(f"  ⚠ title too close to /blog/{clash}; the live run would NOT publish this")
+    md = b._build_markdown(data, f"/blog/images/{slug}.jpg", today, topic["keyword"])
 
     OUT.mkdir(parents=True, exist_ok=True)
     dest = OUT / f"{slug}.md"
@@ -67,7 +76,7 @@ def dry_run() -> int:
     print(f"  words:    {words}  ({'OK' if 1500 <= words <= 2600 else 'OUT OF RANGE'})")
     print(f"  tags:     {data.get('tags')}")
     print(f"  internal links ({len(links)}): {links}")
-    bad = [l for l in links if l not in b.INTERNAL_LINKS]
+    bad = [l for l in links if l not in b._internal_links(posts)]
     if bad:
         print(f"  ⚠ links not in allow-list: {bad}")
     if not os.environ.get("PIXABAY_API_KEY"):

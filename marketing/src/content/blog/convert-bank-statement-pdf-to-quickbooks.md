@@ -8,7 +8,7 @@ readTime: "9 min read"
 image: "/blog/images/convert-bank-statement-pdf-to-quickbooks.jpg"
 ---
 
-Accounting software wants structured data, but banks hand you PDFs. Bridging that gap is one of the most common reasons people reach for a [**bank statement converter**](/blog/bank-statement-converter-pdf-to-excel): they need transactions inside QuickBooks, Xero, or NetSuite, and manual entry is not an option at any real volume.
+Accounting software wants structured data, but banks hand you PDFs. Bridging that gap is one of the most common reasons people reach for a [**bank statement converter**](/blog/bank-statement-converter-guide): they need transactions inside QuickBooks, Xero, or NetSuite, and manual entry is not an option at any real volume.
 
 The good news is that once you understand what your GL expects on import, converting a statement to feed it becomes routine. Here is how to do it without the failed-import cycle.
 

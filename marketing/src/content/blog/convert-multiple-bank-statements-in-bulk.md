@@ -1,7 +1,7 @@
 ---
 title: "How to Convert Multiple Bank Statements in Bulk Without Losing Accuracy"
 seoTitle: "Convert Multiple Bank Statements in Bulk"
-excerpt: "Converting a stack of statements—months of history or many client accounts—needs a repeatable workflow. Here's how to batch-convert PDFs to CSV or Excel while keeping accounts separate and totals reconciled."
+excerpt: "Converting a stack of statements—months of history or many client accounts—needs a repeatable workflow. Here's how to convert a stack of PDFs to CSV or Excel while keeping accounts separate and totals reconciled."
 date: 2026-08-08
 category: "For professionals"
 readTime: "8 min read"
@@ -34,7 +34,7 @@ Structure up front prevents chaos later:
 
 ## The bulk conversion workflow
 
-1. **Upload in batches by account.** Keep each account's statements together so periods stay in order and nothing crosses over.
+1. **Work through one account at a time.** Convert its statements in date order so periods stay in sequence and nothing crosses over.
 2. **Convert.** Extract dates, descriptions, amounts, and balances from each PDF into structured rows.
 3. **Review per account, not per file.** Confirm the earliest opening balance and the latest closing balance tie out across the full range, and that period-to-period balances chain correctly.
 4. **Dedupe at the seams.** Overlapping statement periods are the top cause of doubled transactions—check the boundaries where one file ends and the next begins.
@@ -54,6 +54,6 @@ The most damaging bulk error is a subtle one: two clients' transactions in a sin
 
 ## How Bank Statement Scanner handles the stack
 
-Upload statements for an account, review the extracted transactions and smart categories together, and export clean **CSV or Excel** per account—ready for QuickBooks, Xero, or a spreadsheet. Because the data starts structured and categories apply consistently, the reconciliation checks above go quickly even across months of history. The same product serves a single statement and a firm-wide client roster; only the volume changes.
+Bank Statement Scanner converts one statement at a time: upload a PDF, review the extracted transactions and smart categories, and export clean **CSV or Excel**. Every export uses the same columns (date, description, amount, credit or debit, category), so stacking a year of files for one account in a spreadsheet is a copy-paste job, and the reconciliation checks above go quickly. Name each export after its source file and the account stays easy to trace.
 
 Feeding a GL specifically? See [converting statements for QuickBooks and Xero](/blog/convert-bank-statement-pdf-to-quickbooks) for format and column-mapping details.

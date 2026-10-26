@@ -8,7 +8,7 @@ readTime: "8 min read"
 image: "/blog/images/are-bank-statement-converters-safe-accurate.jpg"
 ---
 
-Before you upload a bank statement to any [bank statement converter](/blog/bank-statement-converter-pdf-to-excel), two questions deserve a real answer: **is it accurate**, and **is it safe**? A statement is among the most sensitive documents you own—account numbers, balances, spending patterns—and a converter that mangles the numbers can be worse than useless when the errors slip into your books. Here is how to judge both without taking a vendor's word for it.
+Before you upload a bank statement to any [bank statement converter](/blog/bank-statement-converter-guide), two questions deserve a real answer: **is it accurate**, and **is it safe**? A statement is among the most sensitive documents you own—account numbers, balances, spending patterns—and a converter that mangles the numbers can be worse than useless when the errors slip into your books. Here is how to judge both without taking a vendor's word for it.
 
 ## What "accurate" really means for a converter
 

@@ -5,12 +5,12 @@ description: Run, test, or debug the daily SEO blog generator — generate a ban
 
 # Daily SEO Blog Generator
 
-Generates one 1500–2500 word, internally-linked, SEO-optimized blog post per day for
+Generates one 1500–2500 word, internally-linked, SEO-optimized blog post per week (Mondays 09:00 UTC) for
 **bankstatementscanner.com** and publishes it with zero human steps.
 
 **Pipeline:** GitHub Actions cron (`.github/workflows/daily-blog.yml`) → `POST
 /admin/generate-blog` on the FastAPI backend → `backend/services/blog_generator.py`:
-pick a target keyword (rotated by day) → **Gemini** writes the post as structured JSON →
+pick the next uncovered topic from `TOPICS` (skipped if a page already covers it) → **Gemini** writes the post as structured JSON →
 **Pixabay API** supplies a finance photo → both files committed to
 `marketing/src/content/blog/` + `marketing/public/blog/images/` via the **GitHub
 contents API** → Vercel auto-rebuilds the Astro site.
@@ -38,7 +38,7 @@ Env vars (see `backend/.env.example`). `GOOGLE_GEMINI_API_KEY` already exists; a
 
 ## Run (agent path) — dry-run the generator
 
-Fastest inner loop when changing prompts, keywords, internal links, or frontmatter.
+Fastest inner loop when changing prompts, topics, internal links, or frontmatter.
 Calls Gemini for real, writes markdown to the scratchpad, and does **NOT** commit.
 Run from `backend/` so `backend/.env` loads:
 
@@ -51,8 +51,8 @@ Output reports title, word count (flags OUT OF RANGE if <1500 or >2600), tags, a
 internal links found — warning on any link outside the allow-list. A real run looks like:
 
 ```
-→ keyword: 'convert bank statements to csv'  model: gemini-flash-latest
-✓ wrote .../scratchpad/convert-bank-statements-to-csv.md
+→ topic: 'reconcile-bank-statement-in-excel'  keyword: 'how to reconcile a bank statement in excel'  model: gemini-flash-latest
+✓ wrote .../scratchpad/reconcile-bank-statement-in-excel.md
   words:    1840  (OK)
   internal links (7): ['/', '/blog/are-bank-statement-converters-safe-accurate', ...]
 ```
@@ -118,12 +118,29 @@ A clean build ends with `[build] Complete!` and renders `/blog/<slug>/index.html
   `response_schema` (`_BlogPost`) so the SDK hydrates `resp.parsed`.
 - **Length retry.** `_generate_post` regenerates once with an "expand" nudge if the draft
   is under 1300 words. Flash models still occasionally land ~1470; treat 1300+ as passing.
-- **Internal links are allow-listed.** The model may only link paths in
-  `INTERNAL_LINKS`. When you publish a new post, add its slug there so future posts can
-  link to it.
-- **Keyword rotation, not dedup.** Posts rotate by day-of-year over `KEYWORDS`; the job
-  lists existing repo slugs and appends the date to a slug on collision. It does not
-  guarantee topical uniqueness over long horizons.
+- **Internal links are allow-listed automatically.** The model may only link
+  `STATIC_PAGES` plus every post that exists in the repo at run time, so new posts become
+  link targets without any manual list.
+- **One post per topic, never a dated copy.** `TOPICS` holds one entry per search intent
+  with a fixed slug; synonyms go in that entry's `secondary` list, never as new topics.
+  If a topic's slug exists it's covered. A token-overlap guard (`find_overlap`,
+  `COVERED_THRESHOLD` 0.75) also skips a topic that another post or a `/convert` /
+  `/compare` page already covers, and `_title_clash` refuses to publish if the generated
+  title is too close to an existing one. When every topic is covered the endpoint returns
+  `{"status": "skipped"}` (HTTP 200): add new, distinct topics to the end of `TOPICS`.
+- **The prompt lists every existing title** and tells the model not to repeat their scope,
+  plus a "product facts" block so posts don't promise features the app lacks (no batch
+  upload, no QBO/Xero export, no automatic reconciliation).
+- **Topic kinds.** `kind: "bank"` topics target "how to download <bank> statements" (the
+  `/convert/<bank>` pages own "<bank> statement to Excel"); the prompt forbids
+  bank-specific menu names, history limits, fees, or phone numbers, and
+  `_ensure_bank_link` appends the `/convert` link if the model left it out.
+  `kind: "comparison"` topics compare methods/categories only; named competitors stay
+  on hand-sourced `/compare` pages.
+- **No unsourced statistics.** `unsourced_claims` flags percentages and "research/studies
+  show" / "according to" sentences. `_generate_post` retries up to twice with the
+  offending sentences quoted; if they survive, the run returns `status: skipped` and the
+  topic is retried next week. Gemini Flash invents stats readily, so don't remove this.
 - **One atomic commit per post.** `_gh_commit_files` uses the Git Data API (blobs →
   tree → commit → move ref) to put the markdown + image in a single commit, so Vercel
   rebuilds once and never sees markdown referencing a not-yet-pushed image.

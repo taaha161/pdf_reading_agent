@@ -46,7 +46,7 @@ image: "/blog/images/how-to-download-chase-bank-statements.jpg"
 <p>Remember this export is limited to a recent window and reflects transaction activity, not the formatted monthly statement. For anything older—or a full statement in spreadsheet form—you'll convert the PDF.</p>
 
 <h2>Convert a Chase statement PDF to CSV or Excel</h2>
-<p>This is the step most guides skip. When the native export can't reach the period you need, or you already have PDF statements saved, a <a href="/blog/bank-statement-converter-pdf-to-excel">bank statement converter</a> turns the PDF into clean, structured rows—dates, descriptions, amounts, and balances—ready for a spreadsheet or your accounting software.</p>
+<p>This is the step most guides skip. When the native export can't reach the period you need, or you already have PDF statements saved, a <a href="/blog/bank-statement-converter-guide">bank statement converter</a> turns the PDF into clean, structured rows—dates, descriptions, amounts, and balances—ready for a spreadsheet or your accounting software.</p>
 <p><a href="/scanner">Bank Statement Scanner</a> is built for exactly this: upload your Chase statement PDF, we extract and rebuild the transaction table, apply smart categorization, and let you export to <strong>CSV or Excel</strong>. It works for any period you have a PDF for—not just the last 90 days—so a stack of monthly statements becomes reconciliation-ready data instead of a retyping chore.</p>
 <ul>
   <li><strong>Old or scanned statements?</strong> Even mailed or photographed statements convert—see <a href="/blog/convert-scanned-bank-statement-ocr">converting scanned bank statements with OCR</a>.</li>
@@ -83,7 +83,7 @@ image: "/blog/images/how-to-download-chase-bank-statements.jpg"
 <p>Using a converter? It's fair to ask how your data is handled—see <a href="/blog/are-bank-statement-converters-safe-accurate">are bank statement converters safe and accurate?</a> for what to verify before you upload.</p>
 
 <h2>Frequently asked questions</h2>
-<p><strong>Can I download Chase statements as CSV directly?</strong> Chase statements themselves download as PDF. CSV/Excel is available for recent transaction <em>activity</em>, not the formatted statement. To get a full or older statement into CSV, convert the PDF with a <a href="/blog/bank-statement-converter-pdf-to-excel">bank statement converter</a>.</p>
+<p><strong>Can I download Chase statements as CSV directly?</strong> Chase statements themselves download as PDF. CSV/Excel is available for recent transaction <em>activity</em>, not the formatted statement. To get a full or older statement into CSV, convert the PDF with a <a href="/blog/bank-statement-converter-guide">bank statement converter</a>.</p>
 <p><strong>Can I download statements on my phone?</strong> Yes—the Chase mobile app supports downloads, though the layout differs from desktop.</p>
 <p><strong>How far back can I get Chase statements?</strong> Chase typically keeps up to 7 years of PDF statements available online.</p>
 <p><strong>Is downloading statements free?</strong> Generally yes; confirm with Chase for any account-specific fees.</p>

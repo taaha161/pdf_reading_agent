@@ -1,10 +1,10 @@
-# Daily SEO blog: hit the backend endpoint that generates + commits a post.
+# Weekly SEO blog: hit the backend endpoint that generates + commits a post.
 # Backend does the Gemini + Pixabay + GitHub-commit work; this just triggers it.
-name: Daily SEO Blog
+name: Weekly SEO Blog
 
 on:
   schedule:
-    - cron: "0 9 * * *" # 09:00 UTC daily
+    - cron: "0 9 * * 1" # 09:00 UTC every Monday
   workflow_dispatch: {} # allow manual "Run workflow"
 
 jobs:

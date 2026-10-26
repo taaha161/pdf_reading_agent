@@ -1,19 +1,409 @@
 {
   "redirects": [
-    { "source": "/sitemap.xml", "destination": "/sitemap-index.xml", "permanent": true }
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap-index.xml",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-automation-guide",
+      "destination": "/blog/bank-statement-automation",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-automation-guide-2026-09-11",
+      "destination": "/blog/bank-statement-automation",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-capture-tool-guide",
+      "destination": "/blog/bank-statement-extraction-software-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-capture-tool-guide-2026-09-09",
+      "destination": "/blog/bank-statement-extraction-software-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-capture-tool-guide-2026-10-06",
+      "destination": "/blog/bank-statement-extraction-software-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-converter-guide-2026-09-29",
+      "destination": "/blog/bank-statement-converter-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-converter-guide-2026-10-26",
+      "destination": "/blog/bank-statement-converter-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-converter-pdf-to-excel",
+      "destination": "/blog/bank-statement-converter-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-extraction-software-free",
+      "destination": "/blog/free-bank-statement-converter",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-extraction-software-free-2026-10-11",
+      "destination": "/blog/free-bank-statement-converter",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-extraction-software-free-guide",
+      "destination": "/blog/free-bank-statement-converter",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-extraction-software-guide-2026-09-10",
+      "destination": "/blog/bank-statement-extraction-software-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-extraction-software-guide-2026-10-07",
+      "destination": "/blog/bank-statement-extraction-software-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-ocr",
+      "destination": "/blog/convert-scanned-bank-statement-ocr",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-ocr-guide",
+      "destination": "/blog/convert-scanned-bank-statement-ocr",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-ocr-guide-2026-09-07",
+      "destination": "/blog/convert-scanned-bank-statement-ocr",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-organizer-2026-10-05",
+      "destination": "/blog/bank-statement-organizer",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-organizer-guide",
+      "destination": "/blog/bank-statement-organizer",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-organizer-guide-2026-08-27",
+      "destination": "/blog/bank-statement-organizer",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-pdf-to-excel",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-pdf-to-excel-2026-09-15",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-pdf-to-excel-2026-10-12",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-scanner-guide",
+      "destination": "/blog/bank-statement-converter-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-scanner-guide-2026-09-27",
+      "destination": "/blog/bank-statement-converter-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-scanner-guide-2026-10-24",
+      "destination": "/blog/bank-statement-converter-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-software-guide",
+      "destination": "/blog/bank-statement-extraction-software-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-to-csv",
+      "destination": "/blog/convert-bank-statements-to-csv",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-to-csv-2026-09-28",
+      "destination": "/blog/convert-bank-statements-to-csv",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-to-excel",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-to-excel-guide",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-to-excel-software",
+      "destination": "/blog/bank-statement-extraction-software-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-to-excel-software-2026-10-16",
+      "destination": "/blog/bank-statement-extraction-software-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bank-statement-to-excel-software-guide",
+      "destination": "/blog/bank-statement-extraction-software-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/best-bank-statement-analysis-software-2026-09-12",
+      "destination": "/blog/best-bank-statement-analysis-software",
+      "permanent": true
+    },
+    {
+      "source": "/blog/best-bank-statement-analysis-software-2026-10-09",
+      "destination": "/blog/best-bank-statement-analysis-software",
+      "permanent": true
+    },
+    {
+      "source": "/blog/best-bank-statement-software",
+      "destination": "/blog/bank-statement-extraction-software-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/best-bank-statement-software-guide",
+      "destination": "/blog/bank-statement-extraction-software-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bookkeeping-made-easy-for-accountants-2026-09-26",
+      "destination": "/blog/bookkeeping-made-easy-for-accountants",
+      "permanent": true
+    },
+    {
+      "source": "/blog/bookkeeping-made-easy-for-accountants-2026-10-23",
+      "destination": "/blog/bookkeeping-made-easy-for-accountants",
+      "permanent": true
+    },
+    {
+      "source": "/blog/complete-guide-to-bookkeeping-software-2026-10-22",
+      "destination": "/blog/complete-guide-to-bookkeeping-software",
+      "permanent": true
+    },
+    {
+      "source": "/blog/convert-bank-statement-pdf-to-excel-2026-09-16",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/convert-bank-statement-pdf-to-excel-2026-10-13",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/convert-bank-statements-to-csv-2026-08-08",
+      "destination": "/blog/convert-bank-statements-to-csv",
+      "permanent": true
+    },
+    {
+      "source": "/blog/convert-bank-statements-to-csv-2026-09-04",
+      "destination": "/blog/convert-bank-statements-to-csv",
+      "permanent": true
+    },
+    {
+      "source": "/blog/convert-bank-statements-to-csv-2026-10-01",
+      "destination": "/blog/convert-bank-statements-to-csv",
+      "permanent": true
+    },
+    {
+      "source": "/blog/convert-bank-statements-to-excel",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/convert-bank-statements-to-excel-2026-09-22",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/convert-credit-card-statement-to-excel-2026-10-20",
+      "destination": "/blog/convert-credit-card-statement-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/credit-card-statement-converter",
+      "destination": "/blog/convert-credit-card-statement-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/credit-card-statement-converter-2026-09-17",
+      "destination": "/blog/convert-credit-card-statement-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/credit-card-statement-converter-2026-10-14",
+      "destination": "/blog/convert-credit-card-statement-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/credit-card-statement-to-excel",
+      "destination": "/blog/convert-credit-card-statement-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/credit-card-statement-to-excel-2026-09-24",
+      "destination": "/blog/convert-credit-card-statement-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/credit-card-statement-to-excel-2026-10-21",
+      "destination": "/blog/convert-credit-card-statement-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/financial-data-extraction-software-2026-09-13",
+      "destination": "/blog/financial-data-extraction-software",
+      "permanent": true
+    },
+    {
+      "source": "/blog/financial-data-extraction-software-guide",
+      "destination": "/blog/financial-data-extraction-software",
+      "permanent": true
+    },
+    {
+      "source": "/blog/free-bank-statement-converter-2026-10-18",
+      "destination": "/blog/free-bank-statement-converter",
+      "permanent": true
+    },
+    {
+      "source": "/blog/free-bank-statement-converter-guide",
+      "destination": "/blog/free-bank-statement-converter",
+      "permanent": true
+    },
+    {
+      "source": "/blog/how-to-convert-bank-statement-to-csv",
+      "destination": "/blog/convert-bank-statements-to-csv",
+      "permanent": true
+    },
+    {
+      "source": "/blog/how-to-convert-bank-statements-to-excel",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/how-to-export-bank-statement-to-excel",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/how-to-export-bank-statement-to-excel-2026-09-18",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/how-to-export-bank-statement-to-excel-2026-10-15",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/how-to-scan-bank-statements",
+      "destination": "/blog/convert-scanned-bank-statement-ocr",
+      "permanent": true
+    },
+    {
+      "source": "/blog/how-to-scan-bank-statements-2026-10-02",
+      "destination": "/blog/convert-scanned-bank-statement-ocr",
+      "permanent": true
+    },
+    {
+      "source": "/blog/how-to-scan-bank-statements-to-excel-csv",
+      "destination": "/blog/convert-scanned-bank-statement-ocr",
+      "permanent": true
+    },
+    {
+      "source": "/blog/ocr-bank-statements-to-excel",
+      "destination": "/blog/convert-scanned-bank-statement-ocr",
+      "permanent": true
+    },
+    {
+      "source": "/blog/ocr-bank-statements-to-excel-2026-09-20",
+      "destination": "/blog/convert-scanned-bank-statement-ocr",
+      "permanent": true
+    },
+    {
+      "source": "/blog/ocr-bank-statements-to-excel-2026-10-17",
+      "destination": "/blog/convert-scanned-bank-statement-ocr",
+      "permanent": true
+    },
+    {
+      "source": "/blog/scan-bank-statements-to-excel-and-csv",
+      "destination": "/blog/convert-scanned-bank-statement-ocr",
+      "permanent": true
+    }
   ],
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://app.bankstatementscanner.com/api/:path*" },
-    { "source": "/assets/:path*", "destination": "https://app.bankstatementscanner.com/assets/:path*" },
-    { "source": "/auth-avatars/:path*", "destination": "https://app.bankstatementscanner.com/auth-avatars/:path*" },
-    { "source": "/auth-illustration.svg", "destination": "https://app.bankstatementscanner.com/auth-illustration.svg" },
-    { "source": "/scanner", "destination": "https://app.bankstatementscanner.com/scanner" },
-    { "source": "/scanner/:path*", "destination": "https://app.bankstatementscanner.com/scanner/:path*" },
-    { "source": "/dashboard", "destination": "https://app.bankstatementscanner.com/dashboard" },
-    { "source": "/settings", "destination": "https://app.bankstatementscanner.com/settings" },
-    { "source": "/login", "destination": "https://app.bankstatementscanner.com/login" },
-    { "source": "/signup", "destination": "https://app.bankstatementscanner.com/signup" },
-    { "source": "/forgot-password", "destination": "https://app.bankstatementscanner.com/forgot-password" },
-    { "source": "/reset-password", "destination": "https://app.bankstatementscanner.com/reset-password" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://app.bankstatementscanner.com/api/:path*"
+    },
+    {
+      "source": "/assets/:path*",
+      "destination": "https://app.bankstatementscanner.com/assets/:path*"
+    },
+    {
+      "source": "/auth-avatars/:path*",
+      "destination": "https://app.bankstatementscanner.com/auth-avatars/:path*"
+    },
+    {
+      "source": "/auth-illustration.svg",
+      "destination": "https://app.bankstatementscanner.com/auth-illustration.svg"
+    },
+    {
+      "source": "/scanner",
+      "destination": "https://app.bankstatementscanner.com/scanner"
+    },
+    {
+      "source": "/scanner/:path*",
+      "destination": "https://app.bankstatementscanner.com/scanner/:path*"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "https://app.bankstatementscanner.com/dashboard"
+    },
+    {
+      "source": "/settings",
+      "destination": "https://app.bankstatementscanner.com/settings"
+    },
+    {
+      "source": "/login",
+      "destination": "https://app.bankstatementscanner.com/login"
+    },
+    {
+      "source": "/signup",
+      "destination": "https://app.bankstatementscanner.com/signup"
+    },
+    {
+      "source": "/forgot-password",
+      "destination": "https://app.bankstatementscanner.com/forgot-password"
+    },
+    {
+      "source": "/reset-password",
+      "destination": "https://app.bankstatementscanner.com/reset-password"
+    }
   ]
 }
