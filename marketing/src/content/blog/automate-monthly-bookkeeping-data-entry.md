@@ -5,6 +5,7 @@ excerpt: "Learn how to automate monthly bookkeeping data entry, convert PDF bank
 date: 2026-10-26
 category: "How-to"
 readTime: "9 min read"
+image: "/blog/images/automate-monthly-bookkeeping-data-entry.jpg"
 tags:
   - "bookkeeping"
   - "accounting automation"
