@@ -1,0 +1,126 @@
+---
+import { getCollection } from 'astro:content';
+
+// Logos are public-domain wordmarks from Wikimedia Commons, stored in
+// public/logos/banks and rendered greyscale so no single brand dominates.
+// `ratio` is width / height from each SVG's viewBox; `scale` corrects marks
+// whose artwork is unusually dense or padded.
+const logos = [
+  { file: 'chase', name: 'Chase', ratio: 5.381, bank: 'chase' },
+  { file: 'bofa', name: 'Bank of America', ratio: 9.863, bank: 'bank-of-america' },
+  { file: 'wellsfargo', name: 'Wells Fargo', ratio: 1, bank: 'wells-fargo' },
+  { file: 'citi', name: 'Citi', ratio: 1.697, bank: 'citi' },
+  { file: 'capitalone', name: 'Capital One', ratio: 2.787, bank: 'capital-one' },
+  { file: 'amex', name: 'American Express', ratio: 1.002, bank: 'american-express' },
+  { file: 'usbank', name: 'U.S. Bank', ratio: 3.591 },
+  { file: 'pnc', name: 'PNC', ratio: 3.307 },
+  { file: 'truist', name: 'Truist', ratio: 4.31 },
+  { file: 'td', name: 'TD Bank', ratio: 1.44, scale: 1.35 },
+  { file: 'ally', name: 'Ally', ratio: 1.754, scale: 0.7 },
+  { file: 'schwab', name: 'Charles Schwab', ratio: 1 },
+  { file: 'navyfederal', name: 'Navy Federal Credit Union', ratio: 1.707 },
+  { file: 'chime', name: 'Chime', ratio: 3.512 },
+  { file: 'sofi', name: 'SoFi', ratio: 3.784 },
+  { file: 'fifththird', name: 'Fifth Third Bank', ratio: 6.75 },
+  { file: 'citizens', name: 'Citizens', ratio: 4.566 },
+  { file: 'regions', name: 'Regions', ratio: 5.999 },
+  { file: 'huntington', name: 'Huntington', ratio: 5.073 },
+  { file: 'mt', name: 'M&T Bank', ratio: 5.503 },
+  { file: 'goldman', name: 'Goldman Sachs', ratio: 2.267 },
+];
+
+// Banks with a /convert guide get linked; the rest are plain logos.
+const banks = await getCollection('banks');
+const slugFor = (id?: string) => banks.find((b) => b.id === id)?.data.slug;
+
+// Equalise visual weight: give every logo roughly the same area, clamped so
+// very wide wordmarks stay legible and square marks don't dominate.
+const AREA = 2600;
+const sized = logos.map((l: { file: string; name: string; ratio: number; bank?: string; scale?: number }) => {
+  const h = Math.round(Math.min(44, Math.max(18, Math.sqrt(AREA / l.ratio))) * (l.scale ?? 1));
+  return { ...l, h, w: Math.round(h * l.ratio), slug: slugFor(l.bank) };
+});
+---
+
+<section class="banks-strip" aria-labelledby="banks-strip-title">
+  <p id="banks-strip-title" class="banks-strip-title">
+    Works with statements from <a href="/convert">100+ banks and card issuers</a>
+  </p>
+  <div class="banks-strip-viewport">
+    {
+      [0, 1].map((copy) => (
+        <ul class="banks-strip-track" role="list" aria-hidden={copy === 1 ? 'true' : undefined}>
+          {sized.map((l) => {
+            const img = (
+              <img
+                src={`/logos/banks/${l.file}.svg`}
+                alt={copy === 0 ? l.name : ''}
+                width={l.w}
+                height={l.h}
+                loading="lazy"
+                decoding="async"
+              />
+            );
+            return (
+              <li>
+                {l.slug ? (
+                  <a
+                    href={`/convert/${l.slug}`}
+                    tabindex={copy === 1 ? -1 : undefined}
+                    title={`Convert ${l.name} statements`}
+                  >
+                    {img}
+                  </a>
+                ) : (
+                  img
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ))
+    }
+  </div>
+  <p class="banks-strip-note">Bank names and logos belong to their owners. Bank Statement Scanner isn't affiliated with these banks.</p>
+</section>
+
+<style>
+  .banks-strip { padding-block: 28px 8px; }
+  .banks-strip-title {
+    text-align: center; margin: 0 0 18px; font-size: 15px; color: var(--color-text-muted);
+  }
+  .banks-strip-title a { color: var(--color-text); font-weight: 600; }
+  .banks-strip-viewport {
+    display: flex; overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .banks-strip-track {
+    list-style: none; margin: 0; padding: 0 56px 0 0; display: flex; align-items: center;
+    gap: 56px; flex: none; animation: banks-scroll 60s linear infinite;
+  }
+  .banks-strip-viewport:hover .banks-strip-track,
+  .banks-strip-viewport:focus-within .banks-strip-track { animation-play-state: paused; }
+  .banks-strip-track li { flex: none; display: flex; align-items: center; min-height: 48px; }
+  .banks-strip-track a { display: flex; border-radius: var(--radius-sm); }
+  .banks-strip-track img {
+    display: block; max-width: none; filter: grayscale(1); opacity: 0.6;
+    transition: filter 0.2s, opacity 0.2s;
+  }
+  .banks-strip-track a:hover img,
+  .banks-strip-track a:focus-visible img { filter: none; opacity: 1; }
+  .banks-strip-note {
+    text-align: center; margin: 14px 0 0; font-size: 12px; color: var(--color-text-muted); opacity: 0.8;
+  }
+
+  @keyframes banks-scroll {
+    to { transform: translateX(-100%); }
+  }
+
+  /* No motion: show a static, wrapped grid of the first copy instead. */
+  @media (prefers-reduced-motion: reduce) {
+    .banks-strip-viewport { -webkit-mask-image: none; mask-image: none; justify-content: center; }
+    .banks-strip-track { animation: none; flex-wrap: wrap; justify-content: center; gap: 24px 40px; padding: 0 16px; flex: 1; }
+    .banks-strip-track[aria-hidden='true'] { display: none; }
+  }
+</style>

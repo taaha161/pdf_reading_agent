@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
+import BankLogoMarquee from '../components/BankLogoMarquee.astro';
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SUPPORT_EMAIL, canonical } from '../consts';
 
 // Use-case cards pull from the real blog posts.
@@ -120,6 +121,8 @@ const jsonLd = [
       </div>
     </div>
   </section>
+
+  <BankLogoMarquee />
 
   <!-- Results / stats -->
   <section class="results" id="results" aria-label="Results">

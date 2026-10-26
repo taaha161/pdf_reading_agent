@@ -1,0 +1,70 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { canonical } from '../../consts';
+
+const banks = (await getCollection('banks')).sort((a, b) => a.data.name.localeCompare(b.data.name));
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: banks.map((b, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: b.data.seoTitle,
+      url: canonical(`/convert/${b.data.slug}`),
+    })),
+  },
+];
+---
+
+<Base
+  title="Supported Banks: Convert Bank Statements to Excel"
+  description="Bank-by-bank guides to downloading your statement PDF and converting it to Excel or CSV, for Chase, Bank of America, Wells Fargo, Citi, Capital One, Amex, and more."
+  path="/convert"
+  jsonLd={jsonLd}
+>
+  <section class="container banks">
+    <h1>Convert statements from your bank</h1>
+    <p class="banks-lede">
+      Bank Statement Scanner works with statement PDFs from 100+ banks and card issuers, including scans and
+      password-protected files. These guides cover where to download each bank's statement, what its layout
+      looks like, and what to check after converting.
+    </p>
+    <ul class="banks-grid" role="list">
+      {
+        banks.map((b) => (
+          <li>
+            <a href={`/convert/${b.data.slug}`}>
+              <span class="banks-name">{b.data.name}</span>
+              <span class="banks-types">{b.data.statementTypes.join(' · ')}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <p class="banks-more">
+      Bank not listed? It almost certainly still works. <a href="/scanner">Upload a statement free</a> and see.
+    </p>
+  </section>
+</Base>
+
+<style>
+  .banks { max-width: 900px; padding-block: 48px 24px; }
+  .banks h1 { font-size: clamp(30px, 5vw, 42px); margin: 0 0 14px; }
+  .banks-lede { font-size: 18px; line-height: 1.65; color: var(--color-text-muted); max-width: 680px; margin: 0 0 32px; }
+  .banks-grid {
+    list-style: none; margin: 0; padding: 0; display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+  .banks-grid a {
+    display: flex; flex-direction: column; gap: 4px; padding: 18px; height: 100%;
+    border: 1px solid var(--color-border); border-radius: var(--radius-md);
+    background: var(--color-surface); color: var(--color-text); text-decoration: none;
+  }
+  .banks-grid a:hover { border-color: var(--color-primary); box-shadow: var(--shadow-sm); }
+  .banks-name { font-family: var(--font-heading); font-size: 20px; font-weight: 600; }
+  .banks-types { font-size: 14px; color: var(--color-text-muted); }
+  .banks-more { margin-top: 28px; font-size: 16px; }
+</style>
