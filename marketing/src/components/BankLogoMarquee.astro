@@ -57,7 +57,6 @@ const sized = logos.map((l: { file: string; name: string; ratio: number; bank?: 
                 alt={copy === 0 ? l.name : ''}
                 width={l.w}
                 height={l.h}
-                loading="lazy"
                 decoding="async"
               />
             );
@@ -97,7 +96,7 @@ const sized = logos.map((l: { file: string; name: string; ratio: number; bank?: 
   }
   .banks-strip-track {
     list-style: none; margin: 0; padding: 0 56px 0 0; display: flex; align-items: center;
-    gap: 56px; flex: none; animation: banks-scroll 60s linear infinite;
+    gap: 56px; flex: none; animation: banks-scroll 60s linear infinite; will-change: transform;
   }
   .banks-strip-viewport:hover .banks-strip-track,
   .banks-strip-viewport:focus-within .banks-strip-track { animation-play-state: paused; }
@@ -117,10 +116,8 @@ const sized = logos.map((l: { file: string; name: string; ratio: number; bank?: 
     to { transform: translateX(-100%); }
   }
 
-  /* No motion: show a static, wrapped grid of the first copy instead. */
+  /* Reduced motion: keep the loop but slow it right down; hover/focus still pauses it. */
   @media (prefers-reduced-motion: reduce) {
-    .banks-strip-viewport { -webkit-mask-image: none; mask-image: none; justify-content: center; }
-    .banks-strip-track { animation: none; flex-wrap: wrap; justify-content: center; gap: 24px 40px; padding: 0 16px; flex: 1; }
-    .banks-strip-track[aria-hidden='true'] { display: none; }
+    .banks-strip-track { animation-duration: 180s; }
   }
 </style>
