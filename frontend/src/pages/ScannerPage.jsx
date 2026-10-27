@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import FileUpload from "../components/FileUpload";
@@ -84,9 +84,11 @@ function transactionsToCsvBrowser(transactions) {
   return `${header}\n${rows.join("\n")}\n`;
 }
 
+const TRIAL_LIMIT_NOTICE = "You've used your free scan. Create a free account to get more free scans.";
+
 export default function ScannerPage() {
-  const { user } = useAuth();
-  const { refreshUsage, applyUsage } = useUsage();
+  const { user, loading: authLoading } = useAuth();
+  const { usage, refreshUsage, applyUsage } = useUsage();
   const navigate = useNavigate();
   const { jobId: routeJobId } = useParams();
   const [jobId, setJobId] = useState(null);
@@ -122,6 +124,25 @@ export default function ScannerPage() {
     }, 1500);
     return () => clearTimeout(timer);
   }, [canEmailSpreadsheet, jobId]);
+
+  // Out of anonymous free scans: send to signup instead of letting them hit the limit.
+  const goToSignup = useCallback(
+    () =>
+      navigate("/signup", {
+        replace: true,
+        state: { from: { pathname: "/scanner" }, notice: TRIAL_LIMIT_NOTICE },
+      }),
+    [navigate]
+  );
+
+  // Checked once, on the first usage that matches the settled auth state, so
+  // viewing the results of the last free scan doesn't redirect mid-page.
+  const trialCheckDone = useRef(false);
+  useEffect(() => {
+    if (trialCheckDone.current || authLoading || !usage || usage.authenticated !== isLoggedIn) return;
+    trialCheckDone.current = true;
+    if (!isLoggedIn && !routeJobId && usage.trial_remaining === 0) goToSignup();
+  }, [usage, authLoading, isLoggedIn, routeJobId, goToSignup]);
 
   // Load existing job when opening from dashboard (e.g. /scanner/:jobId)
   useEffect(() => {
@@ -186,6 +207,10 @@ export default function ScannerPage() {
         setTrialCsvContent(null);
         setLoading(false);
         setLoadingFile(null);
+        return;
+      }
+      if (e.isTrialLimit && !isLoggedIn) {
+        goToSignup();
         return;
       }
       if (e.insufficientCredits) {

@@ -68,6 +68,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const from = location.state?.from?.pathname || "/dashboard";
+  const notice = location.state?.notice;
   const modeFromQuery = searchParams.get("mode"); // e.g. /login?mode=signup
   const mode = modeFromQuery === "signup" || modeFromQuery === "login" || modeFromQuery === "forgot" ? modeFromQuery : initialMode;
 
@@ -83,10 +84,11 @@ export default function AuthPage({ mode: initialMode = "login" }) {
 
   useEffect(() => {
     setView(mode);
-    setMessage({ type: "", text: "" });
+    // e.g. redirected here from the scanner after using the free scan
+    setMessage(notice ? { type: "success", text: notice } : { type: "", text: "" });
     setSignupSuccess(false);
     setConfirmPassword("");
-  }, [mode]);
+  }, [mode, notice]);
 
   // Redirect if already logged in (skip on reset-password; that page handles its own logic)
   useEffect(() => {
