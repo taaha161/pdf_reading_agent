@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import BankLogoMarquee from '../components/BankLogoMarquee.astro';
+import { comparePages } from '../comparePages';
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SUPPORT_EMAIL, canonical } from '../consts';
 
 // Use-case cards pull from the real blog posts.
@@ -12,6 +13,8 @@ const useCases = [
   { slug: 'bank-statement-scanner-for-small-businesses', label: 'For small business' },
   { slug: 'bank-statement-scanner-for-personal-finance', label: 'For personal finance' },
 ].map((u) => ({ ...u, post: bySlug(u.slug) }));
+
+const banks = (await getCollection('banks')).sort((a, b) => a.data.name.localeCompare(b.data.name));
 
 const faqs = [
   {
@@ -188,6 +191,29 @@ const jsonLd = [
     }
   </section>
 
+  <!-- Bank guides -->
+  <section class="bank-guides" aria-label="Bank guides">
+    <div class="container">
+      <header class="section-head">
+        <h2>Guides for your bank</h2>
+        <p>Where to download each bank's statement PDF, what its layout looks like, and what to check after converting.</p>
+      </header>
+      <ul class="link-grid" role="list">
+        {
+          banks.map((b) => (
+            <li>
+              <a href={`/convert/${b.data.slug}`}>
+                <span class="link-title">{b.data.name}</span>
+                <span class="link-body">{b.data.statementTypes.join(' · ')}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="section-more"><a href="/convert">See all supported banks →</a></p>
+    </div>
+  </section>
+
   <!-- CTA band -->
   <section class="cta-band" aria-label="Call to action">
     <div class="container cta-band-inner">
@@ -234,6 +260,29 @@ const jsonLd = [
           <a class="btn btn-outline price-btn" href="/login">Get started</a>
         </article>
       </div>
+    </div>
+  </section>
+
+  <!-- Comparisons -->
+  <section class="compare" aria-label="Comparisons">
+    <div class="container">
+      <header class="section-head">
+        <h2>How we compare</h2>
+        <p>Side-by-side on pricing, contracts, exports, and accuracy, including where the other option wins.</p>
+      </header>
+      <ul class="link-grid link-grid--compare" role="list">
+        {
+          comparePages.map((p) => (
+            <li>
+              <a href={p.href}>
+                <span class="link-title">{p.title}</span>
+                <span class="link-body">{p.body}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="section-more"><a href="/compare">All comparisons →</a></p>
     </div>
   </section>
 
@@ -351,6 +400,25 @@ const jsonLd = [
   .usecard-body h3 { margin: 0 0 8px; font-size: 20px; }
   .usecard-body p { color: var(--color-text-muted); font-size: 15px; margin: 0 0 14px; }
   .usecard-link { font-weight: 600; }
+
+  /* Bank guides + comparisons */
+  .bank-guides { padding-top: 72px; }
+  .compare { padding-block: 0 72px; }
+  .link-grid {
+    list-style: none; margin: 0; padding: 0; display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+  .link-grid--compare { max-width: 820px; margin-inline: auto; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .link-grid a {
+    display: flex; flex-direction: column; gap: 6px; padding: 20px 22px; height: 100%;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+    color: var(--color-text); text-decoration: none;
+  }
+  .link-grid a:hover { border-color: var(--color-primary); box-shadow: var(--shadow-md); }
+  .link-title { font-family: var(--font-heading); font-size: 19px; font-weight: 600; }
+  .link-body { font-size: 15px; color: var(--color-text-muted); line-height: 1.55; }
+  .section-more { text-align: center; margin: 24px 0 0; font-weight: 600; }
 
   /* CTA band */
   .cta-band { background: var(--color-primary); color: #fff; margin-top: 72px; padding-block: 56px; }

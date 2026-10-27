@@ -1,18 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { comparePages } from '../../comparePages';
 
-const pages = [
-  {
-    href: '/compare/docuclipper-alternative',
-    title: 'Bank Statement Scanner vs DocuClipper',
-    body: 'Pay per statement with no annual contract, and when DocuClipper is the better fit.',
-  },
-  {
-    href: '/compare/chatgpt-for-bank-statements',
-    title: 'Bank Statement Scanner vs ChatGPT',
-    body: 'Can ChatGPT convert bank statements to Excel? Where it goes wrong and how to check it.',
-  },
-];
 ---
 
 <Base
@@ -25,7 +14,7 @@ const pages = [
     <p class="cmpi-lede">Side-by-side comparisons covering pricing, contracts, exports, and accuracy, including where the other option wins.</p>
     <ul class="cmpi-grid" role="list">
       {
-        pages.map((p) => (
+        comparePages.map((p) => (
           <li>
             <a href={p.href}>
               <span class="cmpi-title">{p.title}</span>
