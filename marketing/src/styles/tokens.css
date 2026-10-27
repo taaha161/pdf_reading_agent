@@ -1,8 +1,8 @@
 /* Design tokens ported from the live site (frontend/src/index.css) to keep
    visual parity between the Astro marketing surface and the React app. */
 :root {
-  --font-heading: "Fraunces", Georgia, serif;
-  --font-body: "DM Sans", system-ui, -apple-system, sans-serif;
+  --font-heading: "InterVariable", "Inter", system-ui, -apple-system, sans-serif;
+  --font-body: "InterVariable", "Inter", system-ui, -apple-system, sans-serif;
 
   --radius-sm: 6px;
   --radius-md: 10px;
