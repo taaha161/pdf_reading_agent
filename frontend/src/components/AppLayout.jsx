@@ -17,7 +17,7 @@ export default function AppLayout({ children }) {
   // IP; credits live in billing). Counting local jobs — the old
   // behavior — never moved for anonymous trial users and ignored credits.
   const trialUsed = usage?.trial_used ?? 0;
-  const trialLimit = usage?.trial_limit ?? 5;
+  const trialLimit = usage?.trial_limit ?? 1;
   const trialRemaining = usage?.trial_remaining ?? trialLimit;
   const freeScanProgress = trialLimit > 0 ? Math.min(trialUsed / trialLimit, 1) : 0;
   const balanceCents = usage?.balance_cents ?? null;

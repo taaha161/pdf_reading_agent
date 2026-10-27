@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import main
-from main import TRIAL_LIMIT, app
+from main import ANON_TRIAL_LIMIT, AUTH_TRIAL_LIMIT, app, get_current_user_optional
 
 MINIMAL_PDF = b"%PDF-1.4\n%%EOF"
 
@@ -42,7 +42,7 @@ def _scan(client, ip, **extra):
 
 
 def test_trial_limit_is_per_ip_and_ignores_cookies(anon_client):
-    for _ in range(TRIAL_LIMIT):
+    for _ in range(ANON_TRIAL_LIMIT):
         assert _scan(anon_client, "1.1.1.1").status_code == 200
 
     # Clearing / forging cookies doesn't reset the count.
@@ -54,6 +54,25 @@ def test_trial_limit_is_per_ip_and_ignores_cookies(anon_client):
 
     # A different IP has its own allowance.
     assert _scan(anon_client, "2.2.2.2").status_code == 200
+
+
+def test_signed_in_users_get_more_free_scans_on_same_ip(anon_client):
+    for _ in range(ANON_TRIAL_LIMIT):
+        assert _scan(anon_client, "5.5.5.5").status_code == 200
+    assert _scan(anon_client, "5.5.5.5").status_code == 401
+
+    app.dependency_overrides[get_current_user_optional] = lambda: "user-1"
+    try:
+        with patch("main.set_job"):
+            for _ in range(AUTH_TRIAL_LIMIT - ANON_TRIAL_LIMIT):
+                r = _scan(anon_client, "5.5.5.5")
+                assert r.status_code == 200
+                assert r.json()["trial_limit"] == AUTH_TRIAL_LIMIT
+            # Free scans exhausted: falls through to credits.
+            with patch("main.get_billing", return_value={"balance_cents": 0}):
+                assert _scan(anon_client, "5.5.5.5").status_code == 402
+    finally:
+        app.dependency_overrides.pop(get_current_user_optional, None)
 
 
 def test_trial_fails_closed_when_count_unavailable(anon_client):

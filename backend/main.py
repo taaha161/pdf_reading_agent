@@ -448,7 +448,8 @@ _RATE_LIMIT_EMAIL_SPREADSHEET = os.environ.get("RATE_LIMIT_EMAIL_SPREADSHEET", "
 _RATE_LIMIT_EXPORT = os.environ.get("RATE_LIMIT_EXPORT", "30/minute")
 
 
-TRIAL_LIMIT = 5  # Number of free statements for unauthenticated users
+ANON_TRIAL_LIMIT = 1  # Free statements before sign-up
+AUTH_TRIAL_LIMIT = 3  # Total free statements once signed in (includes the anonymous one)
 TRIAL_LIMIT_MESSAGE = "Trial limit reached. Please log in to process more PDFs."
 INSUFFICIENT_CREDITS_CODE = "INSUFFICIENT_CREDITS"
 RECAPTCHA_FAILED_CODE = "RECAPTCHA_FAILED"
@@ -457,7 +458,11 @@ RECAPTCHA_FAILED_CODE = "RECAPTCHA_FAILED"
 PDF_PASSWORD_REQUIRED_CODE = "PDF_PASSWORD_REQUIRED"
 
 
-def _trial_used(request: Request) -> int:
+def _trial_limit(user_id: str | None) -> int:
+    return AUTH_TRIAL_LIMIT if user_id is not None else ANON_TRIAL_LIMIT
+
+
+def _trial_used(request: Request, limit: int) -> int:
     """Free scans used by this client, counted server-side per IP (no cookies,
     so clearing cookies / incognito can't reset the limit).
 
@@ -466,12 +471,12 @@ def _trial_used(request: Request) -> int:
     ip_hash = _client_ip_hash(request)
     if not ip_hash:
         logger.warning("trial: no client IP; treating trial as exhausted")
-        return TRIAL_LIMIT
+        return limit
     try:
-        return min(count_trial_runs_by_ip(ip_hash), TRIAL_LIMIT)
+        return min(count_trial_runs_by_ip(ip_hash), limit)
     except Exception as e:
         logger.error("trial IP count failed; treating trial as exhausted: %s", e)
-        return TRIAL_LIMIT
+        return limit
 
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
 @limiter.limit(_RATE_LIMIT_PROCESS_PDF)
@@ -494,15 +499,16 @@ async def process_pdf(
         )
 
     # Free-scan usage is counted server-side per client IP.
-    trial_used = _trial_used(request)
+    trial_limit = _trial_limit(user_id)
+    trial_used = _trial_used(request, trial_limit)
 
     if user_id is None:
-        if trial_used >= TRIAL_LIMIT:
+        if trial_used >= trial_limit:
             raise HTTPException(status_code=401, detail=TRIAL_LIMIT_MESSAGE)
         # Will run pipeline below and not call set_job; return inline csv_content/raw_text
 
     # Authenticated users share the same per-IP free scans before drawing down credits
-    use_free_trial = user_id is not None and trial_used < TRIAL_LIMIT
+    use_free_trial = user_id is not None and trial_used < trial_limit
 
     # Normalize: only "ocr" or "vision" (for scanned PDFs)
     if scanned_method and scanned_method.strip().lower() == "ocr":
@@ -611,7 +617,7 @@ async def process_pdf(
 
         if is_trial:
             # Return inline csv_content and raw_text
-            new_count = min(trial_used + 1, TRIAL_LIMIT)
+            new_count = min(trial_used + 1, trial_limit)
             payload = ProcessPdfResponse(
                 job_id=job_id,
                 transactions=[Transaction(**t) for t in transactions],
@@ -622,8 +628,8 @@ async def process_pdf(
                 csv_content=csv_content,
                 raw_text=raw_text,
                 trial_used=new_count,
-                trial_limit=TRIAL_LIMIT,
-                trial_remaining=max(0, TRIAL_LIMIT - new_count),
+                trial_limit=trial_limit,
+                trial_remaining=max(0, trial_limit - new_count),
             )
             logger.info("process-pdf: [step 4/4] trial finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
             return payload
@@ -640,10 +646,10 @@ async def process_pdf(
             if use_free_trial:
                 incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
                 set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito, conversion_mode=conversion_mode_val)
-                new_count = min(trial_used + 1, TRIAL_LIMIT)
+                new_count = min(trial_used + 1, trial_limit)
                 payload.trial_used = new_count
-                payload.trial_limit = TRIAL_LIMIT
-                payload.trial_remaining = max(0, TRIAL_LIMIT - new_count)
+                payload.trial_limit = trial_limit
+                payload.trial_remaining = max(0, trial_limit - new_count)
                 return payload
             cost_cents = SCAN_COST_CENTS.get(conversion_mode_val, SCAN_COST_CENTS["fast"])
             new_balance = deduct_balance(user_id, cost_cents)
@@ -663,9 +669,9 @@ async def process_pdf(
                 logger.warning("insert_usage_log failed (continuing): %s", e)
             incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
             set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito, conversion_mode=conversion_mode_val)
-            payload.trial_used = min(trial_used, TRIAL_LIMIT)
-            payload.trial_limit = TRIAL_LIMIT
-            payload.trial_remaining = max(0, TRIAL_LIMIT - trial_used)
+            payload.trial_used = min(trial_used, trial_limit)
+            payload.trial_limit = trial_limit
+            payload.trial_remaining = max(0, trial_limit - trial_used)
             payload.balance_cents = new_balance
             return payload
     except HTTPException:
@@ -866,7 +872,8 @@ def get_usage(
     only get the real count from the server. Authenticated
     users also consume the free trial runs first, then draw down credits.
     """
-    trial_used = _trial_used(request)
+    trial_limit = _trial_limit(user_id)
+    trial_used = _trial_used(request, trial_limit)
 
     balance_cents = None
     subscription_active = False
@@ -878,8 +885,8 @@ def get_usage(
     return UsageResponse(
         authenticated=user_id is not None,
         trial_used=trial_used,
-        trial_limit=TRIAL_LIMIT,
-        trial_remaining=max(0, TRIAL_LIMIT - trial_used),
+        trial_limit=trial_limit,
+        trial_remaining=max(0, trial_limit - trial_used),
         balance_cents=balance_cents,
         subscription_active=subscription_active,
     )

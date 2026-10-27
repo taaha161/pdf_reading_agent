@@ -29,7 +29,7 @@ export function UsageProvider({ children }) {
       subscription_active: prev?.subscription_active ?? false,
       ...prev,
       trial_used: data.trial_used,
-      trial_limit: data.trial_limit ?? prev?.trial_limit ?? 5,
+      trial_limit: data.trial_limit ?? prev?.trial_limit ?? 1,
       trial_remaining: data.trial_remaining ?? prev?.trial_remaining ?? 0,
       ...(data.balance_cents != null ? { balance_cents: data.balance_cents } : {}),
     }));
