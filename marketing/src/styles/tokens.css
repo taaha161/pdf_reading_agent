@@ -44,6 +44,8 @@ html {
   background-color: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Keep #anchor targets clear of the sticky header */
+  scroll-padding-top: 64px;
 }
 
 body {
