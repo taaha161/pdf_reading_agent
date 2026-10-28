@@ -71,6 +71,21 @@ TOPICS: list[dict] = [
     #   kind "bank":       how to get statements from one bank; links its /convert page.
     #   kind "comparison": methods and categories only; named competitors stay on
     #                      hand-sourced /compare pages (no invented vendor facts).
+    # Head terms the overlap guard would block (their words appear in many posts);
+    # `allow_overlap` lets them through because no page targets the exact query.
+    {"slug": "bank-statement-pdf", "keyword": "bank statement pdf",
+     "secondary": ["download bank statement pdf", "bank statement pdf format", "edit bank statement pdf"],
+     "allow_overlap": True,
+     "angle": "a hub for the head term: how to get an official PDF from online banking, what a genuine one "
+              "contains, why PDFs can't be edited legitimately, opening password-protected files, and getting "
+              "the data out into a spreadsheet"},
+    {"slug": "bank-statement-generator", "keyword": "bank statement generator",
+     "secondary": ["fake bank statement", "bank statement template", "proof of address bank statement"],
+     "allow_overlap": True,
+     "angle": "answer the searcher honestly: generated or edited statements presented as real are document "
+              "fraud and lenders, landlords, and consulates verify them; then cover the legitimate needs behind "
+              "the search (official statements, bank letters, proof of address or funds, sample data for "
+              "testing software) and how to get each"},
     {"slug": "reconcile-bank-statement-in-excel", "keyword": "how to reconcile a bank statement in excel",
      "secondary": ["bank reconciliation excel"], "angle": "a hands-on reconciliation walkthrough with formulas"},
     {"slug": "pay-as-you-go-vs-subscription-bank-statement-converter", "keyword": "bank statement converter no subscription",
@@ -343,7 +358,7 @@ def pick_topic(posts: dict[str, dict]) -> tuple[dict | None, list[str]]:
     for topic in TOPICS:
         if topic["slug"] in posts:
             continue
-        clash = find_overlap(topic["keyword"], docs)
+        clash = None if topic.get("allow_overlap") else find_overlap(topic["keyword"], docs)
         if clash:
             skipped.append(f"{topic['slug']}: covered by {clash}")
             continue
@@ -497,7 +512,20 @@ Structure (aim for 7-10 ## H2 sections, each 2-4 paragraphs, plus lists):
 - Short intro (2-3 sentences) that leads with the answer and uses the primary keyword.
 - The core explanation, then a numbered step-by-step section.
 - Common problems / mistakes and how to avoid them.
+- A "## Frequently asked questions" section with 3-5 ### questions real searchers ask,
+  each answered directly in 2-4 sentences.
 - A short closing; mention Bank Statement Scanner only where it genuinely helps.
+
+Quality rules (Google's helpful-content standard: written for people, not rankings):
+- Every section must teach something specific: a concrete step, a decision rule, a
+  pitfall with its fix, or a worked example. Cut any sentence a reader could skip
+  without losing information.
+- Include at least one worked example the reader can follow: a small markdown table of
+  sample transactions (clearly labeled as sample data), a formula, or a checklist.
+- Answer the reader's likely follow-up questions inside the article.
+- Plain, direct language. Never use: "in today's fast-paced world", "delve", "navigate
+  the complexities", "unlock", "game-changer", "seamless", "look no further",
+  "in conclusion", "it's important to note", "whether you're a".
 
 Product facts (do not claim anything beyond these): Bank Statement Scanner converts
 one PDF bank or credit card statement at a time (digital, scanned, or
@@ -545,6 +573,19 @@ _UNSOURCED = re.compile(
     r"\baccording to\b",
     re.I,
 )
+
+
+# Stock phrasing that marks text as generic AI filler; the prompt bans these too.
+_FILLER = re.compile(
+    r"in today's fast-paced|\bdelve|navigat\w* the complexit|\bunlock\w*|game[- ]changer|"
+    r"\bseamless\w*|look no further|\bin conclusion\b|it's important to note|whether you're an? ",
+    re.I,
+)
+
+
+def filler_phrases(body: str) -> list[str]:
+    """Banned filler phrases found in the draft, lowercased and deduplicated."""
+    return sorted({m.group(0).lower() for m in _FILLER.finditer(body or "")})
 
 
 def unsourced_claims(body: str) -> list[str]:
@@ -603,6 +644,11 @@ def _generate_post(topic: dict, posts: dict[str, dict], model: str) -> dict:
                 "qualitatively or as a clearly labeled hypothetical example instead. Offending sentences: "
                 + " | ".join(c[:160] for c in claims[:6])
             )
+        filler = filler_phrases(data["body_markdown"])
+        if filler:
+            problems.append("It used banned filler phrases; rewrite those sentences plainly: " + ", ".join(filler))
+        if "frequently asked questions" not in data["body_markdown"].lower():
+            problems.append('It had no "## Frequently asked questions" section; add one with 3-5 ### questions.')
         if not problems:
             return data
     if unsourced_claims(data["body_markdown"] + "\n" + data["excerpt"]):
