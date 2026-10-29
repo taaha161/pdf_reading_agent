@@ -464,6 +464,138 @@
   background: var(--color-success-muted);
 }
 
+/* --- Signup after the anonymous free scan ran out --- */
+.auth-trial-eyebrow {
+  align-self: flex-start;
+  margin-bottom: 0.9rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  color: var(--color-error);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.auth-scan-meter {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  max-width: 440px;
+}
+
+.auth-scan-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.auth-scan-slot-icon {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 0.35rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.auth-scan-slot-title {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.auth-scan-slot-status {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.auth-scan-slot--used {
+  opacity: 0.6;
+}
+
+.auth-scan-slot--used .auth-scan-slot-icon {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.auth-scan-slot--used .auth-scan-slot-title {
+  text-decoration: line-through;
+}
+
+.auth-scan-slot--free {
+  border: 2px dashed var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.auth-scan-slot--free .auth-scan-slot-icon {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.auth-scan-slot--free .auth-scan-slot-status {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.auth-trial-steps {
+  margin: 0 0 1.5rem;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  color: var(--color-text-muted);
+}
+
+.auth-trial-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin: -0.5rem 0 1.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: var(--color-on-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-trial-banner-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.auth-trial-banner-title {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.auth-trial-banner-body {
+  margin: 0;
+  font-size: 0.88rem;
+  color: rgba(241, 245, 249, 0.92);
+}
+
+.auth-shell--trial .auth-photo-card {
+  display: none;
+}
+
 .auth-photo-card {
   margin-top: 1.25rem;
   height: 140px;
@@ -598,6 +730,11 @@
     display: none;
   }
 
+  /* Out of free scans: put the form (with its "unlock free scans" banner) first */
+  .auth-shell--trial .auth-panel-right {
+    order: -1;
+  }
+
   .auth-header {
     padding-inline: 1.25rem;
   }
@@ -629,6 +766,14 @@
 
   .auth-feature-stack {
     gap: 0.6rem;
+  }
+
+  .auth-scan-slot {
+    padding: 0.7rem 0.6rem;
+  }
+
+  .auth-scan-slot-status {
+    font-size: 0.72rem;
   }
 
   .auth-shell-footer,

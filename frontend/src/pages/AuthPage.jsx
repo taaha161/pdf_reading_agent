@@ -7,6 +7,8 @@ import logo from "../assets/pdf_to_excel_logo.png";
 import "./AuthPage.css";
 
 const PASSWORD_MIN_LENGTH = 8;
+// Mirrors backend AUTH_TRIAL_LIMIT - ANON_TRIAL_LIMIT (3 free scans signed in, 1 anonymous).
+const FREE_SCANS_ON_SIGNUP = 2;
 
 /** Google G logo SVG (official brand colors) */
 function GoogleLogo({ className }) {
@@ -52,6 +54,31 @@ function BoltIcon() {
   );
 }
 
+/** Gift icon for the "unlock more free scans" banner */
+function GiftIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden focusable="false">
+      <path
+        d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7Zm0 0h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Check icon for a used scan slot */
+function CheckIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden focusable="false">
+      <path d="m5 12 5 5 9-10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /** Strong password: min 8 chars, uppercase, lowercase, number, special char */
 function validatePasswordStrength(password) {
   if (!password || password.length < PASSWORD_MIN_LENGTH) return { ok: false, message: `At least ${PASSWORD_MIN_LENGTH} characters` };
@@ -69,6 +96,8 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const [searchParams] = useSearchParams();
   const from = location.state?.from?.pathname || "/dashboard";
   const notice = location.state?.notice;
+  // Redirected from the scanner after the anonymous free scan ran out.
+  const trialExhausted = location.state?.reason === "trial-exhausted";
   const modeFromQuery = searchParams.get("mode"); // e.g. /login?mode=signup
   const mode = modeFromQuery === "signup" || modeFromQuery === "login" || modeFromQuery === "forgot" ? modeFromQuery : initialMode;
 
@@ -85,10 +114,11 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   useEffect(() => {
     setView(mode);
     // e.g. redirected here from the scanner after using the free scan
-    setMessage(notice ? { type: "success", text: notice } : { type: "", text: "" });
+    // (the trial-exhausted signup view has its own banner instead)
+    setMessage(notice && !trialExhausted ? { type: "success", text: notice } : { type: "", text: "" });
     setSignupSuccess(false);
     setConfirmPassword("");
-  }, [mode, notice]);
+  }, [mode, notice, trialExhausted]);
 
   // Redirect if already logged in (skip on reset-password; that page handles its own logic)
   useEffect(() => {
@@ -246,15 +276,52 @@ export default function AuthPage({ mode: initialMode = "login" }) {
           </div>
         </header>
 
-        <main className="auth-shell auth-shell--signup" aria-label="Create account">
+        <main
+          className={`auth-shell auth-shell--signup${trialExhausted ? " auth-shell--trial" : ""}`}
+          aria-label="Create account"
+        >
           <section className="auth-panel auth-panel-left">
-            <h1 className="auth-hero-title">
-              Smart financial <span>management starts here.</span>
-            </h1>
-            <p className="auth-hero-body">
-              Join thousands of users who trust Bank Statement Scanner for secure, automated financial insights
-              and statement processing.
-            </p>
+            {trialExhausted ? (
+              <>
+                <span className="auth-trial-eyebrow">Your free scan is used up</span>
+                <h1 className="auth-hero-title">
+                  Get {FREE_SCANS_ON_SIGNUP} more scans <span>free.</span>
+                </h1>
+                <p className="auth-hero-body">
+                  Create a free account and your next {FREE_SCANS_ON_SIGNUP} bank statements are on us. No credit
+                  card needed.
+                </p>
+                <ol className="auth-scan-meter" aria-label="Your free scans">
+                  <li className="auth-scan-slot auth-scan-slot--used">
+                    <span className="auth-scan-slot-icon"><CheckIcon /></span>
+                    <span className="auth-scan-slot-title">Scan 1</span>
+                    <span className="auth-scan-slot-status">Used</span>
+                  </li>
+                  {Array.from({ length: FREE_SCANS_ON_SIGNUP }, (_, i) => (
+                    <li key={i} className="auth-scan-slot auth-scan-slot--free">
+                      <span className="auth-scan-slot-icon">+</span>
+                      <span className="auth-scan-slot-title">Scan {i + 2}</span>
+                      <span className="auth-scan-slot-status">Free on sign-up</span>
+                    </li>
+                  ))}
+                </ol>
+                <ol className="auth-trial-steps">
+                  <li>Create your account below, it takes 30 seconds</li>
+                  <li>Confirm your email</li>
+                  <li>Convert {FREE_SCANS_ON_SIGNUP} more statements to Excel, free</li>
+                </ol>
+              </>
+            ) : (
+              <>
+                <h1 className="auth-hero-title">
+                  Smart financial <span>management starts here.</span>
+                </h1>
+                <p className="auth-hero-body">
+                  Join thousands of users who trust Bank Statement Scanner for secure, automated financial insights
+                  and statement processing.
+                </p>
+              </>
+            )}
             <div className="auth-feature-stack">
               <div className="auth-feature-card">
                 <div className="auth-feature-icon auth-feature-icon--shield" aria-hidden>
@@ -285,16 +352,31 @@ export default function AuthPage({ mode: initialMode = "login" }) {
 
           <section className="auth-panel auth-panel-right">
             <div className="auth-card auth-card--elevated">
-              <h2 className="auth-title">Create your account</h2>
+              {trialExhausted && !signupSuccess && (
+                <div className="auth-trial-banner" role="status">
+                  <span className="auth-trial-banner-icon" aria-hidden><GiftIcon /></span>
+                  <div>
+                    <p className="auth-trial-banner-title">
+                      Unlock {FREE_SCANS_ON_SIGNUP} more free scans
+                    </p>
+                    <p className="auth-trial-banner-body">
+                      You&apos;ve used your free scan. Create a free account to keep converting statements.
+                    </p>
+                  </div>
+                </div>
+              )}
+              <h2 className="auth-title">{trialExhausted ? "Create your free account" : "Create your account"}</h2>
               <p className="auth-description">
-                Start managing your finances securely today.
+                {trialExhausted
+                  ? `Sign up and get ${FREE_SCANS_ON_SIGNUP} more free scans instantly.`
+                  : "Start managing your finances securely today."}
               </p>
 
               {signupSuccess ? (
                 <div className="auth-success-block">
                   <p className="auth-message auth-message-success">
                     We sent a confirmation link to <strong>{email}</strong>. Click the link in that email to activate your
-                    account, then log in below.
+                    account{trialExhausted ? ` and unlock your ${FREE_SCANS_ON_SIGNUP} free scans` : ""}, then log in below.
                   </p>
                   <Link
                     to="/login"
@@ -362,7 +444,11 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                       </span>
                     </label>
                     <button type="submit" className="auth-btn auth-btn-primary auth-btn-block" disabled={loading}>
-                      {loading ? "Creating account…" : "Create Account →"}
+                      {loading
+                        ? "Creating account…"
+                        : trialExhausted
+                          ? `Create account & get ${FREE_SCANS_ON_SIGNUP} free scans →`
+                          : "Create Account →"}
                     </button>
                   </form>
 

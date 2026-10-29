@@ -130,7 +130,7 @@ export default function ScannerPage() {
     () =>
       navigate("/signup", {
         replace: true,
-        state: { from: { pathname: "/scanner" }, notice: TRIAL_LIMIT_NOTICE },
+        state: { from: { pathname: "/scanner" }, notice: TRIAL_LIMIT_NOTICE, reason: "trial-exhausted" },
       }),
     [navigate]
   );
