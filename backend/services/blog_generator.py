@@ -65,7 +65,7 @@ TOPICS: list[dict] = [
      "secondary": ["credit card statement converter", "credit card statement to excel"]},
     {"slug": "bookkeeping-made-easy-for-accountants", "keyword": "bookkeeping for accountants", "secondary": []},
     {"slug": "complete-guide-to-bookkeeping-software", "keyword": "bookkeeping software", "secondary": []},
-    # Queue, in publish order (one per week). Ideas come from the Oct 2026 business
+    # Queue, in publish order (one every second day). Ideas come from the Oct 2026 business
     # report: small bookkeeping/tax practices, billing-fairness and accuracy pains,
     # ChatGPT-vs-converter, per-bank search demand, lending/visa/tax use cases.
     #   kind "bank":       how to get statements from one bank; links its /convert page.

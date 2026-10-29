@@ -5,7 +5,7 @@ description: Run, test, or debug the daily SEO blog generator — generate a ban
 
 # Daily SEO Blog Generator
 
-Generates one 1500–2500 word, internally-linked, SEO-optimized blog post per week (Mondays 09:00 UTC) for
+Generates one 1500–2500 word, internally-linked, SEO-optimized blog post every second day (09:00 UTC, odd days of the month) for
 **bankstatementscanner.com** and publishes it with zero human steps.
 
 **Pipeline:** GitHub Actions cron (`.github/workflows/daily-blog.yml`) → `POST
