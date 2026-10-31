@@ -56,19 +56,21 @@ def extract_text_from_pdf(
     try:
         reader = PdfReader(io.BytesIO(file_content))
         if reader.is_encrypted:
-            pwd = (password or "").strip()
-            if not pwd:
-                raise PdfPasswordRequired()
-            result = reader.decrypt(pwd)
-            if result == 0:
-                raise ValueError("Incorrect PDF password")
+            # Owner-password-only PDFs (edit/print restricted, viewable without a password)
+            # open with an empty user password, so try that before asking the user.
+            if reader.decrypt("") == 0:
+                pwd = (password or "").strip()
+                if not pwd:
+                    raise PdfPasswordRequired()
+                if reader.decrypt(pwd) == 0:
+                    raise ValueError("Incorrect PDF password")
             writer = PdfWriter()
             for page in reader.pages:
                 writer.add_page(page)
             out = io.BytesIO()
             writer.write(out)
             file_content = out.getvalue()
-            logger.info("extract_text_from_pdf: decrypted PDF with provided password")
+            logger.info("extract_text_from_pdf: decrypted encrypted PDF")
     except PdfPasswordRequired:
         raise
     except ValueError as e:

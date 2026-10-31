@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import time
+from collections import Counter
 from typing import Any
 
 from google import genai
@@ -242,6 +243,32 @@ def _generate(client: genai.Client, system: str, user_content: str, max_tokens: 
     return (response.text or "").strip()
 
 
+def _tx_key(t: dict) -> tuple[str, str, str]:
+    return (str(t.get("date", "")), str(t.get("description", "")), str(t.get("amount", "")))
+
+
+def _merge_chunk_transactions(chunk_results: list[list]) -> list[dict]:
+    """
+    Merge per-chunk transaction lists. Adjacent chunks share EXTRACTION_CHUNK_OVERLAP chars, so a
+    row in the overlap can be extracted twice: drop a row from chunk N only while chunk N-1 still
+    has an unmatched row with the same key. Never dedupe within a chunk: identical
+    date/description/amount rows are legitimate repeat transactions.
+    """
+    merged: list[dict] = []
+    prev_counts: Counter = Counter()
+    for chunk_tx in chunk_results:
+        rows = [t for t in chunk_tx if isinstance(t, dict)]
+        budget = prev_counts.copy()
+        for t in rows:
+            key = _tx_key(t)
+            if budget[key] > 0:
+                budget[key] -= 1
+                continue
+            merged.append(t)
+        prev_counts = Counter(_tx_key(t) for t in rows)
+    return merged
+
+
 def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | None]:
     """
     Extract transactions from raw statement text and assign categories using Gemini.
@@ -265,6 +292,7 @@ def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | N
         + CATEGORY_GUIDANCE
         + ' For each data row: use Date for "date", Description for "description" (preserve exactly). '
         "If Credit column has a non-zero value use type \"credit\" and amount as that value; if Debit has non-zero use type \"debit\" and amount as absolute value. Ignore Balance. "
+        "Rows that look identical (same date, description and amount) are separate transactions: output every one, never merge or skip repeats. "
         "EXCLUDE: Opening Balance, Closing Balance, summary/footer tables (Total Deposit, End Of Statement), header rows. "
         "Output format: First, a valid JSON array of objects. Each object must have: \"date\", \"description\", \"amount\", \"type\" (\"credit\" or \"debit\"), \"category\" (one of the list above). "
         "Output the complete array—no truncation. Then on the next line write exactly: CURRENCY: <currency code e.g. USD PKR GBP or UNKNOWN if not found in the statement>. "
@@ -290,7 +318,7 @@ def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | N
             time.perf_counter() - t0,
         )
 
-    all_transactions: list[dict] = []
+    chunk_results: list[list] = []
     currency: str | None = None
     for chunk_idx, text_input in enumerate(chunks):
         logger.info(
@@ -315,21 +343,12 @@ def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | N
         except json.JSONDecodeError:
             chunk_tx = []
         if isinstance(chunk_tx, list):
-            all_transactions.extend(chunk_tx)
+            chunk_results.append(chunk_tx)
 
-    seen = set()
-    transactions = []
-    for t in all_transactions:
-        if not isinstance(t, dict):
-            continue
-        key = (str(t.get("date", "")), str(t.get("description", "")), str(t.get("amount", "")))
-        if key in seen:
-            continue
-        seen.add(key)
-        transactions.append(t)
-    if len(chunks) > 1 and all_transactions:
+    transactions = _merge_chunk_transactions(chunk_results)
+    if len(chunks) > 1 and transactions:
         logger.info(
-            "extract_and_categorize: merged %d chunks -> %d unique (%.2f s)",
+            "extract_and_categorize: merged %d chunks -> %d transactions (%.2f s)",
             len(chunks),
             len(transactions),
             time.perf_counter() - t0,
