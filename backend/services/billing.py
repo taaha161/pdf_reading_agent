@@ -6,6 +6,7 @@ from typing import Literal
 import stripe
 from stripe import StripeError
 
+from services.linkedin_capi import track_subscription_purchase
 from store import add_balance, get_billing, get_user_id_by_stripe_customer_id, set_balance, set_stripe_ids
 
 logger = logging.getLogger("pdf_processor_app.billing")
@@ -131,10 +132,21 @@ def _handle_invoice_paid(event) -> tuple[bool, str]:
         try:
             set_balance(user_id, 1000)
             set_stripe_ids(user_id, customer_id, subscription_id)
-            return True, "Balance set to 1000"
         except Exception as e:
             logger.exception("set_balance failed: %s", e)
             return False, str(e)
+        # First paid month only (not renewals): report the checkout to LinkedIn
+        if billing_reason == "subscription_create":
+            try:
+                track_subscription_purchase(
+                    email=invoice.get("customer_email"),
+                    event_id=invoice.get("id"),
+                    amount_cents=amount_paid,
+                    currency=invoice.get("currency"),
+                )
+            except Exception as e:  # noqa: BLE001
+                logger.warning("LinkedIn purchase conversion failed (continuing): %s", e)
+        return True, "Balance set to 1000"
 
     # One-time payment (top-up): no subscription on invoice
     if not subscription_id and amount_paid > 0:
