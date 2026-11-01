@@ -287,6 +287,25 @@ def record_email_capture(
         )
 
 
+def record_feedback(
+    user_id: str | None,
+    job_id: str | None,
+    rating: int | None,
+    comment: str | None,
+    contact_ok: bool,
+    client_ip_hash: str | None = None,
+) -> None:
+    """Store a post-scan feedback response."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO scan_feedback (user_id, job_id, rating, comment, contact_ok, client_ip_hash, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+            """,
+            (user_id, job_id, rating, comment, contact_ok, client_ip_hash),
+        )
+
+
 def update_job_transactions(job_id: str, user_id: str, transactions: list[dict[str, Any]]) -> None:
     """Update stored transactions for a job owned by the user. No-op for incognito/purged jobs (no payload row)."""
     payload_json = json.dumps(transactions)

@@ -41,6 +41,7 @@ from models.schemas import (
     DashboardStats,
     EmailSpreadsheetRequest,
     ExportRequest,
+    FeedbackRequest,
     JobDetailResponse,
     JobListItem,
     JobListResponse,
@@ -55,6 +56,7 @@ from services.csv_export import transactions_to_csv
 from services.xlsx_export import XLSX_MIME, transactions_to_xlsx
 from services.notifications import (
     notify_email_capture,
+    notify_feedback,
     notify_login,
     notify_scan,
     notify_signup,
@@ -77,6 +79,7 @@ from store import (
     count_trial_runs_by_ip,
     count_email_captures_for_job,
     record_email_capture,
+    record_feedback,
     trial_run_exists,
     set_job,
     update_job_transactions,
@@ -446,6 +449,7 @@ _RATE_LIMIT_PROCESS_PDF = os.environ.get("RATE_LIMIT_PROCESS_PDF", "10/minute")
 _RATE_LIMIT_CHAT = os.environ.get("RATE_LIMIT_CHAT", "30/minute")
 _RATE_LIMIT_EMAIL_SPREADSHEET = os.environ.get("RATE_LIMIT_EMAIL_SPREADSHEET", "5/hour")
 _RATE_LIMIT_EXPORT = os.environ.get("RATE_LIMIT_EXPORT", "30/minute")
+_RATE_LIMIT_FEEDBACK = os.environ.get("RATE_LIMIT_FEEDBACK", "10/hour")
 
 
 ANON_TRIAL_LIMIT = 1  # Free statements before sign-up
@@ -782,6 +786,30 @@ def email_spreadsheet(request: Request, body: EmailSpreadsheetRequest):
         notify_email_capture(email, body.marketing_opt_in)
     except Exception as e:  # noqa: BLE001
         logger.warning("email capture notification failed (continuing): %s", e)
+    return {"ok": True}
+
+
+@app.post("/api/feedback")
+@limiter.limit(_RATE_LIMIT_FEEDBACK)
+def submit_feedback(
+    request: Request,
+    body: FeedbackRequest,
+    user_id: str | None = Depends(get_current_user_optional),
+):
+    """Optional feedback from the post-scan prompt (logged-in or anonymous)."""
+    comment = (body.comment or "").strip() or None
+    if body.rating is None and comment is None:
+        raise HTTPException(400, "Pick a rating or write a comment.")
+    contact_ok = body.contact_ok and user_id is not None
+    job_id = str(body.job_id) if body.job_id else None
+    try:
+        record_feedback(user_id, job_id, body.rating, comment, contact_ok, _client_ip_hash(request))
+    except Exception as e:
+        logger.warning("scan_feedback insert failed (continuing): %s", e)
+    try:
+        notify_feedback(body.rating, comment, user_id, contact_ok)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("feedback notification failed (continuing): %s", e)
     return {"ok": True}
 
 

@@ -324,3 +324,19 @@ export async function emailSpreadsheet(jobId, email, transactions, { format = "x
   }
   return res.json();
 }
+
+/** Optional post-scan feedback. Works logged in (Bearer token) or anonymous. */
+export async function submitFeedback({ jobId, rating, comment, contactOk = false }) {
+  const res = await fetch(`${API_BASE}/api/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    credentials: "include",
+    body: JSON.stringify({ job_id: jobId || null, rating: rating || null, comment: comment || null, contact_ok: contactOk }),
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many requests. Please try again later.");
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(typeof err.detail === "string" ? err.detail : "Couldn't send feedback");
+  }
+  return res.json();
+}

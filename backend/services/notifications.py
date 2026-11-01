@@ -126,6 +126,15 @@ def notify_email_capture(email: str, marketing_opt_in: bool) -> None:
     )
 
 
+def notify_feedback(rating: int | None, comment: str | None, user_id: str | None, contact_ok: bool) -> None:
+    score = f"{rating}/5" if rating else "no rating"
+    _notify(
+        f"Feedback: {score}",
+        f"A user left feedback after a scan.\n\nRating: {score}\nComment: {comment or 'n/a'}\n"
+        f"User ID: {user_id or 'anonymous'}\nOK to contact: {'yes' if contact_ok else 'no'}",
+    )
+
+
 def _notify(subject: str, text: str) -> None:
     """Fire-and-forget: dispatch the email on a daemon thread."""
     threading.Thread(target=_send, args=(subject, text), daemon=True).start()

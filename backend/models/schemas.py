@@ -136,3 +136,10 @@ class EmailSpreadsheetRequest(BaseModel):
     format: ExportFormat = "csv"
     include_categories: bool = True
     marketing_opt_in: bool = False
+
+
+class FeedbackRequest(BaseModel):
+    job_id: Optional[uuid.UUID] = None
+    rating: Optional[int] = Field(None, ge=1, le=5)
+    comment: Optional[str] = Field(None, max_length=2000)
+    contact_ok: bool = False

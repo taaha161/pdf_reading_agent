@@ -7,6 +7,7 @@ import SummaryTable from "../components/SummaryTable";
 import ResultsTable from "../components/ResultsTable";
 import ChatPanel from "../components/ChatPanel";
 import EmailSpreadsheet from "../components/EmailSpreadsheet";
+import FeedbackPrompt from "../components/FeedbackPrompt";
 import { useAuth } from "../contexts/AuthContext";
 import { useUsage } from "../contexts/UsageContext";
 import { processPdf, getJob, updateJobTransactions } from "../api/client";
@@ -86,6 +87,30 @@ function transactionsToCsvBrowser(transactions) {
 
 const TRIAL_LIMIT_NOTICE = "You've used your free scan. Create a free account to get more free scans.";
 
+const FEEDBACK_SCAN_COUNT_KEY = "bss_scan_count";
+const FEEDBACK_PROMPTED_KEY = "bss_feedback_prompted";
+const FEEDBACK_AFTER_SCANS = 2;
+const FEEDBACK_DELAY_MS = 4000;
+
+/** Count successful scans in this browser; true when the feedback prompt is due (2nd scan, never shown before). */
+function noteScanForFeedback() {
+  try {
+    const count = Number(localStorage.getItem(FEEDBACK_SCAN_COUNT_KEY) || 0) + 1;
+    localStorage.setItem(FEEDBACK_SCAN_COUNT_KEY, String(count));
+    return count >= FEEDBACK_AFTER_SCANS && !localStorage.getItem(FEEDBACK_PROMPTED_KEY);
+  } catch {
+    return false;
+  }
+}
+
+function markFeedbackPrompted() {
+  try {
+    localStorage.setItem(FEEDBACK_PROMPTED_KEY, "1");
+  } catch {
+    /* storage blocked: prompt may show again next time, which is harmless */
+  }
+}
+
 export default function ScannerPage() {
   const { user, loading: authLoading } = useAuth();
   const { usage, refreshUsage, applyUsage } = useUsage();
@@ -112,6 +137,8 @@ export default function ScannerPage() {
   const [passwordInput, setPasswordInput] = useState("");
   const [emailPopupOpen, setEmailPopupOpen] = useState(false);
   const emailPopupShownFor = useRef(null);
+  const [feedbackDue, setFeedbackDue] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const isLoggedIn = !!user;
   const canEmailSpreadsheet = !isLoggedIn && !!jobId && !!trialCsvContent && transactions.length > 0;
 
@@ -124,6 +151,20 @@ export default function ScannerPage() {
     }, 1500);
     return () => clearTimeout(timer);
   }, [canEmailSpreadsheet, jobId]);
+
+  // Optional feedback prompt: a few seconds after the 2nd successful scan's results load,
+  // once per browser, and never on top of another popup.
+  useEffect(() => {
+    if (!feedbackDue || !jobId || emailPopupOpen || showPasswordModal) return;
+    const timer = setTimeout(() => {
+      markFeedbackPrompted();
+      setFeedbackDue(false);
+      setFeedbackOpen(true);
+    }, FEEDBACK_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [feedbackDue, jobId, emailPopupOpen, showPasswordModal]);
+
+  const closeFeedback = useCallback(() => setFeedbackOpen(false), []);
 
   // Out of anonymous free scans: send to signup instead of letting them hit the limit.
   const goToSignup = useCallback(
@@ -193,6 +234,7 @@ export default function ScannerPage() {
       setTrialCsvContent(data.csv_content ?? null);
       applyUsage(data);
       refreshUsage();
+      if (noteScanForFeedback()) setFeedbackDue(true);
     } catch (e) {
       if (e.isPdfPasswordRequired) {
         setPendingPasswordFile(file);
@@ -256,6 +298,7 @@ export default function ScannerPage() {
       setTrialCsvContent(data?.csv_content ?? null);
       applyUsage(data);
       refreshUsage();
+      if (noteScanForFeedback()) setFeedbackDue(true);
     } catch (e) {
       if (e.isPdfPasswordIncorrect) {
         setPasswordError("Incorrect password. Please try again.");
@@ -511,6 +554,8 @@ export default function ScannerPage() {
           onClose={() => setEmailPopupOpen(false)}
         />
       )}
+
+      {feedbackOpen && <FeedbackPrompt jobId={jobId} isLoggedIn={isLoggedIn} onClose={closeFeedback} />}
 
       {showPasswordModal && (
         <div className="scanner-password-modal-backdrop" onClick={handlePasswordModalClose} aria-hidden />
