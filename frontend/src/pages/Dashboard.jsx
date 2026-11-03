@@ -102,7 +102,7 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="dashboard">
+      <div className="dashboard" data-clarity-mask="true">
         <div className="dashboard-page-header">
           <div className="dashboard-page-header-text">
             <h1 className="dashboard-title">

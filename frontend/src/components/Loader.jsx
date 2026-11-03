@@ -51,7 +51,7 @@ export default function Loader({ fileName, fileSize }) {
         </p>
       )}
       {fileName && (
-        <p className="loader-filename" title={fileName}>
+        <p className="loader-filename" title={fileName} data-clarity-mask="true">
           {fileName.length > 40 ? fileName.slice(0, 37) + "…" : fileName}
         </p>
       )}

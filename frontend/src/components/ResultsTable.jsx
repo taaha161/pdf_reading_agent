@@ -164,7 +164,7 @@ export default function ResultsTable({
   };
 
   return (
-    <section className="results-section">
+    <section className="results-section" data-clarity-mask="true">
       <div className="results-header">
         <h2>Transactions</h2>
         <div className="results-header-actions">

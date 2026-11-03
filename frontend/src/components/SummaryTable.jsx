@@ -43,7 +43,7 @@ export default function SummaryTable({ summaryByCategory, currency }) {
   if (!summaryByCategory?.length) return null;
 
   return (
-    <section className="summary-section">
+    <section className="summary-section" data-clarity-mask="true">
       <h2>Summary by category</h2>
       <div className="table-wrap">
         <table className="summary-table">

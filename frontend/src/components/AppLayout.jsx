@@ -60,6 +60,7 @@ export default function AppLayout({ children }) {
               onClick={() => navigate("/settings")}
               aria-label="Account settings"
               title={email}
+              data-clarity-mask="true"
             >
               <img src={settingsGear} alt="" aria-hidden className="app-layout-avatar-icon" />
             </button>

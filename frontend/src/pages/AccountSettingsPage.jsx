@@ -158,7 +158,7 @@ export default function AccountSettingsPage() {
 
   return (
     <AppLayout>
-      <div className="account-settings">
+      <div className="account-settings" data-clarity-mask="true">
         <header className="account-settings-head">
           <h1 className="account-settings-title">Account settings</h1>
           <p className="account-settings-description">

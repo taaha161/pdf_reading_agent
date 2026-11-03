@@ -31,7 +31,7 @@ export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogi
   };
 
   return (
-    <section className="chat-panel">
+    <section className="chat-panel" data-clarity-mask="true">
       {!hideHeading && (
         <>
           <h2>Validate CSV</h2>
