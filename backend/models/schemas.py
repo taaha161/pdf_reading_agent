@@ -40,6 +40,10 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000)
 
 
+class FetchPdfUrlRequest(BaseModel):
+    url: str = Field(..., min_length=1, max_length=2048)
+
+
 class ChatResponse(BaseModel):
     reply: str
 

@@ -59,6 +59,9 @@ Sitemap: ${baseUrl}sitemap.xml
         'import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY': JSON.stringify(env.SUPABASE_PUBLISHABLE_KEY ?? env.SUPABASE_ANON_KEY ?? ''),
         'import.meta.env.PUBLIC_SUPABASE_ANON_KEY': JSON.stringify(env.SUPABASE_ANON_KEY ?? ''),
         'import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY': JSON.stringify(env.RECAPTCHA_SITE_KEY ?? ''),
+        'import.meta.env.PUBLIC_GOOGLE_CLIENT_ID': JSON.stringify(env.GOOGLE_CLIENT_ID ?? ''),
+        'import.meta.env.PUBLIC_GOOGLE_API_KEY': JSON.stringify(env.GOOGLE_API_KEY ?? ''),
+        'import.meta.env.PUBLIC_GOOGLE_APP_ID': JSON.stringify(env.GOOGLE_APP_ID ?? ''),
       }),
     },
   }

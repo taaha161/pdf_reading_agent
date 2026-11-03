@@ -42,6 +42,7 @@ from models.schemas import (
     EmailSpreadsheetRequest,
     ExportRequest,
     FeedbackRequest,
+    FetchPdfUrlRequest,
     JobDetailResponse,
     JobListItem,
     JobListResponse,
@@ -52,6 +53,7 @@ from models.schemas import (
 )
 from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
 from services.chat_service import get_reply
+from services.remote_pdf import RemotePdfError, fetch_pdf
 from services.csv_export import transactions_to_csv
 from services.xlsx_export import XLSX_MIME, transactions_to_xlsx
 from services.notifications import (
@@ -450,6 +452,7 @@ _RATE_LIMIT_CHAT = os.environ.get("RATE_LIMIT_CHAT", "30/minute")
 _RATE_LIMIT_EMAIL_SPREADSHEET = os.environ.get("RATE_LIMIT_EMAIL_SPREADSHEET", "5/hour")
 _RATE_LIMIT_EXPORT = os.environ.get("RATE_LIMIT_EXPORT", "30/minute")
 _RATE_LIMIT_FEEDBACK = os.environ.get("RATE_LIMIT_FEEDBACK", "10/hour")
+_RATE_LIMIT_FETCH_URL = os.environ.get("RATE_LIMIT_FETCH_URL", "10/minute")
 
 
 ANON_TRIAL_LIMIT = 1  # Free statements before sign-up
@@ -481,6 +484,29 @@ def _trial_used(request: Request, limit: int) -> int:
     except Exception as e:
         logger.error("trial IP count failed; treating trial as exhausted: %s", e)
         return limit
+
+@app.options("/api/fetch-pdf-url")
+async def preflight_fetch_pdf_url(request: Request):
+    return await _preflight_response(request)
+
+
+@app.post("/api/fetch-pdf-url")
+@limiter.limit(_RATE_LIMIT_FETCH_URL)
+async def fetch_pdf_url(request: Request, body: FetchPdfUrlRequest):
+    """Download a PDF from a public link (direct URL, Google Drive/Dropbox share link) and
+    return its bytes. The client then submits it to /api/process-pdf like a local file,
+    so reCAPTCHA, trial and credit checks all still apply there."""
+    try:
+        content, filename = await fetch_pdf(body.url, MAX_FILE_SIZE)
+    except RemotePdfError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    logger.info("fetch-pdf-url: downloaded %d bytes", len(content))
+    return Response(
+        content=content,
+        media_type=ALLOWED_CONTENT_TYPE,
+        headers={"X-Filename": filename, "Access-Control-Expose-Headers": "X-Filename"},
+    )
+
 
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
 @limiter.limit(_RATE_LIMIT_PROCESS_PDF)

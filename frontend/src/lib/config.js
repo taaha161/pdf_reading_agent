@@ -15,6 +15,9 @@ export async function loadConfig() {
         supabaseUrl: data.supabaseUrl,
         supabasePublishableKey: data.supabasePublishableKey || "",
         recaptchaSiteKey: data.recaptchaSiteKey || "",
+        googleClientId: data.googleClientId || "",
+        googleApiKey: data.googleApiKey || "",
+        googleAppId: data.googleAppId || "",
       };
       return cached;
     }
@@ -44,6 +47,9 @@ export async function loadConfig() {
     supabaseUrl,
     supabasePublishableKey,
     recaptchaSiteKey: import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY || "",
+    googleClientId: import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || "",
+    googleApiKey: import.meta.env.PUBLIC_GOOGLE_API_KEY || "",
+    googleAppId: import.meta.env.PUBLIC_GOOGLE_APP_ID || "",
   };
   return cached;
 }

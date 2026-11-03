@@ -97,6 +97,30 @@ export async function processPdf(file, options = {}) {
   return res.json();
 }
 
+/** Download a PDF from a public link via the backend (avoids CORS; SSRF-guarded server-side). Returns a File. */
+export async function fetchPdfFromUrl(url) {
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/fetch-pdf-url`, {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+      credentials: "include",
+    });
+  } catch (e) {
+    throw new Error(getErrorMessage(e));
+  }
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    const detail = Array.isArray(err.detail) ? "Please enter a valid URL." : err.detail;
+    throw new Error(detail || "Couldn't download that PDF");
+  }
+  const blob = await res.blob();
+  const name = res.headers.get("X-Filename") || "statement.pdf";
+  return new File([blob], name, { type: "application/pdf" });
+}
+
 export async function getBillingBalance() {
   const res = await fetch(`${API_BASE}/api/billing/balance`, {
     headers: authHeaders(),

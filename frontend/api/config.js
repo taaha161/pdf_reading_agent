@@ -1,6 +1,6 @@
 // Vercel serverless function: serves public config from server-side env only.
 // Env vars here are NOT prefixed with VITE_, so they are never embedded in the client bundle.
-// Set API_URL, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, RECAPTCHA_SITE_KEY in Vercel → Settings → Environment Variables.
+// Set API_URL, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, RECAPTCHA_SITE_KEY (+ optional GOOGLE_CLIENT_ID, GOOGLE_API_KEY, GOOGLE_APP_ID) in Vercel → Settings → Environment Variables.
 
 export default function handler(req, res) {
   if (req.method !== "GET") {
@@ -24,5 +24,8 @@ export default function handler(req, res) {
     supabaseUrl,
     supabasePublishableKey,
     recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || "",
+    googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+    googleApiKey: process.env.GOOGLE_API_KEY || "",
+    googleAppId: process.env.GOOGLE_APP_ID || "",
   });
 }
