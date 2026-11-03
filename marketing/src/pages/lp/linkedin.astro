@@ -61,16 +61,19 @@ const svg = (d: string) =>
 const steps = [
   {
     title: 'Drop in the PDF',
+    tag: 'Free to sign up',
     body: 'Any bank or credit card statement: digital, scanned, or a phone photo.',
     icon: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 18v-6m0 0-2.5 2.5M12 12l2.5 2.5"/>'),
   },
   {
     title: 'AI does the typing',
+    tag: '$10 of scans, free',
     body: 'We pull out every date, payee and amount, then sort each row into a category.',
     icon: svg('<path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>'),
   },
   {
     title: 'Download Excel',
+    tag: '$0 your first month',
     body: 'Export to Excel or CSV and import straight into QuickBooks, Xero or your workbook.',
     icon: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/>'),
   },
@@ -219,6 +222,10 @@ const faqs = [
               <div class="vs-cell vs-new" role="cell"><span class="vs-mark vs-mark--new" aria-hidden="true">✓</span>{p.new}</div>
             </div>
           ))}
+          <div class="vs-row vs-cost" role="row">
+            <div class="vs-cell vs-old" role="cell"><span class="vs-mark vs-mark--old" aria-hidden="true">✕</span>Costs you hours, every single month</div>
+            <div class="vs-cell vs-new" role="cell"><span class="vs-gift" aria-hidden="true">🎁</span><span><strong>$0 for your first month</strong> with the LinkedIn offer</span></div>
+          </div>
         </div>
       </div>
     </section>
@@ -236,6 +243,7 @@ const faqs = [
               <p class="step-label">Step {i + 1}</p>
               <h3>{st.title}</h3>
               <p class="step-body">{st.body}</p>
+              <span class="step-tag">{st.tag}</span>
             </li>
           ))}
         </ol>
@@ -463,6 +471,10 @@ const faqs = [
   }
   .vs-mark--old { background: #fee2e2; color: #dc2626; }
   .vs-mark--new { background: #dcfce7; color: #16a34a; }
+  .vs-cost .vs-old { background: #fef2f2; color: #991b1b; font-weight: 600; }
+  .vs-cost .vs-new { background: var(--color-primary-subtle); color: var(--color-primary-hover); }
+  .vs-cost .vs-cell { padding-block: 22px; }
+  .vs-gift { font-size: 20px; line-height: 1; flex: none; }
 
   /* Steps: icon cards joined by a connector line */
   .steps {
@@ -486,7 +498,13 @@ const faqs = [
   }
   .step-label { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); }
   .step h3 { margin: 0 0 10px; font-size: 21px; }
-  .step-body { margin: 0; color: var(--color-text-muted); font-size: 15px; line-height: 1.6; }
+  .step { display: flex; flex-direction: column; align-items: center; }
+  .step-body { margin: 0 0 18px; color: var(--color-text-muted); font-size: 15px; line-height: 1.6; flex: 1; }
+  .step-tag {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700;
+    color: #15803d; background: #dcfce7; padding: 6px 12px; border-radius: 999px;
+  }
+  .step-tag::before { content: "✓"; }
 
   /* Offer */
   .offer {
