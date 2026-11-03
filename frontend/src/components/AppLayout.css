@@ -396,3 +396,25 @@
     color: var(--color-danger);
   }
 }
+
+.app-layout-offer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 24px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+  font-weight: 600;
+  font-size: 14px;
+}
+.app-layout-offer a {
+  background: #2563eb;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 8px;
+  white-space: nowrap;
+}

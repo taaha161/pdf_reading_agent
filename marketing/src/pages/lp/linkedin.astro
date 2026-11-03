@@ -1,0 +1,458 @@
+---
+/**
+ * LinkedIn paid-ad landing page: first month free.
+ *
+ * Conversion rules this page follows:
+ *  1. One big idea, repeated in every headline: "Never type a bank statement into Excel again."
+ *  2. No options, no distractions: no nav, no pricing plans, no outbound links.
+ *     The only way forward is the CTA (legal links in the footer are required by LinkedIn ad policy).
+ *  3. Scannable: the headlines alone tell the whole story.
+ *
+ * The CTA carries ?offer=linkedin1m into signup; the SPA stores it and the backend
+ * turns it into a 30-day Stripe trial (first-time subscribers only, see billing.OFFERS).
+ */
+import Base from '../../layouts/Base.astro';
+import BankLogoMarquee from '../../components/BankLogoMarquee.astro';
+import logo from '../../assets/pdf_to_excel_logo.png';
+import { SITE_NAME } from '../../consts';
+
+const OFFER = 'linkedin1m';
+const CTA_HREF = `/login?mode=signup&offer=${OFFER}`;
+const CTA_LABEL = 'Claim my free month';
+
+const sampleRows = [
+  { date: '03/01', desc: 'Adobe Creative Cloud', cat: 'Software', amt: '-54.99' },
+  { date: '03/02', desc: 'Client payment: Acme Co', cat: 'Income', amt: '4,200.00' },
+  { date: '03/04', desc: 'Delta Air Lines', cat: 'Travel', amt: '-386.40' },
+  { date: '03/05', desc: 'Staples #1123', cat: 'Office supplies', amt: '-72.18' },
+  { date: '03/07', desc: 'Gusto payroll', cat: 'Payroll', amt: '-2,915.00' },
+];
+
+const faqs = [
+  {
+    q: 'Will I still have to fix rows by hand?',
+    a: 'Rarely. Dates, descriptions, amounts and running balances are extracted for you and every transaction is categorized. You review a finished spreadsheet instead of typing one.',
+  },
+  {
+    q: 'My statements are scanned paper. Does it still work?',
+    a: 'Yes. Scanned PDFs, digital PDFs and photos of statements all work, from Chase, Wells Fargo, Amex and 100+ other banks and card issuers.',
+  },
+  {
+    q: 'What does the free month include?',
+    a: 'Your first month of the $10/month plan, free. That puts $10 of scan credit in your account, enough for about 10 statements on Normal mode or 2,000 pages on Fast mode. After 30 days it renews at $10/month unless you cancel.',
+  },
+  {
+    q: 'Do I need a credit card?',
+    a: 'Not to sign up. You get 3 free scans as soon as you create your account. To activate the free month you add a card at checkout. You are not charged for 30 days, and you can cancel any time before that.',
+  },
+  {
+    q: 'Is my financial data safe?',
+    a: 'Statements are encrypted between your browser and our servers, payments are handled by Stripe, and saved statements stay only until you delete them. Incognito mode converts a statement without keeping the file or its data after your session.',
+  },
+];
+---
+
+<Base
+  title="Never Type a Bank Statement Into Excel Again"
+  description="Upload a bank statement PDF and get a clean, categorized Excel spreadsheet in seconds. LinkedIn members get the first month free."
+  path="/lp/linkedin"
+  noindex
+  bare
+>
+  <!-- Store the offer on landing too, so it survives even if the visitor signs up later from another page. -->
+  <script is:inline define:vars={{ OFFER }}>
+    try { localStorage.setItem('bss_offer', JSON.stringify({ code: OFFER, at: Date.now() })); } catch (e) {}
+  </script>
+
+  <div class="lp">
+    <div class="topbar">
+      <div class="container topbar-inner">
+        <span class="brand">
+          <img src={logo.src} alt="" width="28" height="28" />
+          {SITE_NAME}
+        </span>
+        <span class="topbar-offer">LinkedIn members: first month free</span>
+      </div>
+    </div>
+
+    <!-- 1. Hero: the big idea -->
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow">For accountants, bookkeepers &amp; business owners</p>
+          <h1>Never type a bank statement into Excel again.</h1>
+          <p class="hero-sub">
+            Upload the PDF. Get a clean, categorized spreadsheet back in seconds. No retyping, no
+            copy-paste, no fixing columns.
+          </p>
+          <a class="btn btn-primary btn-lg js-cta" href={CTA_HREF} data-cta="hero">{CTA_LABEL} →</a>
+          <ul class="reassure">
+            <li>No card to sign up</li>
+            <li>3 free scans instantly</li>
+            <li>Cancel anytime</li>
+          </ul>
+          <div class="trust">
+            <span class="avatars" aria-hidden="true">
+              <img src="/avatars/avatar-1.jpg" alt="" width="32" height="32" />
+              <img src="/avatars/avatar-2.jpg" alt="" width="32" height="32" />
+              <img src="/avatars/avatar-3.jpg" alt="" width="32" height="32" />
+            </span>
+            <span>10,000+ finance professionals have stopped typing statements</span>
+          </div>
+        </div>
+
+        <!-- Visual of the big idea: messy PDF in, clean spreadsheet out -->
+        <div class="demo" aria-label="A PDF bank statement turned into a categorized spreadsheet">
+          <div class="pdf">
+            <div class="file-tag">statement_march.pdf</div>
+            <div class="pdf-lines" aria-hidden="true">
+              {sampleRows.map((r) => (
+                <div class="pdf-line">
+                  <span>{r.date}</span>
+                  <span>{r.desc.toUpperCase()}</span>
+                  <span>{r.amt}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div class="arrow" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14m0 0l-6-6m6 6l-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>seconds</span>
+          </div>
+          <div class="sheet">
+            <div class="file-tag file-tag--xl">statement_march.xlsx</div>
+            <table>
+              <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th></tr></thead>
+              <tbody>
+                {sampleRows.map((r) => (
+                  <tr>
+                    <td>{r.date}</td>
+                    <td>{r.desc}</td>
+                    <td><span class="chip">{r.cat}</span></td>
+                    <td class={`num ${r.amt.startsWith('-') ? 'neg' : 'pos'}`}>{r.amt}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Proof strip -->
+    <section class="proof" aria-label="Results">
+      <div class="container proof-inner">
+        <div><strong>Seconds</strong><span>per statement, not hours</span></div>
+        <div><strong>0</strong><span>rows typed by you</span></div>
+        <div><strong>100+</strong><span>banks and card issuers</span></div>
+        <div><strong>Excel &amp; CSV</strong><span>ready for QuickBooks &amp; Xero</span></div>
+      </div>
+    </section>
+
+    <!-- 3. Pain vs. outcome -->
+    <section class="section">
+      <div class="container">
+        <header class="head">
+          <h2>Typing statements by hand costs you hours. Uploading them takes seconds.</h2>
+          <p>Same statement, same spreadsheet. The only difference is who does the typing.</p>
+        </header>
+        <div class="compare">
+          <div class="compare-col compare-col--old">
+            <h3>Typing it into Excel</h3>
+            <ul>
+              <li>Retype every date, payee and amount</li>
+              <li>Copy-paste that breaks the columns</li>
+              <li>Hunt for the one typo that throws off the balance</li>
+              <li>Categorize hundreds of rows one by one</li>
+            </ul>
+          </div>
+          <div class="compare-col compare-col--new">
+            <h3>Uploading it to {SITE_NAME}</h3>
+            <ul>
+              <li>Every transaction extracted for you</li>
+              <li>Clean columns, ready to sort and filter</li>
+              <li>Balances checked against the statement</li>
+              <li>Every row categorized automatically</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. How it works -->
+    <section class="section section--tint">
+      <div class="container">
+        <header class="head">
+          <h2>Three steps. Zero typing.</h2>
+        </header>
+        <ol class="steps">
+          <li>
+            <span class="step-n">1</span>
+            <h3>Drop in the PDF</h3>
+            <p>Any bank or credit card statement: digital, scanned or photographed.</p>
+          </li>
+          <li>
+            <span class="step-n">2</span>
+            <h3>AI does the typing</h3>
+            <p>Dates, descriptions and amounts are extracted, then categorized for you.</p>
+          </li>
+          <li>
+            <span class="step-n">3</span>
+            <h3>Download the spreadsheet</h3>
+            <p>Export to Excel or CSV and import straight into QuickBooks, Xero or your own workbook.</p>
+          </li>
+        </ol>
+        <div class="center">
+          <a class="btn btn-primary btn-lg js-cta" href={CTA_HREF} data-cta="steps">{CTA_LABEL} →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Coverage -->
+    <section class="section section--tight">
+      <div class="container">
+        <header class="head">
+          <h2>Works on the statements you're typing in today.</h2>
+          <p>Chase, Wells Fargo, Amex and 100+ more, even scanned paper statements.</p>
+        </header>
+      </div>
+      <BankLogoMarquee linkless title="" />
+    </section>
+
+    <!-- 6. The offer -->
+    <section class="section" id="offer">
+      <div class="container">
+        <div class="offer">
+          <p class="offer-tag">LinkedIn members only</p>
+          <h2>Your first month is free. Stop typing statements today.</h2>
+          <p class="offer-price"><s>$10</s> <strong>$0</strong> <span>for your first month</span></p>
+          <ul class="offer-list">
+            <li>$10 in scan credit, about 10 statements on Normal mode</li>
+            <li>Excel and CSV exports, every bank, scanned PDFs included</li>
+            <li>3 free scans the moment you sign up, no card needed</li>
+            <li>Cancel anytime before day 30 and pay nothing</li>
+          </ul>
+          <a class="btn btn-invert btn-lg js-cta" href={CTA_HREF} data-cta="offer">{CTA_LABEL} →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. FAQ: every answer comes back to the big idea -->
+    <section class="section section--tint">
+      <div class="container faq-wrap">
+        <header class="head">
+          <h2>Questions before you stop typing statements</h2>
+        </header>
+        <div class="faq">
+          {faqs.map((f) => (
+            <details>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. Final CTA: the big idea, one last time -->
+    <section class="final">
+      <div class="container">
+        <h2>Never type a bank statement into Excel again.</h2>
+        <p>Your first month is free. Sign up takes 30 seconds.</p>
+        <a class="btn btn-invert btn-lg js-cta" href={CTA_HREF} data-cta="final">{CTA_LABEL} →</a>
+      </div>
+    </section>
+
+    <footer class="legal">
+      <div class="container">
+        © {new Date().getFullYear()} {SITE_NAME} ·
+        <a href="/privacy-policy" target="_blank" rel="noopener">Privacy</a> ·
+        <a href="/terms-of-service" target="_blank" rel="noopener">Terms</a>
+      </div>
+    </footer>
+
+    <!-- Sticky mobile CTA: the button is always one thumb away -->
+    <div class="sticky-cta">
+      <a class="btn btn-primary js-cta" href={CTA_HREF} data-cta="sticky">{CTA_LABEL} →</a>
+    </div>
+  </div>
+
+  <script is:inline>
+    // Report CTA clicks to GTM (and LinkedIn Insight, if a conversion is mapped to this event).
+    document.querySelectorAll('.js-cta').forEach(function (a) {
+      a.addEventListener('click', function () {
+        try {
+          (window.dataLayer = window.dataLayer || []).push({ event: 'lp_cta_click', lp: 'linkedin', cta: a.dataset.cta });
+        } catch (e) {}
+      });
+    });
+  </script>
+</Base>
+
+<style>
+  .lp { --ink: var(--color-text); background: var(--color-surface); padding-bottom: 72px; }
+  @media (min-width: 761px) { .lp { padding-bottom: 0; } }
+
+  .btn {
+    display: inline-block; font-weight: 700; font-size: 16px; padding: 13px 24px;
+    border-radius: var(--radius-md); text-align: center; border: 1px solid transparent;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-lg { font-size: 18px; padding: 16px 30px; }
+  .btn-primary { background: var(--color-primary); color: var(--color-on-primary); box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3); }
+  .btn-primary:hover { background: var(--color-primary-hover); color: var(--color-on-primary); }
+  .btn-invert { background: #fff; color: var(--color-primary); }
+  .btn-invert:hover { color: var(--color-primary-hover); }
+
+  /* Top bar: brand only, no links */
+  .topbar { border-bottom: 1px solid var(--color-border); background: var(--color-surface); }
+  .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 60px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; }
+  .brand img { border-radius: 6px; }
+  .topbar-offer {
+    font-size: 13px; font-weight: 700; color: var(--color-primary);
+    background: var(--color-primary-subtle); padding: 6px 12px; border-radius: 999px;
+  }
+
+  /* Hero */
+  .hero { background: var(--landing-bg); padding-block: 56px 64px; }
+  .hero-inner { display: grid; grid-template-columns: 1fr 1.05fr; gap: 48px; align-items: center; }
+  .eyebrow { margin: 0 0 14px; font-size: 14px; font-weight: 600; color: var(--color-text-muted); }
+  h1 { font-size: clamp(36px, 5.6vw, 58px); line-height: 1.04; margin: 0; letter-spacing: -0.02em; }
+  .hero-sub { font-size: 19px; color: var(--color-text-muted); margin: 20px 0 28px; max-width: 46ch; }
+  .reassure { list-style: none; padding: 0; margin: 18px 0 0; display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; color: var(--color-text-muted); }
+  .reassure li::before { content: "✓ "; color: var(--color-success); font-weight: 700; }
+  .trust { display: flex; align-items: center; gap: 12px; margin-top: 26px; font-size: 14px; font-weight: 600; }
+  .avatars { display: inline-flex; }
+  .avatars img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
+  .avatars img + img { margin-left: -9px; }
+
+  /* Demo visual */
+  .demo { display: grid; grid-template-columns: 0.65fr auto 1.45fr; align-items: center; gap: 12px; }
+  .pdf, .sheet {
+    background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg); padding: 14px; min-width: 0;
+  }
+  .pdf { transform: rotate(-2deg); }
+  .file-tag { font-size: 11px; font-weight: 700; color: #b91c1c; margin-bottom: 10px; }
+  .file-tag--xl { color: #15803d; }
+  .pdf-lines { display: flex; flex-direction: column; gap: 9px; }
+  .pdf-line {
+    display: grid; grid-template-columns: 32px 1fr auto; gap: 6px;
+    font-family: ui-monospace, Menlo, monospace; font-size: 9px; color: #94a3b8;
+    white-space: nowrap; overflow: hidden;
+  }
+  .pdf-line span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
+  .arrow { display: flex; flex-direction: column; align-items: center; color: var(--color-primary); font-size: 11px; font-weight: 700; }
+  .sheet table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .sheet th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-muted); padding: 0 6px 6px; border-bottom: 1px solid var(--color-border); }
+  .sheet td { padding: 7px 6px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+  .sheet td:nth-child(2) { white-space: normal; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .neg { color: var(--color-text); }
+  .pos { color: #15803d; font-weight: 600; }
+  .chip { background: var(--color-primary-subtle); color: var(--color-primary); font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; }
+
+  /* Proof strip */
+  .proof { border-block: 1px solid var(--color-border); padding-block: 28px; }
+  .proof-inner { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; text-align: center; }
+  .proof strong { display: block; font-size: 26px; color: var(--color-primary); }
+  .proof span { font-size: 14px; color: var(--color-text-muted); }
+
+  /* Sections */
+  .section { padding-block: 80px; }
+  .section--tight { padding-block: 64px 32px; }
+  .section--tint { background: var(--color-bg); }
+  .head { max-width: 720px; margin: 0 auto 40px; text-align: center; }
+  .head h2 { font-size: clamp(28px, 4vw, 40px); margin: 0; letter-spacing: -0.01em; }
+  .head p { font-size: 18px; color: var(--color-text-muted); margin: 14px 0 0; }
+  .center { text-align: center; margin-top: 40px; }
+
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 900px; margin-inline: auto; }
+  .compare-col { border-radius: var(--radius-lg); padding: 28px; border: 1px solid var(--color-border); }
+  .compare-col h3 { margin: 0 0 16px; font-size: 20px; }
+  .compare-col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .compare-col li { padding-left: 28px; position: relative; font-size: 16px; }
+  .compare-col--old { background: #fafafa; color: var(--color-text-muted); }
+  .compare-col--old li::before { content: "✕"; position: absolute; left: 0; color: var(--color-error); font-weight: 700; }
+  .compare-col--new { border-color: var(--color-primary); box-shadow: var(--shadow-md); }
+  .compare-col--new li::before { content: "✓"; position: absolute; left: 0; color: var(--color-success); font-weight: 700; }
+
+  .steps { list-style: none; margin: 0 auto; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 980px; }
+  .steps li { background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 28px; }
+  .step-n {
+    display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+    background: var(--color-primary); color: #fff; font-weight: 700; margin-bottom: 14px;
+  }
+  .steps h3 { margin: 0 0 8px; font-size: 20px; }
+  .steps p { margin: 0; color: var(--color-text-muted); }
+
+  /* Offer */
+  .offer {
+    max-width: 760px; margin-inline: auto; text-align: center; color: #fff;
+    background: linear-gradient(140deg, #1d4ed8, #2563eb 55%, #3b82f6);
+    border-radius: 20px; padding: 48px 32px; box-shadow: 0 20px 50px rgba(37, 99, 235, 0.35);
+  }
+  .offer-tag { display: inline-block; margin: 0 0 14px; font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.18); padding: 6px 14px; border-radius: 999px; }
+  .offer h2 { font-size: clamp(28px, 4vw, 40px); margin: 0; color: #fff; }
+  .offer-price { margin: 22px 0; font-size: 20px; }
+  .offer-price s { opacity: 0.7; }
+  .offer-price strong { font-size: 56px; margin: 0 6px; }
+  .offer-price span { opacity: 0.9; }
+  .offer-list { list-style: none; margin: 0 auto 30px; padding: 0; display: inline-flex; flex-direction: column; gap: 10px; text-align: left; }
+  .offer-list li::before { content: "✓  "; font-weight: 700; }
+
+  /* FAQ */
+  .faq-wrap { max-width: 780px; }
+  .faq { display: flex; flex-direction: column; gap: 12px; }
+  .faq details { background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 4px 20px; }
+  .faq summary {
+    cursor: pointer; list-style: none; font-weight: 600; font-size: 17px; padding: 16px 0;
+    display: flex; justify-content: space-between; gap: 16px;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; color: var(--color-primary); font-size: 22px; line-height: 1; }
+  .faq details[open] summary::after { content: "−"; }
+  .faq details p { margin: 0 0 18px; color: var(--color-text-muted); }
+
+  /* Final CTA */
+  .final { background: var(--color-text); color: #fff; text-align: center; padding-block: 80px; }
+  .final h2 { font-size: clamp(30px, 4.6vw, 46px); margin: 0; color: #fff; }
+  .final p { color: rgba(255,255,255,0.8); font-size: 18px; margin: 14px 0 30px; }
+
+  .legal { text-align: center; font-size: 13px; color: var(--color-text-muted); padding-block: 24px; }
+  .legal a { color: var(--color-text-muted); text-decoration: underline; }
+
+  /* Sticky mobile CTA */
+  .sticky-cta {
+    display: none; position: fixed; inset: auto 0 0 0; z-index: 50; padding: 12px 16px;
+    background: rgba(255,255,255,0.96); border-top: 1px solid var(--color-border);
+    backdrop-filter: blur(8px);
+  }
+  .sticky-cta .btn { width: 100%; }
+
+  @media (max-width: 960px) {
+    .hero-inner { grid-template-columns: 1fr; }
+    .demo { max-width: 560px; }
+  }
+  @media (max-width: 760px) {
+    .container { padding-inline: 16px; }
+    .topbar-offer { font-size: 11px; padding: 5px 10px; }
+    .brand { font-size: 14px; }
+    .hero { padding-block: 36px 48px; }
+    .hero .btn-lg { width: 100%; }
+    .demo { grid-template-columns: 1fr; }
+    .pdf { display: none; }
+    .arrow { display: none; }
+    .sheet td:nth-child(3), .sheet th:nth-child(3) { display: none; }
+    .proof-inner { grid-template-columns: 1fr 1fr; }
+    .section { padding-block: 56px; }
+    .compare, .steps { grid-template-columns: 1fr; }
+    .offer { padding: 36px 20px; }
+    .offer .btn-lg, .final .btn-lg { width: 100%; }
+    .sticky-cta { display: block; }
+  }
+</style>

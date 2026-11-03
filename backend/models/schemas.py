@@ -97,6 +97,7 @@ class UsageResponse(BaseModel):
 class CheckoutSessionRequest(BaseModel):
     mode: str  # "subscription" | "topup"
     email: Optional[str] = None  # optional, for Stripe Customer
+    offer: Optional[str] = None  # ad-campaign offer code (see billing.OFFERS); validated server-side
 
 
 class CheckoutSessionResponse(BaseModel):

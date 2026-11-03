@@ -4,6 +4,7 @@ import AppLayout from "../components/AppLayout";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 import { createCheckoutSession, deleteAccount, getBillingBalance } from "../api/client";
+import { OFFERS, getOffer } from "../lib/offer";
 import "./AccountSettingsPage.css";
 import "./AuthPage.css";
 
@@ -108,11 +109,13 @@ export default function AccountSettingsPage() {
     }
   };
 
+  const offer = getOffer();
+
   const handleSubscribe = async () => {
     setBillingLoading(true);
     setBillingMessage({ type: "", text: "" });
     try {
-      const url = await createCheckoutSession("subscription", user?.email ?? undefined);
+      const url = await createCheckoutSession("subscription", user?.email ?? undefined, offer);
       if (url) window.location.href = url;
     } catch (err) {
       setError(setBillingMessage, err.message || "Failed to start checkout");
@@ -237,6 +240,9 @@ export default function AccountSettingsPage() {
                 <strong>{(billingBalance.balance_cents / 100).toFixed(2)}</strong> credits remaining
               </p>
               <div className="account-settings-billing-actions">
+                {!billingBalance.subscription_active && offer && (
+                  <p className="account-settings-offer">{OFFERS[offer].label}. $10 in credits, then $10/month. Cancel anytime.</p>
+                )}
                 {!billingBalance.subscription_active ? (
                   <button
                     type="button"
@@ -244,7 +250,7 @@ export default function AccountSettingsPage() {
                     onClick={handleSubscribe}
                     disabled={billingLoading}
                   >
-                    {billingLoading ? "Redirecting…" : "Subscribe — $10/month"}
+                    {billingLoading ? "Redirecting…" : offer ? `${OFFERS[offer].cta} — then $10/month` : "Subscribe — $10/month"}
                   </button>
                 ) : (
                   <button

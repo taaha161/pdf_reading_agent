@@ -136,9 +136,10 @@ export async function getUsage() {
   return res.json();
 }
 
-export async function createCheckoutSession(mode, email = null) {
+export async function createCheckoutSession(mode, email = null, offer = null) {
   const body = { mode };
   if (email) body.email = email;
+  if (offer) body.offer = offer;
   const res = await fetch(`${API_BASE}/api/billing/checkout-session`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },

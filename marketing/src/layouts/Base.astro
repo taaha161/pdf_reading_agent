@@ -20,6 +20,8 @@ interface Props {
   appendSiteName?: boolean;
   /** Array of JSON-LD objects rendered server-side into <head>. */
   jsonLd?: Record<string, unknown>[];
+  /** Drop site header/footer (paid-ad landing pages: no exits but the CTA). */
+  bare?: boolean;
 }
 
 const {
@@ -31,6 +33,7 @@ const {
   noindex = false,
   appendSiteName = true,
   jsonLd = [],
+  bare = false,
 } = Astro.props;
 
 const canonicalUrl = canonical(path);
@@ -97,11 +100,11 @@ const fullTitle =
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TKPGJ7DD"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
-    <Header />
+    {!bare && <Header />}
     <main>
       <slot />
     </main>
-    <Footer />
+    {!bare && <Footer />}
     <Analytics />
     <!-- LinkedIn Insight Tag -->
     <script is:inline type="text/javascript">

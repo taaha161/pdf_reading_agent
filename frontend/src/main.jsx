@@ -10,6 +10,10 @@ import App from './App.jsx'
 import { loadConfig } from './lib/config'
 import { initSupabase } from './lib/supabase'
 import { setApiBase } from './api/client'
+import { captureOfferFromUrl } from './lib/offer'
+
+// Before routing/auth redirects can drop the query string.
+captureOfferFromUrl()
 
 function BootstrappedApp() {
   const [ready, setReady] = useState(false);

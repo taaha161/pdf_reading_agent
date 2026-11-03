@@ -1,6 +1,13 @@
 ---
 import { getCollection } from 'astro:content';
 
+interface Props {
+  /** Plain logos, no links (paid-ad landing pages keep the CTA the only exit). */
+  linkless?: boolean;
+  title?: string;
+}
+const { linkless = false, title } = Astro.props;
+
 // Logos are public-domain wordmarks from Wikimedia Commons, stored in
 // public/logos/banks and rendered greyscale so no single brand dominates.
 // `ratio` is width / height from each SVG's viewBox; `scale` corrects marks
@@ -38,13 +45,13 @@ const slugFor = (id?: string) => banks.find((b) => b.id === id)?.data.slug;
 const AREA = 2600;
 const sized = logos.map((l: { file: string; name: string; ratio: number; bank?: string; scale?: number }) => {
   const h = Math.round(Math.min(44, Math.max(18, Math.sqrt(AREA / l.ratio))) * (l.scale ?? 1));
-  return { ...l, h, w: Math.round(h * l.ratio), slug: slugFor(l.bank) };
+  return { ...l, h, w: Math.round(h * l.ratio), slug: linkless ? undefined : slugFor(l.bank) };
 });
 ---
 
 <section class="banks-strip" aria-labelledby="banks-strip-title">
   <p id="banks-strip-title" class="banks-strip-title">
-    Works with statements from <a href="/convert">100+ banks and card issuers</a>
+    {title ?? <>Works with statements from <a href="/convert">100+ banks and card issuers</a></>}
   </p>
   <div class="banks-strip-viewport">
     {

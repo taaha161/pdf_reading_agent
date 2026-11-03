@@ -16,7 +16,9 @@ export default defineConfig({
     sitemap({
       // App/auth routes live on the SPA and must not appear in the marketing sitemap.
       filter: (page) =>
-        !/\/(dashboard|settings|login|signup|forgot-password|reset-password|scanner)(\/|$)/.test(page),
+        !/\/(dashboard|settings|login|signup|forgot-password|reset-password|scanner)(\/|$)/.test(page) &&
+        // Paid-ad landing pages are noindex.
+        !/\/lp\//.test(page),
     }),
   ],
 });

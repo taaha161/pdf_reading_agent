@@ -21,6 +21,33 @@ _PRICE_ID_TOPUP = os.environ.get("STRIPE_PRICE_ID_TOPUP", "").strip()
 _FRONTEND_URL = (os.environ.get("FRONTEND_URL", "http://localhost:5173") or "http://localhost:5173").strip().rstrip("/")
 
 
+# Ad-campaign offers, keyed by the code the landing page passes through signup.
+# Value = free trial days on the monthly subscription. Server-side allowlist so
+# a client can't invent its own discount.
+OFFERS: dict[str, int] = {
+    "linkedin1m": 30,  # LinkedIn paid-ad landing page (/lp/linkedin): first month free
+}
+
+
+def offer_trial_days(offer: str | None) -> int:
+    """Trial days for a known offer code, else 0."""
+    return OFFERS.get((offer or "").strip().lower(), 0)
+
+
+def _has_had_subscription(customer_id: str) -> bool:
+    """True if this Stripe customer ever had a subscription (any status).
+
+    Offers are for first-time subscribers only. Fails closed (True) on Stripe
+    errors so an outage never hands out a free month by accident.
+    """
+    try:
+        subs = stripe.Subscription.list(customer=customer_id, status="all", limit=1)
+        return bool(subs.data)
+    except StripeError as e:
+        logger.warning("Subscription history lookup failed; skipping offer: %s", e)
+        return True
+
+
 def _stripe_available() -> bool:
     return bool(_STRIPE_KEY and _PRICE_ID_MONTHLY and _PRICE_ID_TOPUP)
 
@@ -51,8 +78,13 @@ def create_checkout_session(
     success_url: str | None = None,
     cancel_url: str | None = None,
     email: str | None = None,
+    offer: str | None = None,
 ) -> dict | None:
-    """Create Stripe Checkout Session. Returns { 'url': str } or None on error."""
+    """Create Stripe Checkout Session. Returns { 'url': str } or None on error.
+
+    `offer` (subscription only): a code from OFFERS. Applied as a free trial
+    when the customer has never subscribed before; silently ignored otherwise.
+    """
     if not _stripe_available():
         logger.warning("Stripe not configured; cannot create checkout session")
         return None
@@ -64,6 +96,11 @@ def create_checkout_session(
         return None
     try:
         if mode == "subscription":
+            subscription_data: dict = {"metadata": {"user_id": user_id}}
+            trial_days = offer_trial_days(offer)
+            if trial_days and not _has_had_subscription(customer_id):
+                subscription_data["trial_period_days"] = trial_days
+                subscription_data["metadata"]["offer"] = offer.strip().lower()
             session = stripe.checkout.Session.create(
                 customer=customer_id,
                 mode="subscription",
@@ -71,7 +108,7 @@ def create_checkout_session(
                 success_url=success_url,
                 cancel_url=cancel_url,
                 client_reference_id=user_id,
-                subscription_data={"metadata": {"user_id": user_id}},
+                subscription_data=subscription_data,
             )
         else:
             session = stripe.checkout.Session.create(

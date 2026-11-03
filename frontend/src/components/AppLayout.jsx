@@ -4,6 +4,7 @@ import logo from "../assets/pdf_to_excel_logo.png";
 import settingsGear from "../assets/settings-gear.svg";
 import { useAuth } from "../contexts/AuthContext";
 import { useUsage } from "../contexts/UsageContext";
+import { OFFERS, getOffer } from "../lib/offer";
 import "./AppLayout.css";
 
 export default function AppLayout({ children }) {
@@ -23,6 +24,10 @@ export default function AppLayout({ children }) {
   const balanceCents = usage?.balance_cents ?? null;
 
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  // Ad-campaign offer (e.g. LinkedIn first month free) until they subscribe.
+  const offer = getOffer();
+  const showOffer = isLoggedIn && offer && usage && !usage.subscription_active;
 
   return (
     <div className="app-layout">
@@ -144,6 +149,12 @@ export default function AppLayout({ children }) {
           </nav>
         )}
         <main className="app-layout-main">
+          {showOffer && (
+            <div className="app-layout-offer" role="note">
+              <span>{OFFERS[offer].label}.</span>
+              <Link to="/settings">{OFFERS[offer].cta}</Link>
+            </div>
+          )}
           {children}
         </main>
       </div>
