@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { sendTikTokSignupEvent } from "../lib/tiktokSignupEvent";
+import { trackSignup } from "../lib/trackSignup";
 import { useAuth } from "../contexts/AuthContext";
 import logo from "../assets/pdf_to_excel_logo.png";
 import "./AuthPage.css";
@@ -178,7 +179,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -187,6 +188,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
       });
       if (error) throw error;
       sendTikTokSignupEvent({ email: email.trim() });
+      trackSignup({ method: "email", userId: signUpData?.user?.id });
       setSignupSuccess(true);
       setSuccess("Check your email to confirm your account. Then you can log in.");
     } catch (err) {

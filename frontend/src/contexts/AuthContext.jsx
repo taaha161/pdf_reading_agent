@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { notifyLogin } from "../api/client";
+import { trackOAuthSignupIfNew } from "../lib/trackSignup";
 
 const AuthContext = createContext(null);
 
@@ -24,6 +25,8 @@ export function AuthProvider({ children }) {
       setSession(s);
       setUser(s?.user ?? null);
       setLoading(false);
+      // New Google/OAuth account → signup conversion (email signups fire in AuthPage).
+      if (event === "SIGNED_IN") trackOAuthSignupIfNew(s?.user);
       // Owner login notification: only on a real SIGNED_IN (not INITIAL_SESSION
       // or TOKEN_REFRESHED), deduped to once per browser session per user.
       if (event === "SIGNED_IN" && s?.user?.id && s?.access_token) {
