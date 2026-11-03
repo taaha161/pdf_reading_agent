@@ -28,6 +28,33 @@ const sampleRows = [
   { date: '03/07', desc: 'Gusto payroll', cat: 'Payroll', amt: '-2,915.00' },
 ];
 
+const pairs = [
+  { old: 'Retype every date, payee and amount', new: 'Every transaction extracted for you' },
+  { old: 'Copy-paste that breaks the columns', new: 'Clean columns, ready to sort and filter' },
+  { old: 'Hunt for the typo that throws off the balance', new: 'Balances checked against the statement' },
+  { old: 'Categorize hundreds of rows one by one', new: 'Every row categorized automatically' },
+];
+
+const svg = (d: string) =>
+  `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const steps = [
+  {
+    title: 'Drop in the PDF',
+    body: 'Any bank or credit card statement: digital, scanned or photographed.',
+    icon: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 18v-6m0 0-2.5 2.5M12 12l2.5 2.5"/>'),
+  },
+  {
+    title: 'AI does the typing',
+    body: 'Dates, descriptions and amounts are extracted, then categorized for you.',
+    icon: svg('<path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>'),
+  },
+  {
+    title: 'Download Excel',
+    body: 'Export to Excel or CSV and import straight into QuickBooks, Xero or your workbook.',
+    icon: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/>'),
+  },
+];
+
 const faqs = [
   {
     q: 'Will I still have to fix rows by hand?',
@@ -158,25 +185,21 @@ const faqs = [
           <h2>Typing statements by hand costs you hours. Uploading them takes seconds.</h2>
           <p>Same statement, same spreadsheet. The only difference is who does the typing.</p>
         </header>
-        <div class="compare">
-          <div class="compare-col compare-col--old">
-            <h3>Typing it into Excel</h3>
-            <ul>
-              <li>Retype every date, payee and amount</li>
-              <li>Copy-paste that breaks the columns</li>
-              <li>Hunt for the one typo that throws off the balance</li>
-              <li>Categorize hundreds of rows one by one</li>
-            </ul>
+        <div class="vs" role="table" aria-label="Typing by hand compared with uploading">
+          <div class="vs-row vs-head" role="row">
+            <div class="vs-cell vs-old" role="columnheader">
+              <span class="vs-badge vs-badge--old" aria-hidden="true">✕</span> Typing it by hand
+            </div>
+            <div class="vs-cell vs-new" role="columnheader">
+              <span class="vs-badge vs-badge--new" aria-hidden="true">✓</span> Uploading it
+            </div>
           </div>
-          <div class="compare-col compare-col--new">
-            <h3>Uploading it to {SITE_NAME}</h3>
-            <ul>
-              <li>Every transaction extracted for you</li>
-              <li>Clean columns, ready to sort and filter</li>
-              <li>Balances checked against the statement</li>
-              <li>Every row categorized automatically</li>
-            </ul>
-          </div>
+          {pairs.map((p) => (
+            <div class="vs-row" role="row">
+              <div class="vs-cell vs-old" role="cell"><span class="vs-mark vs-mark--old" aria-hidden="true">✕</span>{p.old}</div>
+              <div class="vs-cell vs-new" role="cell"><span class="vs-mark vs-mark--new" aria-hidden="true">✓</span>{p.new}</div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -188,21 +211,14 @@ const faqs = [
           <h2>Three steps. Zero typing.</h2>
         </header>
         <ol class="steps">
-          <li>
-            <span class="step-n">1</span>
-            <h3>Drop in the PDF</h3>
-            <p>Any bank or credit card statement: digital, scanned or photographed.</p>
-          </li>
-          <li>
-            <span class="step-n">2</span>
-            <h3>AI does the typing</h3>
-            <p>Dates, descriptions and amounts are extracted, then categorized for you.</p>
-          </li>
-          <li>
-            <span class="step-n">3</span>
-            <h3>Download the spreadsheet</h3>
-            <p>Export to Excel or CSV and import straight into QuickBooks, Xero or your own workbook.</p>
-          </li>
+          {steps.map((st, i) => (
+            <li class="step">
+              <div class="step-icon" aria-hidden="true" set:html={st.icon} />
+              <p class="step-label">Step {i + 1}</p>
+              <h3>{st.title}</h3>
+              <p class="step-body">{st.body}</p>
+            </li>
+          ))}
         </ol>
         <div class="center">
           <a class="btn btn-primary btn-lg js-cta" href={CTA_HREF} data-cta="steps">{CTA_LABEL} →</a>
@@ -371,24 +387,56 @@ const faqs = [
   .head p { font-size: 18px; color: var(--color-text-muted); margin: 14px 0 0; }
   .center { text-align: center; margin-top: 40px; }
 
-  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 900px; margin-inline: auto; }
-  .compare-col { border-radius: var(--radius-lg); padding: 28px; border: 1px solid var(--color-border); }
-  .compare-col h3 { margin: 0 0 16px; font-size: 20px; }
-  .compare-col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-  .compare-col li { padding-left: 28px; position: relative; font-size: 16px; }
-  .compare-col--old { background: #fafafa; color: var(--color-text-muted); }
-  .compare-col--old li::before { content: "✕"; position: absolute; left: 0; color: var(--color-error); font-weight: 700; }
-  .compare-col--new { border-color: var(--color-primary); box-shadow: var(--shadow-md); }
-  .compare-col--new li::before { content: "✓"; position: absolute; left: 0; color: var(--color-success); font-weight: 700; }
-
-  .steps { list-style: none; margin: 0 auto; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 980px; }
-  .steps li { background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 28px; }
-  .step-n {
-    display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
-    background: var(--color-primary); color: #fff; font-weight: 700; margin-bottom: 14px;
+  /* Pain vs. outcome: one panel, rows aligned side by side */
+  .vs {
+    max-width: 920px; margin-inline: auto; border-radius: 18px; overflow: hidden;
+    border: 1px solid var(--color-border); box-shadow: var(--shadow-lg); background: #fff;
   }
-  .steps h3 { margin: 0 0 8px; font-size: 20px; }
-  .steps p { margin: 0; color: var(--color-text-muted); }
+  .vs-row { display: grid; grid-template-columns: 1fr 1fr; }
+  .vs-row + .vs-row .vs-cell { border-top: 1px solid var(--color-border); }
+  .vs-head + .vs-row .vs-cell { border-top: 0; }
+  .vs-cell { display: flex; align-items: center; gap: 14px; padding: 18px 28px; font-size: 16px; }
+  .vs-old { background: #fbfbfc; color: #475569; }
+  .vs-new { background: #fff; color: var(--color-text); font-weight: 500; border-left: 1px solid var(--color-border); }
+  .vs-head .vs-cell { font-family: var(--font-heading); font-size: 18px; font-weight: 700; padding-block: 20px; }
+  .vs-head .vs-old { background: #fef2f2; color: #991b1b; }
+  .vs-head .vs-new { background: var(--color-primary); color: #fff; border-left-color: var(--color-primary); }
+  .vs-badge {
+    display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+    font-size: 14px; font-weight: 800; flex: none;
+  }
+  .vs-badge--old { background: #fee2e2; color: #dc2626; }
+  .vs-badge--new { background: rgba(255,255,255,0.2); color: #fff; }
+  .vs-mark {
+    display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+    font-size: 12px; font-weight: 800; flex: none;
+  }
+  .vs-mark--old { background: #fee2e2; color: #dc2626; }
+  .vs-mark--new { background: #dcfce7; color: #16a34a; }
+
+  /* Steps: icon cards joined by a connector line */
+  .steps {
+    list-style: none; margin: 0 auto; padding: 0; position: relative;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; max-width: 1000px;
+  }
+  .steps::before {
+    content: ""; position: absolute; top: 56px; left: 16%; right: 16%; height: 2px; z-index: 0;
+    background: repeating-linear-gradient(90deg, var(--color-primary-muted) 0 8px, transparent 8px 16px);
+  }
+  .step {
+    position: relative; z-index: 1; text-align: center; background: #fff;
+    border: 1px solid var(--color-border); border-radius: 18px; padding: 28px 26px 30px;
+    box-shadow: var(--shadow-sm); transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .step:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  .step-icon {
+    width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 16px; display: grid; place-items: center;
+    color: #fff; background: linear-gradient(140deg, #1d4ed8, #3b82f6);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  }
+  .step-label { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); }
+  .step h3 { margin: 0 0 10px; font-size: 21px; }
+  .step-body { margin: 0; color: var(--color-text-muted); font-size: 15px; line-height: 1.6; }
 
   /* Offer */
   .offer {
@@ -450,7 +498,10 @@ const faqs = [
     .sheet td:nth-child(3), .sheet th:nth-child(3) { display: none; }
     .proof-inner { grid-template-columns: 1fr 1fr; }
     .section { padding-block: 56px; }
-    .compare, .steps { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; gap: 16px; }
+    .steps::before { display: none; }
+    .vs-cell { padding: 14px 14px; font-size: 14px; gap: 10px; }
+    .vs-head .vs-cell { font-size: 15px; }
     .offer { padding: 36px 20px; }
     .offer .btn-lg, .final .btn-lg { width: 100%; }
     .sticky-cta { display: block; }
