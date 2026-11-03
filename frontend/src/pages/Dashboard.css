@@ -298,10 +298,6 @@
   color: var(--color-text-muted);
 }
 
-.dashboard-table-amount {
-  font-variant-numeric: tabular-nums;
-}
-
 .dashboard-table-category-btn {
   display: inline-flex;
   align-items: center;
@@ -345,6 +341,27 @@
 .dashboard-table-action-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.dashboard-table-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.dashboard-table-selectall {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.dashboard-table-selectall-text {
+  display: none;
 }
 
 .dashboard-table-footer {
@@ -579,5 +596,128 @@
     flex-direction: column;
     gap: 12px;
     align-items: flex-start;
+  }
+
+  /* Mobile: each statement row becomes a card.
+     [x] Statement – 42 transactions     View  [trash]
+         Mar 4, 2026 · USD
+     ARIA roles on the markup keep table semantics despite display changes. */
+  .dashboard-table-wrap {
+    overflow-x: visible;
+  }
+
+  .dashboard-table,
+  .dashboard-table thead,
+  .dashboard-table tbody {
+    display: block;
+  }
+
+  /* Header collapses to a "Select all" bar */
+  .dashboard-table thead tr {
+    display: flex;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .dashboard-table thead th {
+    display: none;
+  }
+
+  .dashboard-table thead th.dashboard-table-cell-check {
+    display: block;
+    width: auto;
+    padding: 10px 16px;
+    border-bottom: none;
+  }
+
+  .dashboard-table-selectall-text {
+    display: inline;
+    font-weight: 500;
+  }
+
+  .dashboard-table .dashboard-table-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "check desc view del"
+      "check date view del";
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 2px;
+    padding: 12px 8px 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .dashboard-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .dashboard-table td,
+  .dashboard-table td:first-child {
+    display: block;
+    width: auto;
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .dashboard-table td.dashboard-table-cell-check {
+    grid-area: check;
+    align-self: start;
+    padding-top: 2px;
+  }
+
+  .dashboard-table td.dashboard-table-cell-desc {
+    grid-area: desc;
+    min-width: 0;
+  }
+
+  .dashboard-table-desc {
+    flex-direction: row;
+    align-items: baseline;
+    flex-wrap: wrap;
+    column-gap: 6px;
+  }
+
+  .dashboard-table-desc-main {
+    overflow-wrap: anywhere;
+  }
+
+  /* Currency sits on the date line */
+  .dashboard-table-desc-sub {
+    display: none;
+  }
+
+  .dashboard-table td.dashboard-table-cell-date {
+    grid-area: date;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  .dashboard-table td.dashboard-table-cell-date::after {
+    content: attr(data-currency);
+  }
+
+  .dashboard-table td.dashboard-table-cell-view {
+    grid-area: view;
+  }
+
+  .dashboard-table-category-btn {
+    min-height: 44px;
+    padding: 0 14px;
+  }
+
+  .dashboard-table td.dashboard-table-cell-delete {
+    grid-area: del;
+  }
+
+  .dashboard-table-action-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .dashboard-table th input,
+  .dashboard-table td input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
   }
 }

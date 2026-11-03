@@ -213,21 +213,25 @@ export default function Dashboard() {
               ) : (
                 <>
                   <div className="dashboard-table-wrap">
-                    <table className="dashboard-table">
-                      <thead>
-                        <tr>
-                          <th><input type="checkbox" checked={allSelectableSelected} onChange={toggleSelectAll} disabled={deleting || jobsWithPayload.length === 0} aria-label="Select all" /></th>
-                          <th>Date</th>
-                          <th>Description</th>
-                          <th>Amount</th>
-                          <th>Category</th>
-                          <th></th>
+                    <table className="dashboard-table" role="table">
+                      <thead role="rowgroup">
+                        <tr role="row">
+                          <th role="columnheader" className="dashboard-table-cell-check">
+                            <label className="dashboard-table-selectall">
+                              <input type="checkbox" checked={allSelectableSelected} onChange={toggleSelectAll} disabled={deleting || jobsWithPayload.length === 0} aria-label="Select all" />
+                              <span className="dashboard-table-selectall-text" aria-hidden="true">Select all</span>
+                            </label>
+                          </th>
+                          <th role="columnheader">Date</th>
+                          <th role="columnheader">Description</th>
+                          <th role="columnheader">Category</th>
+                          <th role="columnheader"><span className="dashboard-table-sr-only">Actions</span></th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody role="rowgroup">
                         {filteredJobs.map((job) => (
-                          <tr key={job.id}>
-                            <td>
+                          <tr key={job.id} className="dashboard-table-row" role="row">
+                            <td className="dashboard-table-cell-check" role="cell">
                               <input
                                 type="checkbox"
                                 checked={selectedIds.has(job.id)}
@@ -236,15 +240,14 @@ export default function Dashboard() {
                                 aria-label={`Select job ${job.id}`}
                               />
                             </td>
-                            <td>{formatDate(job.created_at)}</td>
-                            <td>
+                            <td className="dashboard-table-cell-date" role="cell" data-currency={` · ${job.currency || "Processed"}`}>{formatDate(job.created_at)}</td>
+                            <td className="dashboard-table-cell-desc" role="cell">
                               <div className="dashboard-table-desc">
                                 <span className="dashboard-table-desc-main">Statement – {job.transaction_count} transaction{job.transaction_count !== 1 ? "s" : ""}</span>
                                 <span className="dashboard-table-desc-sub">{job.currency || "Processed"}</span>
                               </div>
                             </td>
-                            <td className="dashboard-table-amount">—</td>
-                            <td>
+                            <td className="dashboard-table-cell-view" role="cell">
                               {job.has_payload ? (
                                 <Link to={`/scanner/${job.id}`} className="dashboard-table-category-btn">
                                   View
@@ -253,7 +256,7 @@ export default function Dashboard() {
                                 <span className="dashboard-table-category-muted">—</span>
                               )}
                             </td>
-                            <td>
+                            <td className="dashboard-table-cell-delete" role="cell">
                               <button
                                 type="button"
                                 className="dashboard-table-action-btn"

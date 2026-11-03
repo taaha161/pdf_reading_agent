@@ -175,7 +175,7 @@ export default function ResultsTable({
       </div>
       {transactions?.length > 0 ? (
       <div className="table-wrap">
-        <table className="results-table">
+        <table className="results-table" role="table">
           <colgroup>
             <col className="results-col-date" />
             <col className="results-col-desc" />
@@ -183,43 +183,44 @@ export default function ResultsTable({
             <col className="results-col-amount" />
             <col className="results-col-actions" />
           </colgroup>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Description</th>
-              <th>Category</th>
-              <th>Amount</th>
-              <th className="results-table-actions-col">Actions</th>
+          <thead role="rowgroup">
+            <tr role="row">
+              <th role="columnheader">Date</th>
+              <th role="columnheader">Description</th>
+              <th role="columnheader">Category</th>
+              <th role="columnheader">Amount</th>
+              <th role="columnheader" className="results-table-actions-col">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup">
             {transactions.map((t, i) => {
               const chipClass = getCategoryChipClass(t.category);
               const amountClass = getAmountClass(t.type, t.amount);
               return (
-                <tr key={i} className="results-row">
-                  <td className="results-cell-date">
+                <tr key={i} className="results-row" role="row">
+                  <td className="results-cell-date" role="cell">
                     <span className="results-date">{t.date || "—"}</span>
                   </td>
-                  <td className="results-cell-desc">
+                  <td className="results-cell-desc" role="cell">
                     <div className="results-desc-main">{t.description || "—"}</div>
                   </td>
-                  <td>
+                  <td className="results-cell-category" role="cell">
                     {t.category ? (
                       <span className={`results-chip ${chipClass}`}>{t.category}</span>
                     ) : (
                       <span className="results-chip results-chip--muted">Uncategorized</span>
                     )}
                   </td>
-                  <td>
+                  <td className="results-cell-amount" role="cell">
                     <span className={`results-amount ${amountClass}`}>{formatAmountForDisplay(t.type, t.amount)}</span>
                   </td>
-                  <td className="results-cell-actions">
+                  <td className="results-cell-actions" role="cell">
                     <div className="results-cell-actions-inner">
                       <button
                         type="button"
                         className="results-row-action-btn"
                         onClick={() => openEditCard(i)}
+                        aria-label={`Edit transaction: ${t.description || "untitled"}`}
                       >
                         Edit
                       </button>

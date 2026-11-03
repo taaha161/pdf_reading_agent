@@ -36,6 +36,25 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Long category names wrap instead of forcing horizontal scroll */
+.summary-table td:first-child {
+  overflow-wrap: anywhere;
+}
+
+.summary-table .amount-col {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .summary-section {
+    padding: 1rem;
+  }
+
+  .summary-section .table-wrap {
+    max-width: none;
+  }
+}
+
 .summary-table tbody tr:last-child td {
   border-bottom: none;
 }
