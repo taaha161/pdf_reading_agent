@@ -5,7 +5,11 @@ import "./FileUpload.css";
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
-export default function FileUpload({ onUpload, disabled }) {
+/**
+ * `blocked` + `onBlocked`: when the user can't scan (e.g. out of free scans), any attempt to
+ * start an upload (click, drop, Drive, URL) calls onBlocked instead of opening a picker.
+ */
+export default function FileUpload({ onUpload, disabled, blocked = false, onBlocked }) {
   const [drag, setDrag] = useState(false);
   const [showUrl, setShowUrl] = useState(false);
   const [url, setUrl] = useState("");
@@ -22,10 +26,18 @@ export default function FileUpload({ onUpload, disabled }) {
     [onUpload]
   );
 
+  // Returns true (and fires onBlocked) when uploads are blocked.
+  const intercept = (e) => {
+    if (!blocked) return false;
+    e?.preventDefault();
+    onBlocked?.();
+    return true;
+  };
+
   const onDrop = (e) => {
     e.preventDefault();
     setDrag(false);
-    if (busy) return;
+    if (busy || intercept(e)) return;
     const file = e.dataTransfer?.files?.[0];
     handleFile(file);
   };
@@ -61,7 +73,7 @@ export default function FileUpload({ onUpload, disabled }) {
     }
   };
 
-  const onDriveClick = () => runImport("drive", () => pickPdfFromGoogleDrive(MAX_FILE_BYTES));
+  const onDriveClick = (e) => !intercept(e) && runImport("drive", () => pickPdfFromGoogleDrive(MAX_FILE_BYTES));
 
   const onUrlSubmit = (e) => {
     e.preventDefault();
@@ -89,7 +101,7 @@ export default function FileUpload({ onUpload, disabled }) {
           disabled={busy}
           id="pdf-input"
         />
-        <label htmlFor="pdf-input" className="file-upload-label">
+        <label htmlFor="pdf-input" className="file-upload-label" onClick={intercept}>
           <span className="file-upload-icon" aria-hidden>
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -118,7 +130,8 @@ export default function FileUpload({ onUpload, disabled }) {
           <button
             type="button"
             className={`file-upload-source-btn ${showUrl ? "active" : ""}`}
-            onClick={() => {
+            onClick={(e) => {
+              if (intercept(e)) return;
               setShowUrl((v) => !v);
               setImportError(null);
             }}

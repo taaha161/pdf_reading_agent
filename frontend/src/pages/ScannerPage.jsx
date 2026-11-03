@@ -112,7 +112,7 @@ function markFeedbackPrompted() {
 }
 
 export default function ScannerPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const { usage, refreshUsage, applyUsage } = useUsage();
   const navigate = useNavigate();
   const { jobId: routeJobId } = useParams();
@@ -166,24 +166,16 @@ export default function ScannerPage() {
 
   const closeFeedback = useCallback(() => setFeedbackOpen(false), []);
 
-  // Out of anonymous free scans: send to signup instead of letting them hit the limit.
+  // Out of anonymous free scans: send to signup when they click to upload (not on page load).
+  // The server's 401 trial-limit response in handleUpload covers stale usage.
+  const trialExhausted = !isLoggedIn && usage?.authenticated === false && usage?.trial_remaining === 0;
   const goToSignup = useCallback(
     () =>
       navigate("/signup", {
-        replace: true,
         state: { from: { pathname: "/scanner" }, notice: TRIAL_LIMIT_NOTICE, reason: "trial-exhausted" },
       }),
     [navigate]
   );
-
-  // Checked once, on the first usage that matches the settled auth state, so
-  // viewing the results of the last free scan doesn't redirect mid-page.
-  const trialCheckDone = useRef(false);
-  useEffect(() => {
-    if (trialCheckDone.current || authLoading || !usage || usage.authenticated !== isLoggedIn) return;
-    trialCheckDone.current = true;
-    if (!isLoggedIn && !routeJobId && usage.trial_remaining === 0) goToSignup();
-  }, [usage, authLoading, isLoggedIn, routeJobId, goToSignup]);
 
   // Load existing job when opening from dashboard (e.g. /scanner/:jobId)
   useEffect(() => {
@@ -424,7 +416,12 @@ export default function ScannerPage() {
               <p className="scanner-incognito-hint">Do not store transaction data, currency, or raw text (job count is still recorded).</p>
             </>
           )}
-          <FileUpload onUpload={handleUpload} disabled={loading} />
+          <FileUpload
+            onUpload={handleUpload}
+            disabled={loading}
+            blocked={trialExhausted}
+            onBlocked={goToSignup}
+          />
         </div>
 
         {loading && (
