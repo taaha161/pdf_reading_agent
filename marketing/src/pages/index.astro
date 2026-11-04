@@ -4,6 +4,7 @@ import Base from '../layouts/Base.astro';
 import BankLogoMarquee from '../components/BankLogoMarquee.astro';
 import HeroDropzone from '../components/HeroDropzone.astro';
 import ConvertDemo from '../components/ConvertDemo.astro';
+import ProductVideo from '../components/ProductVideo.astro';
 import SecurityStrip from '../components/SecurityStrip.astro';
 import SampleExport from '../components/SampleExport.astro';
 import FounderBlock from '../components/FounderBlock.astro';
@@ -168,6 +169,22 @@ const steps = [
       <div><div class="stat-value">10k+</div><div class="stat-label">Finance professionals</div></div>
       <div><div class="stat-value">8 hrs</div><div class="stat-label">Saved per client</div></div>
       <div><div class="stat-value">Up to 100%</div><div class="stat-label">Extraction accuracy</div></div>
+    </div>
+  </section>
+
+  <!-- Product video -->
+  <section class="watch" id="demo" aria-labelledby="watch-h">
+    <div class="container watch-inner">
+      <div class="section-head">
+        <h2 id="watch-h">See it work in 22 seconds</h2>
+        <p>Drop in a PDF. Every transaction comes back categorized and checked against the balances, ready for Excel or CSV.</p>
+      </div>
+      <ProductVideo />
+      <div class="watch-actions">
+        <a class="btn btn-primary" href="/scanner" data-cta="video_primary">Try it free with your statement</a>
+        <a class="btn btn-ghost" href="/scanner?sample=1" data-cta="video_sample">Try it with a sample</a>
+      </div>
+      <p class="watch-credit">Music: “Happy Beats / Business Moves Vol. 11” by Sascha Ende (ende.app), CC BY 4.0.</p>
     </div>
   </section>
 
@@ -410,6 +427,13 @@ const steps = [
   .stats { display: flex; gap: 48px; justify-content: center; flex-wrap: wrap; text-align: center; }
   .stat-value { font-family: var(--font-heading); font-size: 34px; color: var(--color-primary); }
   .stat-label { color: var(--color-text-muted); font-size: 14px; margin-top: 4px; }
+
+  /* Product video */
+  .watch { padding-block: 72px 0; }
+  .watch-inner { max-width: 1000px; }
+  .watch .section-head { margin-bottom: 28px; }
+  .watch-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+  .watch-credit { margin: 14px 0 0; text-align: center; font-size: 12px; color: var(--color-text-muted); }
 
   /* How it works */
   .how { padding-block: 80px 24px; }
