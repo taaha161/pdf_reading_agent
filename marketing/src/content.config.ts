@@ -46,6 +46,10 @@ const banks = defineCollection({
     sources: z.array(z.object({ label: z.string(), url: z.string().url() })),
     /** Optional blog post slug covering the bank in more depth. */
     relatedPost: z.string().optional(),
+    /** Optional rows for the PDF → spreadsheet visual; generic rows are used when absent. */
+    demoRows: z
+      .array(z.object({ date: z.string(), desc: z.string(), cat: z.string(), tone: z.string(), amt: z.string() }))
+      .optional(),
     reviewed: z.coerce.date(),
   }),
 });

@@ -13,3 +13,28 @@ export function canonical(path: string): string {
   if (!path || path === '/') return `${SITE_URL}/`;
   return `${SITE_URL}/${path.replace(/^\/+|\/+$/g, '')}`;
 }
+
+/** Free statements per person (1 without an account, 3 total once signed up). Matches AUTH_TRIAL_LIMIT in backend/main.py. */
+export const FREE_STATEMENTS = 3;
+export const FREE_STATEMENTS_LABEL = `${FREE_STATEMENTS} statements free`;
+
+/**
+ * Public review profile (Trustpilot/G2). Empty = review links stay hidden.
+ * Fill in once the profile exists.
+ */
+export const REVIEW_URL = '';
+
+/**
+ * Founder block on the homepage. Leave null to hide the section.
+ * TODO(owner): fill with real details and add the photo to marketing/public/.
+ */
+export const FOUNDER: null | {
+  name: string;
+  role: string;
+  photo: string; // path under /public, e.g. '/founder.jpg'
+  linkedin?: string;
+  story: string;
+} = null;
+
+/** Hero product video. Leave src empty to show the static demo only. */
+export const HERO_VIDEO = { src: '', poster: '' };

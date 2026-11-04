@@ -30,7 +30,7 @@ faqs:
   - q: "My converted file has shifted columns in Excel. Why?"
     a: "Citi descriptions often contain commas (for example \"SEATTLE, WA\"). Our CSV quotes those fields so Excel keeps them in one column. If you copy-paste from the PDF instead, they tend to split."
   - q: "Is there a free option?"
-    a: "Your first 5 statements are free, with no card required. After that, credits are used per statement."
+    a: "Your first 3 statements are free, with no card required. After that, credits are used per statement."
 sources:
   - label: "ImageToTable: Citibank statement layouts"
     url: "https://imagetotable.ai/blog/convert-citibank-statement-to-excel"

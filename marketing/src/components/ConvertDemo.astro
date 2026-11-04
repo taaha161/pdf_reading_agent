@@ -1,0 +1,143 @@
+---
+/**
+ * PDF → categorized spreadsheet visual. Shows the output before the visitor commits a file.
+ * Used on the homepage hero, bank pages, persona pages and the LinkedIn LP.
+ *
+ * If HERO_VIDEO.src is set (and `video` is true), a muted looping product video replaces
+ * the static spreadsheet on wide screens; the static table stays as its poster/fallback.
+ */
+import { HERO_VIDEO } from '../consts';
+
+export type DemoRow = { date: string; desc: string; cat: string; tone: string; amt: string };
+
+interface Props {
+  rows?: DemoRow[];
+  fileName?: string;
+  video?: boolean;
+  compact?: boolean;
+}
+
+const DEFAULT_ROWS: DemoRow[] = [
+  { date: 'Mar 01', desc: 'Adobe', cat: 'Software', tone: 'violet', amt: '-54.99' },
+  { date: 'Mar 02', desc: 'Acme Co (client)', cat: 'Income', tone: 'green', amt: '+4,200.00' },
+  { date: 'Mar 04', desc: 'Delta Air Lines', cat: 'Travel', tone: 'sky', amt: '-386.40' },
+  { date: 'Mar 05', desc: 'Staples', cat: 'Office', tone: 'amber', amt: '-72.18' },
+  { date: 'Mar 07', desc: 'Gusto Payroll', cat: 'Payroll', tone: 'rose', amt: '-2,915.00' },
+];
+
+const { rows = DEFAULT_ROWS, fileName = 'statement_march.xlsx', video = false, compact = false } = Astro.props;
+const showVideo = video && !!HERO_VIDEO.src;
+---
+
+<figure class:list={['demo', { 'demo--compact': compact }]} aria-label="A PDF bank statement turned into a categorized spreadsheet">
+  <div class="demo-pdf" aria-hidden="true">
+    <div class="demo-pdf-head"><span class="pdf-badge">PDF</span></div>
+    <div class="skel skel--title"></div>
+    {[92, 78, 86, 70, 88, 74, 82, 66].map((w) => (
+      <div class="skel-row"><span class="skel" style={`width:${w}%`}></span></div>
+    ))}
+  </div>
+
+  <div class="demo-win">
+    <div class="win-bar">
+      <span class="win-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="win-file"><span class="xls-badge" aria-hidden="true">X</span>{fileName}</span>
+      <span class="win-status">✓ Converted</span>
+    </div>
+    {
+      showVideo ? (
+        <video
+          class="win-video"
+          src={HERO_VIDEO.src}
+          poster={HERO_VIDEO.poster || undefined}
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="none"
+          aria-label="Product demo: uploading a statement and exporting a spreadsheet"
+        />
+      ) : (
+        <table class="win-table">
+          <thead>
+            <tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th></tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr>
+                <td class="muted">{r.date}</td>
+                <td class="desc">{r.desc}</td>
+                <td><span class={`chip chip--${r.tone}`}>{r.cat}</span></td>
+                <td class={`num ${r.amt.startsWith('+') ? 'pos' : ''}`}>{r.amt}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+    <div class="win-foot">
+      <span>{rows.length} transactions · all categorized</span>
+      <span class="win-ok">✓ Balance matches statement</span>
+    </div>
+  </div>
+</figure>
+
+<style>
+  .demo { position: relative; margin: 0; padding: 36px 0 0 84px; }
+  .demo--compact { padding: 24px 0 0 56px; }
+  .demo-pdf {
+    position: absolute; top: 0; left: 0; width: 40%; aspect-ratio: 8.5 / 11; z-index: 0;
+    background: #fff; border: 1px solid var(--color-border); border-radius: 12px;
+    box-shadow: var(--shadow-md); padding: 16px; transform: rotate(-6deg);
+  }
+  .demo-pdf-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .pdf-badge { background: #dc2626; color: #fff; font-size: 9px; font-weight: 800; padding: 3px 5px; border-radius: 4px; letter-spacing: 0.04em; }
+  .skel { display: block; height: 7px; border-radius: 4px; background: #e2e8f0; }
+  .skel--title { width: 55%; height: 10px; margin-bottom: 14px; background: #cbd5e1; }
+  .skel-row { padding: 7px 0; border-bottom: 1px dashed #eef2f7; }
+
+  .demo-win {
+    position: relative; z-index: 1; background: #fff; border: 1px solid var(--color-border);
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.06);
+  }
+  .win-bar { display: flex; align-items: center; gap: 12px; padding: 11px 14px; background: #f8fafc; border-bottom: 1px solid var(--color-border); }
+  .win-dots { display: inline-flex; gap: 6px; }
+  .win-dots i { width: 10px; height: 10px; border-radius: 50%; }
+  .win-dots i:nth-child(1) { background: #fca5a5; }
+  .win-dots i:nth-child(2) { background: #fcd34d; }
+  .win-dots i:nth-child(3) { background: #86efac; }
+  .win-file { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .xls-badge { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; background: #16a34a; color: #fff; font-size: 10px; font-weight: 800; flex: none; }
+  .win-status { font-size: 12px; font-weight: 700; color: #15803d; background: #dcfce7; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+  .win-video { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: #f8fafc; }
+
+  .win-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .win-table th {
+    text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--color-text-muted); padding: 12px 16px 10px; border-bottom: 1px solid var(--color-border);
+  }
+  .win-table td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+  .win-table tbody tr:nth-child(even) td { background: #fbfcfe; }
+  .win-table .muted { color: var(--color-text-muted); font-size: 13px; }
+  .win-table .desc { font-weight: 500; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .pos { color: #15803d; font-weight: 600; }
+  .chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
+  .chip--violet { background: #ede9fe; color: #6d28d9; }
+  .chip--green { background: #dcfce7; color: #15803d; }
+  .chip--sky { background: #e0f2fe; color: #0369a1; }
+  .chip--amber { background: #fef3c7; color: #b45309; }
+  .chip--rose { background: #ffe4e6; color: #be123c; }
+  .chip--slate { background: #f1f5f9; color: #334155; }
+  .win-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; font-size: 12px; color: var(--color-text-muted); background: #f8fafc; }
+  .win-ok { color: #15803d; font-weight: 700; }
+
+  @media (max-width: 760px) {
+    .demo, .demo--compact { padding: 0; }
+    .demo-pdf, .win-dots { display: none; }
+    .win-table { font-size: 13px; }
+    .win-table th, .win-table td { padding-inline: 10px; }
+    .win-table th:first-child, .win-table td:first-child { display: none; }
+  }
+</style>

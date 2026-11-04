@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import FileUpload from "../components/FileUpload";
 import Loader from "../components/Loader";
@@ -13,6 +13,8 @@ import { useUsage } from "../contexts/UsageContext";
 import { runScan, getJob, updateJobTransactions } from "../api/client";
 import "./ScannerPage.css";
 import PasswordInput from "../components/PasswordInput";
+import { takeHandedOffFile } from "../lib/fileHandoff";
+import sampleStatement from "../lib/sampleStatement.json";
 
 function ChatIcon() {
   return (
@@ -28,6 +30,14 @@ function CloseIcon() {
       <path d="M18 6L6 18M6 6l12 12" />
     </svg>
   );
+}
+
+function pushDataLayer(data) {
+  try {
+    (window.dataLayer = window.dataLayer || []).push(data);
+  } catch {
+    /* analytics must never break the scanner */
+  }
 }
 
 function parseAmount(amountStr) {
@@ -86,6 +96,9 @@ function transactionsToCsvBrowser(transactions) {
   return `${header}\n${rows.join("\n")}\n`;
 }
 
+/** Placeholder job id for the built-in sample statement (never sent to the API). */
+const SAMPLE_JOB_ID = "sample";
+
 const TRIAL_LIMIT_NOTICE = "You've used your free scan. Create a free account to get more free scans.";
 
 const FEEDBACK_SCAN_COUNT_KEY = "bss_scan_count";
@@ -117,6 +130,7 @@ export default function ScannerPage() {
   const { usage, refreshUsage, applyUsage } = useUsage();
   const navigate = useNavigate();
   const { jobId: routeJobId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [jobId, setJobId] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [summaryByCategory, setSummaryByCategory] = useState([]);
@@ -143,7 +157,8 @@ export default function ScannerPage() {
   const [feedbackDue, setFeedbackDue] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const isLoggedIn = !!user;
-  const canEmailSpreadsheet = !isLoggedIn && !!jobId && !!trialCsvContent && transactions.length > 0;
+  const isSample = jobId === SAMPLE_JOB_ID;
+  const canEmailSpreadsheet = !isLoggedIn && !!jobId && !isSample && !!trialCsvContent && transactions.length > 0;
 
   // Anonymous trial: pop up "Email me this spreadsheet" shortly after results load (once per scan).
   useEffect(() => {
@@ -225,7 +240,10 @@ export default function ScannerPage() {
     setDataStatus(null);
     setTrialCsvContent(null);
     setScanProgress({ stage: "uploading" });
-    if (!viaPassword) showLoader();
+    if (!viaPassword) {
+      showLoader();
+      pushDataLayer({ event: "scan_started", logged_in: isLoggedIn, mode: conversionMode });
+    }
     try {
       const data = await runScan(
         file,
@@ -248,6 +266,7 @@ export default function ScannerPage() {
       setTrialCsvContent(data.csv_content ?? null);
       applyUsage(data);
       refreshUsage();
+      pushDataLayer({ event: "scan_completed", rows: (data.transactions || []).length, logged_in: isLoggedIn });
       if (noteScanForFeedback()) setFeedbackDue(true);
     } catch (e) {
       if (e.isPdfPasswordRequired) {
@@ -295,6 +314,39 @@ export default function ScannerPage() {
     setPasswordInput("");
   };
 
+  // Entry points from the marketing site:
+  //  ?handoff=1 — a file dropped on the landing page's upload box (stored in IndexedDB); start scanning it.
+  //  ?sample=1  — show the built-in sample statement's results (no upload, no trial used).
+  const entryHandled = useRef(false);
+  useEffect(() => {
+    if (entryHandled.current || routeJobId) return;
+    const handoff = searchParams.get("handoff") === "1";
+    const sample = searchParams.get("sample") === "1";
+    if (!handoff && !sample) return;
+    entryHandled.current = true;
+    setSearchParams({}, { replace: true });
+    if (sample) {
+      loadSample();
+      return;
+    }
+    takeHandedOffFile().then((file) => {
+      if (file) handleUpload(file);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadSample = () => {
+    const rows = sampleStatement.transactions;
+    setError(null);
+    setJobId(SAMPLE_JOB_ID);
+    setTransactions(rows);
+    setSummaryByCategory(computeSummaryByCategory(rows));
+    setCurrency(sampleStatement.currency);
+    setDataStatus(null);
+    setTrialCsvContent(transactionsToCsvBrowser(rows));
+    pushDataLayer({ event: "sample_view", where: "scanner" });
+  };
+
   const hasResults = !!jobId;
 
   const handleTransactionChange = async (index, field, value) => {
@@ -315,7 +367,7 @@ export default function ScannerPage() {
     }
 
     // Persist changes for stored jobs (non-incognito / not purged)
-    if (jobId && isLoggedIn && !dataStatus) {
+    if (jobId && !isSample && isLoggedIn && !dataStatus) {
       try {
         const updated = await updateJobTransactions(jobId, nextTransactions);
         setSummaryByCategory(
@@ -346,7 +398,7 @@ export default function ScannerPage() {
       setTrialCsvContent(transactionsToCsvBrowser(nextTransactions));
     }
 
-    if (jobId && isLoggedIn && !dataStatus) {
+    if (jobId && !isSample && isLoggedIn && !dataStatus) {
       try {
         const updated = await updateJobTransactions(jobId, nextTransactions);
         setSummaryByCategory(
@@ -456,6 +508,18 @@ export default function ScannerPage() {
           </div>
         )}
 
+        {isSample && (
+          <div className="scanner-sample-banner" role="status">
+            <div>
+              <strong>This is a sample statement.</strong>{" "}
+              {sampleStatement.bank} is fictional. Opening balance ${sampleStatement.opening.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
+              + credits − debits = closing ${sampleStatement.closing.toLocaleString("en-US", { minimumFractionDigits: 2 })}, matching the statement.{" "}
+              <a href="/samples/sample-bank-statement.pdf" target="_blank" rel="noopener">View the original PDF</a>
+            </div>
+            <span className="scanner-sample-banner-cta">Upload your own statement above to try it for real.</span>
+          </div>
+        )}
+
         {hasResults && (
           <>
             <div className="scanner-results">
@@ -480,7 +544,7 @@ export default function ScannerPage() {
               </div>
             </div>
 
-            <div className="scanner-fab-wrap">
+            {!isSample && <div className="scanner-fab-wrap">
               <button
                 type="button"
                 className="scanner-fab"
@@ -496,12 +560,12 @@ export default function ScannerPage() {
                   <span className="scanner-fab-tooltip-text-mobile">Validate using AI</span>
                 </span>
               </button>
-            </div>
+            </div>}
 
-            {chatOpen && (
+            {chatOpen && !isSample && (
               <div className="scanner-chat-drawer-backdrop" onClick={() => setChatOpen(false)} aria-hidden />
             )}
-            <div className={`scanner-chat-drawer ${chatOpen ? "scanner-chat-drawer--open" : ""}`}>
+            {!isSample && <div className={`scanner-chat-drawer ${chatOpen ? "scanner-chat-drawer--open" : ""}`}>
               <div className="scanner-chat-drawer-inner">
                 <div className="scanner-chat-drawer-header">
                   <h2 className="scanner-chat-drawer-title">Validate CSV</h2>
@@ -523,7 +587,7 @@ export default function ScannerPage() {
                   hideHeading
                 />
               </div>
-            </div>
+            </div>}
           </>
         )}
         </div>

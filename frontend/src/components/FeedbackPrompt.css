@@ -358,3 +358,8 @@
     transition: none;
   }
 }
+
+.feedback-card-review-link {
+  font-weight: 600;
+  white-space: nowrap;
+}

@@ -1,0 +1,182 @@
+---
+/**
+ * Persona landing pages (/for/<persona>): hero copy that matches who is visiting, then the
+ * same proof as the homepage. Ads and persona-targeted posts should link here.
+ */
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import HeroDropzone from '../../components/HeroDropzone.astro';
+import ConvertDemo from '../../components/ConvertDemo.astro';
+import SecurityStrip from '../../components/SecurityStrip.astro';
+import SampleExport from '../../components/SampleExport.astro';
+import StickyCta from '../../components/StickyCta.astro';
+import BankLogoMarquee from '../../components/BankLogoMarquee.astro';
+import { SITE_NAME, FREE_STATEMENTS_LABEL, canonical } from '../../consts';
+import { PERSONAS, type Persona } from '../../personas';
+
+export function getStaticPaths() {
+  return PERSONAS.map((p) => ({ params: { persona: p.slug }, props: { p } }));
+}
+
+const { p } = Astro.props as { p: Persona };
+const path = `/for/${p.slug}`;
+const guide = (await getCollection('blog')).find((x) => x.id === p.guide);
+
+const steps = [
+  { title: 'Drop in the PDF', body: 'Digital, scanned, or password-protected.' },
+  { title: 'AI does the typing', body: 'Every row extracted and categorized.' },
+  { title: 'Check and export', body: 'Balances checked. Excel or CSV out.' },
+];
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: p.seoTitle,
+    description: p.description,
+    url: canonical(path),
+    isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: canonical('/') },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: p.faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+
+<Base title={p.seoTitle} description={p.description} path={path} jsonLd={jsonLd}>
+  <section class="hero" data-sticky-after>
+    <div class="container hero-inner">
+      <div>
+        <p class="eyebrow">{p.eyebrow}</p>
+        <h1>{p.h1}</h1>
+        <p class="sub">{p.sub}</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="/scanner" data-cta="persona_hero">Convert a statement free</a>
+          <a class="btn btn-ghost" href="#sample" data-open-sample="persona_hero" data-cta="persona_sample">View sample export</a>
+        </div>
+        <p class="meta">{FREE_STATEMENTS_LABEL} · No credit card · No annual contract</p>
+      </div>
+      <div>
+        <HeroDropzone cta="persona" />
+      </div>
+    </div>
+  </section>
+
+  <SecurityStrip />
+  <BankLogoMarquee />
+
+  <section class="section">
+    <div class="container">
+      <header class="head"><h2>What changes when you stop typing statements</h2></header>
+      <ul class="pains" role="list">
+        {p.pains.map((x) => (
+          <li>
+            <span class="old"><span class="mark mark--old" aria-hidden="true">✕</span>{x.old}</span>
+            <span class="new"><span class="mark mark--new" aria-hidden="true">✓</span>{x.new}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section section--tint">
+    <div class="container how">
+      <ConvertDemo />
+      <div>
+        <h2>Three steps. Zero typing.</h2>
+        <ol class="steps" role="list">
+          {steps.map((s, i) => (
+            <li><span class="n">{i + 1}</span><div><h3>{s.title}</h3><p>{s.body}</p></div></li>
+          ))}
+        </ol>
+        <a class="btn btn-primary" href="/scanner" data-cta="persona_mid">Try it on a statement</a>
+        {guide && <p class="guide">Want the full walkthrough? <a href={`/blog/${guide.id}`}>{guide.data.title} →</a></p>}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container faq-wrap">
+      <header class="head"><h2>Questions from {p.name.toLowerCase()}</h2></header>
+      <div class="faq">
+        {p.faqs.map((f) => (
+          <details><summary>{f.q}</summary><p>{f.a}</p></details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="container">
+      <h2>Your next statement could be a spreadsheet in a minute.</h2>
+      <p>{FREE_STATEMENTS_LABEL}. No credit card. Incognito mode if you don't want anything saved.</p>
+      <a class="btn btn-invert" href="/scanner" data-cta="persona_final">Convert a statement free</a>
+    </div>
+  </section>
+
+  <SampleExport />
+  <StickyCta />
+</Base>
+
+<style>
+  .btn {
+    display: inline-block; font-weight: 600; font-size: 16px; padding: 12px 22px;
+    border-radius: var(--radius-md); text-align: center; border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--color-primary); color: var(--color-on-primary); }
+  .btn-primary:hover { background: var(--color-primary-hover); color: var(--color-on-primary); }
+  .btn-ghost { background: transparent; color: var(--color-text); border-color: var(--color-border); }
+  .btn-ghost:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  .btn-invert { background: #fff; color: var(--color-primary); }
+
+  .hero { background: var(--landing-bg); padding-block: 64px 48px; }
+  .hero-inner { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; }
+  .eyebrow { margin: 0 0 14px; color: var(--color-primary); font-weight: 600; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; }
+  h1 { font-size: clamp(32px, 5vw, 50px); line-height: 1.08; margin: 0; }
+  .sub { font-size: 18px; color: var(--color-text-muted); margin: 20px 0 0; max-width: 54ch; }
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
+  .meta { margin: 18px 0 0; font-size: 14px; color: var(--color-text-muted); }
+
+  .section { padding-block: 72px; }
+  .section--tint { background: var(--color-bg); }
+  .head { max-width: 720px; margin: 0 auto 32px; text-align: center; }
+  .head h2 { font-size: clamp(26px, 4vw, 36px); margin: 0; }
+
+  .pains { list-style: none; margin: 0 auto; padding: 0; max-width: 900px; border: 1px solid var(--color-border); border-radius: 16px; overflow: hidden; background: #fff; }
+  .pains li { display: grid; grid-template-columns: 1fr 1fr; }
+  .pains li + li > span { border-top: 1px solid var(--color-border); }
+  .old, .new { display: flex; gap: 12px; align-items: center; padding: 16px 22px; font-size: 16px; }
+  .old { background: #fbfbfc; color: #475569; }
+  .new { border-left: 1px solid var(--color-border); font-weight: 500; }
+  .mark { flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 12px; font-weight: 800; }
+  .mark--old { background: #fee2e2; color: #dc2626; }
+  .mark--new { background: #dcfce7; color: #16a34a; }
+
+  .how { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 56px; align-items: center; }
+  .how h2 { font-size: clamp(26px, 4vw, 34px); margin: 0 0 20px; }
+  .steps { list-style: none; margin: 0 0 24px; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+  .steps li { display: flex; gap: 14px; align-items: flex-start; }
+  .n { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--color-primary); color: #fff; font-weight: 700; }
+  .steps h3 { margin: 4px 0 2px; font-size: 17px; }
+  .steps p { margin: 0; color: var(--color-text-muted); font-size: 15px; }
+  .guide { margin: 18px 0 0; font-size: 15px; color: var(--color-text-muted); }
+
+  .faq-wrap { max-width: 780px; }
+  .faq { display: flex; flex-direction: column; gap: 12px; }
+  .faq details { background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 4px 20px; }
+  .faq summary { cursor: pointer; font-weight: 600; font-size: 17px; padding: 14px 0; }
+  .faq details p { margin: 0 0 16px; color: var(--color-text-muted); }
+
+  .final { background: var(--color-primary); color: #fff; text-align: center; padding-block: 64px; }
+  .final h2 { margin: 0; color: #fff; font-size: clamp(26px, 4vw, 36px); }
+  .final p { margin: 12px auto 26px; color: rgba(255, 255, 255, 0.9); max-width: 56ch; }
+
+  @media (max-width: 860px) {
+    .hero-inner, .how { grid-template-columns: 1fr; gap: 32px; }
+    .pains li { grid-template-columns: 1fr; }
+    .new { border-left: 0; border-top: 1px dashed var(--color-border); }
+    .old, .new { padding: 12px 16px; font-size: 15px; }
+  }
+</style>

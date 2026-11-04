@@ -129,6 +129,54 @@ const fullTitle =
     </main>
     {!bare && <Footer />}
     <Analytics />
+    <script>
+      // Engagement events for GTM. Landing → scan_started is the KPI; these explain the path.
+      import { handOffFile } from '../lib/fileHandoff';
+
+      const push = (data: Record<string, unknown>) => {
+        try { ((window as any).dataLayer = (window as any).dataLayer || []).push({ page: location.pathname, ...data }); } catch {}
+      };
+
+      // Any element with data-cta="<location>" reports clicks.
+      document.addEventListener('click', (e) => {
+        const el = (e.target as Element | null)?.closest<HTMLElement>('[data-cta]');
+        if (el) push({ event: 'cta_click', cta: el.dataset.cta, href: el.getAttribute('href') || '' });
+      });
+
+      // FAQ opens (any <details> on the page).
+      document.addEventListener('toggle', (e) => {
+        const d = e.target as HTMLDetailsElement;
+        if (d.tagName === 'DETAILS' && d.open) {
+          push({ event: 'faq_open', question: d.querySelector('summary')?.textContent?.trim().slice(0, 100) });
+        }
+      }, true);
+
+      // Scroll depth, once per threshold.
+      const marks = [25, 50, 75, 90];
+      const seen = new Set<number>();
+      const onScroll = () => {
+        const h = document.documentElement;
+        const pct = ((h.scrollTop + innerHeight) / h.scrollHeight) * 100;
+        for (const m of marks) if (pct >= m && !seen.has(m)) { seen.add(m); push({ event: 'scroll_depth', percent: m }); }
+        if (seen.size === marks.length) removeEventListener('scroll', onScroll);
+      };
+      addEventListener('scroll', onScroll, { passive: true });
+
+      // Pages without an upload box: a file dropped anywhere goes to the scanner instead of
+      // opening in the browser and leaving the site.
+      if (!document.querySelector('[data-dropzone]')) {
+        const hasFiles = (e: DragEvent) => !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');
+        addEventListener('dragover', (e) => { if (hasFiles(e)) e.preventDefault(); });
+        addEventListener('drop', async (e) => {
+          if (!hasFiles(e)) return;
+          e.preventDefault();
+          const file = e.dataTransfer?.files?.[0];
+          if (!file || !(file.type === 'application/pdf' || /\.pdf$/i.test(file.name) || file.type.startsWith('image/'))) return;
+          push({ event: 'hero_drop', cta: 'page', method: 'drop', file_type: file.type || 'unknown' });
+          location.href = (await handOffFile(file)) ? '/scanner?handoff=1' : '/scanner';
+        });
+      }
+    </script>
     <!-- LinkedIn Insight Tag -->
     <script is:inline type="text/javascript">
       _linkedin_partner_id = "10325908";
