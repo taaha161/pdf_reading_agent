@@ -109,6 +109,7 @@ def create_checkout_session(
                 cancel_url=cancel_url,
                 client_reference_id=user_id,
                 subscription_data=subscription_data,
+                allow_promotion_codes=True,
             )
         else:
             session = stripe.checkout.Session.create(
@@ -119,6 +120,7 @@ def create_checkout_session(
                 cancel_url=cancel_url,
                 client_reference_id=user_id,
                 metadata={"user_id": user_id, "topup": "1"},
+                allow_promotion_codes=True,
             )
         return {"url": session.url, "sessionId": session.id}
     except StripeError as e:
