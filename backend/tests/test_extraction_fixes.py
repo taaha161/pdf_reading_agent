@@ -57,3 +57,4 @@ def test_user_password_pdf_opens_with_correct_password(no_datalab):
 def test_user_password_pdf_rejects_wrong_password(no_datalab):
     with pytest.raises(ValueError, match="Incorrect PDF password"):
         extract_text_from_pdf(_encrypted_pdf("open-me", "owner-secret"), password="nope")
+

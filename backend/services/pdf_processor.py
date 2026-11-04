@@ -33,6 +33,40 @@ class PdfPasswordRequired(Exception):
     """Raised when the PDF is encrypted and no password was provided."""
 
 
+def decrypt_pdf(file_content: bytes, password: str | None = None) -> bytes:
+    """Return the PDF bytes with encryption removed (unchanged if not encrypted).
+
+    Raises PdfPasswordRequired if a user password is needed and none was given,
+    ValueError("Incorrect PDF password") if the given password is wrong.
+    """
+    try:
+        reader = PdfReader(io.BytesIO(file_content))
+        if not reader.is_encrypted:
+            return file_content
+        # Owner-password-only PDFs (edit/print restricted, viewable without a password)
+        # open with an empty user password, so try that before asking the user.
+        if reader.decrypt("") == 0:
+            pwd = (password or "").strip()
+            if not pwd:
+                raise PdfPasswordRequired()
+            if reader.decrypt(pwd) == 0:
+                raise ValueError("Incorrect PDF password")
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+        out = io.BytesIO()
+        writer.write(out)
+        logger.info("decrypt_pdf: decrypted encrypted PDF")
+        return out.getvalue()
+    except (PdfPasswordRequired, ValueError):
+        raise
+    except Exception as e:
+        err_lower = str(e).lower()
+        if ("encrypt" in err_lower or "password" in err_lower or "decrypt" in err_lower) and not (password or "").strip():
+            raise PdfPasswordRequired() from e
+        raise
+
+
 def extract_text_from_pdf(
     file_content: bytes,
     filename: str = "statement.pdf",
@@ -52,36 +86,7 @@ def extract_text_from_pdf(
     t0 = time.perf_counter()
     logger.info("extract_text_from_pdf: start, filename=%s, size=%d bytes, scanned_method=%s, conversion_mode=%s", filename, len(file_content), scanned_method or "auto", conversion_mode or "fast")
 
-    # Detect encrypted PDF and optionally decrypt so downstream code sees plain bytes
-    try:
-        reader = PdfReader(io.BytesIO(file_content))
-        if reader.is_encrypted:
-            # Owner-password-only PDFs (edit/print restricted, viewable without a password)
-            # open with an empty user password, so try that before asking the user.
-            if reader.decrypt("") == 0:
-                pwd = (password or "").strip()
-                if not pwd:
-                    raise PdfPasswordRequired()
-                if reader.decrypt(pwd) == 0:
-                    raise ValueError("Incorrect PDF password")
-            writer = PdfWriter()
-            for page in reader.pages:
-                writer.add_page(page)
-            out = io.BytesIO()
-            writer.write(out)
-            file_content = out.getvalue()
-            logger.info("extract_text_from_pdf: decrypted encrypted PDF")
-    except PdfPasswordRequired:
-        raise
-    except ValueError as e:
-        if "password" in str(e).lower() or "decrypt" in str(e).lower():
-            raise
-        raise
-    except Exception as e:
-        err_lower = str(e).lower()
-        if ("encrypt" in err_lower or "password" in err_lower or "decrypt" in err_lower) and not (password or "").strip():
-            raise PdfPasswordRequired() from e
-        raise
+    file_content = decrypt_pdf(file_content, password)
 
     if os.environ.get("DATALAB_API_KEY", "").strip():
         try:

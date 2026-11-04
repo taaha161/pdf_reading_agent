@@ -21,7 +21,9 @@ def anon_client():
         runs[ip_hash] += 1
 
     main.limiter.reset()
-    with patch("main.extract_text_from_pdf", return_value="1/1/24,Foo,10"), patch(
+    with patch("main.decrypt_pdf", side_effect=lambda c, p=None: c), patch(
+        "main.extract_text_from_pdf", return_value="1/1/24,Foo,10"
+    ), patch(
         "main.extract_and_categorize", return_value=([], "USD")
     ), patch("main.create_job_id", side_effect=lambda: str(uuid.uuid4())), patch(
         "main.notify_scan"
