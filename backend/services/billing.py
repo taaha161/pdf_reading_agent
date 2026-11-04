@@ -58,8 +58,22 @@ def get_or_create_stripe_customer(user_id: str, email: str | None) -> str | None
         return None
     stripe.api_key = _STRIPE_KEY
     row = get_billing(user_id)
-    if row and row.get("stripe_customer_id"):
-        return row["stripe_customer_id"]
+    stored_id = row.get("stripe_customer_id") if row else None
+    if stored_id:
+        # Stored id can be stale (test-mode id, or deleted customer): verify, else recreate.
+        try:
+            existing = stripe.Customer.retrieve(stored_id)
+            if not getattr(existing, "deleted", False):
+                return stored_id
+            logger.warning("Stripe customer %s deleted; recreating for user %s", stored_id, user_id)
+        except stripe.InvalidRequestError as e:
+            if getattr(e, "code", None) != "resource_missing":
+                logger.exception("Stripe Customer retrieve failed: %s", e)
+                return None
+            logger.warning("Stripe customer %s missing; recreating for user %s", stored_id, user_id)
+        except StripeError as e:
+            logger.exception("Stripe Customer retrieve failed: %s", e)
+            return None
     try:
         customer = stripe.Customer.create(
             metadata={"user_id": user_id},
