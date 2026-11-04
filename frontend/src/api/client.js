@@ -31,7 +31,43 @@ function getErrorMessage(err) {
   return err.message || "Request failed";
 }
 
-export async function processPdf(file, options = {}) {
+/** Build the Error the UI expects from an API error status + FastAPI `detail`. */
+function scanError(status, detail, fallback) {
+  if (status === 429) return new Error("Too many requests. Please try again in a minute.");
+  const obj = detail && typeof detail === "object" && !Array.isArray(detail) ? detail : null;
+  if (status === 402) {
+    const e = new Error(obj?.detail || "Insufficient credits");
+    e.insufficientCredits = {
+      code: obj?.code || "INSUFFICIENT_CREDITS",
+      balance_cents: obj?.balance_cents ?? 0,
+      required_cents: obj?.required_cents ?? 0,
+    };
+    return e;
+  }
+  const msg = Array.isArray(detail) ? detail.map((d) => d.msg || d).join(", ") : obj?.detail || detail || fallback;
+  const e = new Error(msg);
+  if (status === 403 && obj?.code === "RECAPTCHA_FAILED") e.isRecaptchaFailed = true;
+  if (status === 401 && typeof msg === "string" && msg.toLowerCase().includes("trial limit")) e.isTrialLimit = true;
+  if (status === 422 && obj?.code === "PDF_PASSWORD_REQUIRED") e.isPdfPasswordRequired = true;
+  if (status === 422 && obj?.code === "PDF_PASSWORD_INCORRECT") e.isPdfPasswordIncorrect = true;
+  return e;
+}
+
+async function responseError(res) {
+  const body = await res.json().catch(() => ({ detail: res.statusText }));
+  return scanError(res.status, body.detail, res.statusText);
+}
+
+const SCAN_POLL_INTERVAL_MS = 1500;
+const SCAN_POLL_MAX_FAILURES = 5; // consecutive network errors tolerated while polling
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Upload a PDF and start a background scan. Rejects right away on validation,
+ * trial/credit and password errors. Resolves with { scan_id, status, stage }.
+ */
+export async function startScan(file, options = {}) {
   const form = new FormData();
   form.append("file", file);
   if (options.incognitoMode) {
@@ -48,7 +84,7 @@ export async function processPdf(file, options = {}) {
   const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
   let res;
   try {
-    res = await fetch(`${API_BASE}/api/process-pdf`, {
+    res = await fetch(`${API_BASE}/api/scans`, {
       method: "POST",
       headers: authHeaders(),
       body: form,
@@ -56,45 +92,61 @@ export async function processPdf(file, options = {}) {
       credentials: "include",
     });
   } catch (e) {
+    throw new Error(getErrorMessage(e));
+  } finally {
     clearTimeout(timeoutId);
-    const message = getErrorMessage(e);
-    throw new Error(message);
   }
-  clearTimeout(timeoutId);
+  if (!res.ok) throw await responseError(res);
+  return res.json();
+}
+
+/** Current state of a scan: { scan_id, status: running|done|error, stage, chunk?, chunks?, result?, error? }. */
+export async function getScan(scanId) {
+  const res = await fetch(`${API_BASE}/api/scans/${encodeURIComponent(scanId)}`, {
+    headers: authHeaders(),
+    credentials: "include",
+  });
+  if (res.status === 404) {
+    throw new Error("Processing was interrupted. Please upload the file again.");
+  }
   if (!res.ok) {
-    if (res.status === 429) {
-      throw new Error("Too many requests. Please try again in a minute.");
-    }
-    if (res.status === 402) {
-      const data = await res.json().catch(() => ({}));
-      const detail = data.detail && typeof data.detail === "object" ? data.detail : {};
-      const e = new Error(detail.detail || "Insufficient credits");
-      e.insufficientCredits = {
-        code: detail.code || "INSUFFICIENT_CREDITS",
-        balance_cents: detail.balance_cents ?? 0,
-        required_cents: detail.required_cents ?? 0,
-      };
-      throw e;
-    }
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    const detail = err.detail;
-    const msg = Array.isArray(detail) ? detail.map((d) => d.msg || d).join(", ") : (typeof detail === "object" && detail?.detail ? detail.detail : detail || res.statusText);
-    const e = new Error(msg);
-    if (res.status === 403 && typeof detail === "object" && detail?.code === "RECAPTCHA_FAILED") {
-      e.isRecaptchaFailed = true;
-    }
-    if (res.status === 401 && msg && msg.toLowerCase().includes("trial limit")) {
-      e.isTrialLimit = true;
-    }
-    if (res.status === 422 && typeof detail === "object" && detail?.code === "PDF_PASSWORD_REQUIRED") {
-      e.isPdfPasswordRequired = true;
-    }
-    if (res.status === 422 && typeof detail === "object" && detail?.code === "PDF_PASSWORD_INCORRECT") {
-      e.isPdfPasswordIncorrect = true;
-    }
+    const e = await responseError(res);
+    e.retryable = res.status === 429 || res.status >= 500;
     throw e;
   }
   return res.json();
+}
+
+/**
+ * Start a scan and poll until it finishes. Resolves with the scan result
+ * (same shape as the old /api/process-pdf response).
+ * - onStarted(): called once the upload is accepted (password and other checks passed).
+ * - onProgress({ stage, chunk, chunks }): called with each progress update.
+ */
+export async function runScan(file, options = {}, { onStarted, onProgress } = {}) {
+  const started = await startScan(file, options);
+  onStarted?.();
+  onProgress?.({ stage: started.stage });
+  const deadline = Date.now() + UPLOAD_TIMEOUT_MS;
+  let failures = 0;
+  while (Date.now() < deadline) {
+    await sleep(SCAN_POLL_INTERVAL_MS);
+    let scan;
+    try {
+      scan = await getScan(started.scan_id);
+      failures = 0;
+    } catch (e) {
+      const transient = e.retryable || e instanceof TypeError;
+      if (!transient || ++failures > SCAN_POLL_MAX_FAILURES) throw e;
+      continue;
+    }
+    if (scan.status === "done") return scan.result;
+    if (scan.status === "error") {
+      throw scanError(scan.error?.status_code ?? 500, scan.error?.detail, "Processing failed");
+    }
+    onProgress?.({ stage: scan.stage, chunk: scan.chunk, chunks: scan.chunks });
+  }
+  throw new Error("Processing is taking too long. Please try again with a smaller PDF.");
 }
 
 /** Download a PDF from a public link via the backend (avoids CORS; SSRF-guarded server-side). Returns a File. */

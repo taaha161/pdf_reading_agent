@@ -44,11 +44,13 @@ def test_chat_rate_limit_returns_429_after_limit(client, mock_chat_deps):
 @pytest.fixture
 def mock_process_pdf_deps():
     """Mock PDF extraction and store so /api/process-pdf returns 200 without real processing."""
-    with patch("main.extract_text_from_pdf", return_value="Date,Description,Debit,Credit\n1/1/24,Foo,10,0"), patch(
+    with patch("main.decrypt_pdf", side_effect=lambda c, p=None: c), patch(
+        "main.extract_text_from_pdf", return_value="Date,Description,Debit,Credit\n1/1/24,Foo,10,0"
+    ), patch(
         "main.extract_and_categorize", return_value=([], "USD")
     ), patch("main.create_job_id", return_value=str(uuid.uuid4())), patch("main.set_job"), patch(
         "main.count_trial_runs_by_ip", return_value=0
-    ), patch("main.record_trial_run"):
+    ), patch("main.record_trial_run"), patch("main.notify_scan"):
         yield
 
 

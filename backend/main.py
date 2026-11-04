@@ -7,7 +7,9 @@ import os
 import re
 import time
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 from dotenv import load_dotenv
 
@@ -23,7 +25,9 @@ logger = logging.getLogger("pdf_processor_app")
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -64,7 +68,8 @@ from services.notifications import (
     notify_signup,
     send_spreadsheet_email,
 )
-from services.pdf_processor import PdfPasswordRequired, extract_text_from_pdf
+from services.pdf_processor import PdfPasswordRequired, decrypt_pdf, extract_text_from_pdf
+from services.scan_jobs import create_scan, fail_scan, finish_scan, get_scan, set_stage as set_scan_stage
 from services.recaptcha import verify_recaptcha
 from services.statement_agent import extract_and_categorize
 from store import (
@@ -453,6 +458,7 @@ _RATE_LIMIT_EMAIL_SPREADSHEET = os.environ.get("RATE_LIMIT_EMAIL_SPREADSHEET", "
 _RATE_LIMIT_EXPORT = os.environ.get("RATE_LIMIT_EXPORT", "30/minute")
 _RATE_LIMIT_FEEDBACK = os.environ.get("RATE_LIMIT_FEEDBACK", "10/hour")
 _RATE_LIMIT_FETCH_URL = os.environ.get("RATE_LIMIT_FETCH_URL", "10/minute")
+_RATE_LIMIT_SCAN_STATUS = os.environ.get("RATE_LIMIT_SCAN_STATUS", "120/minute")
 
 
 ANON_TRIAL_LIMIT = 1  # Free statements before sign-up
@@ -508,19 +514,41 @@ async def fetch_pdf_url(request: Request, body: FetchPdfUrlRequest):
     )
 
 
-@app.post("/api/process-pdf", response_model=ProcessPdfResponse)
-@limiter.limit(_RATE_LIMIT_PROCESS_PDF)
-async def process_pdf(
+@dataclass
+class _ScanRequest:
+    """A validated scan, ready to run: checks passed and the PDF already decrypted."""
+
+    content: bytes
+    filename: str
+    user_id: str | None
+    trial_used: int
+    trial_limit: int
+    use_free_trial: bool
+    scanned_method: str
+    conversion_mode: str
+    incognito: bool
+    ip_hash: str | None
+
+
+ProgressFn = Callable[..., None]
+
+
+def _no_progress(*_args, **_kwargs) -> None:
+    pass
+
+
+async def _prepare_scan(
     request: Request,
-    file: UploadFile = File(...),
-    scanned_method: str = Form("vision"),
-    incognito_mode: str = Form("false"),
-    conversion_mode: str = Form("fast"),
-    pdf_password: str | None = Form(None),
-    recaptcha_token: str | None = Form(None),
-    user_id: str | None = Depends(get_current_user_optional),
-):
-    t0 = time.perf_counter()
+    file: UploadFile,
+    scanned_method: str,
+    incognito_mode: str,
+    conversion_mode: str,
+    pdf_password: str | None,
+    recaptcha_token: str | None,
+    user_id: str | None,
+) -> _ScanRequest:
+    """Fast checks that must fail before a scan starts: bot check, trial/credits,
+    file validation and PDF decryption (so password errors return immediately)."""
     # Bot check before any (paid) processing, for every scan — anonymous or not.
     if not await verify_recaptcha(recaptcha_token, _client_ip(request)):
         raise HTTPException(
@@ -532,24 +560,19 @@ async def process_pdf(
     trial_limit = _trial_limit(user_id)
     trial_used = _trial_used(request, trial_limit)
 
-    if user_id is None:
-        if trial_used >= trial_limit:
-            raise HTTPException(status_code=401, detail=TRIAL_LIMIT_MESSAGE)
-        # Will run pipeline below and not call set_job; return inline csv_content/raw_text
+    if user_id is None and trial_used >= trial_limit:
+        raise HTTPException(status_code=401, detail=TRIAL_LIMIT_MESSAGE)
 
     # Authenticated users share the same per-IP free scans before drawing down credits
     use_free_trial = user_id is not None and trial_used < trial_limit
 
     # Normalize: only "ocr" or "vision" (for scanned PDFs)
-    if scanned_method and scanned_method.strip().lower() == "ocr":
-        scanned_method_val = "ocr"
-    else:
-        scanned_method_val = "vision"
+    scanned_method_val = "ocr" if scanned_method and scanned_method.strip().lower() == "ocr" else "vision"
     # Datalab processing mode: fast | balanced | accurate
     conversion_mode_val = (conversion_mode or "fast").strip().lower()
     if conversion_mode_val not in ("fast", "balanced", "accurate"):
         conversion_mode_val = "fast"
-    logger.info("process-pdf: [step 0] request started, filename=%s, scanned_method=%s, conversion_mode=%s (elapsed 0.00 s)", file.filename or "statement.pdf", scanned_method_val, conversion_mode_val)
+    logger.info("scan: request started, filename=%s, scanned_method=%s, conversion_mode=%s", file.filename or "statement.pdf", scanned_method_val, conversion_mode_val)
 
     # Authenticated: check credits before running pipeline (skip if still within trial)
     if user_id is not None and not use_free_trial:
@@ -567,148 +590,261 @@ async def process_pdf(
                 },
             )
 
+    if file.content_type and file.content_type != ALLOWED_CONTENT_TYPE:
+        raise HTTPException(400, "File must be a PDF")
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(400, "File too large")
+    if not content:
+        raise HTTPException(400, "Empty file")
+
     try:
-        if file.content_type and file.content_type != ALLOWED_CONTENT_TYPE:
-            raise HTTPException(400, "File must be a PDF")
-        content = await file.read()
-        logger.info("process-pdf: [step 1/4] file read, size=%d bytes (%.2f s this step, total %.2f s)", len(content), time.perf_counter() - t0, time.perf_counter() - t0)
-        if len(content) > MAX_FILE_SIZE:
-            raise HTTPException(400, "File too large")
-        if not content:
-            raise HTTPException(400, "Empty file")
+        content = await run_in_threadpool(decrypt_pdf, content, (pdf_password or "").strip() or None)
+    except Exception as e:
+        raise _pdf_error(e)
 
-        t1 = time.perf_counter()
-        pdf_password_val = (pdf_password or "").strip() or None
-        try:
-            raw_text = extract_text_from_pdf(
-                content,
-                file.filename or "statement.pdf",
-                scanned_method=scanned_method_val,
-                conversion_mode=conversion_mode_val,
-                password=pdf_password_val,
-            )
-        except PdfPasswordRequired:
-            raise HTTPException(
-                422,
-                detail={
-                    "detail": "This PDF is password protected. Please enter the password to unlock it.",
-                    "code": PDF_PASSWORD_REQUIRED_CODE,
-                },
-            )
-        except ValueError as e:
-            msg = str(e).strip()
-            if "password" in msg.lower() or "decrypt" in msg.lower():
-                raise HTTPException(422, detail={"detail": msg, "code": "PDF_PASSWORD_INCORRECT"})
-            raise HTTPException(422, f"PDF parsing failed: {msg}")
-        except Exception as e:
-            raise HTTPException(422, f"PDF parsing failed: {str(e)}")
-        logger.info("process-pdf: [step 2/4] PDF text extraction done, len=%d chars (%.2f s this step, total %.2f s)", len(raw_text), time.perf_counter() - t1, time.perf_counter() - t0)
-        if not raw_text.strip():
-            raise HTTPException(
-                422,
-                "Could not extract text from PDF (empty or image-only). "
-                "For scanned PDFs, install poppler and Tesseract (see README)."
-            )
+    return _ScanRequest(
+        content=content,
+        filename=file.filename or "statement.pdf",
+        user_id=user_id,
+        trial_used=trial_used,
+        trial_limit=trial_limit,
+        use_free_trial=use_free_trial,
+        scanned_method=scanned_method_val,
+        conversion_mode=conversion_mode_val,
+        incognito=incognito_mode.strip().lower() in ("true", "1", "yes"),
+        ip_hash=_client_ip_hash(request),
+    )
 
-        t2 = time.perf_counter()
-        try:
-            transactions, currency = extract_and_categorize(raw_text)
-        except Exception as e:
-            logger.exception("AI extraction failed: %s", e)
-            raise HTTPException(500, GENERIC_500_MESSAGE)
-        logger.info("process-pdf: [step 3/4] AI extraction + categorization done, transactions=%d, currency=%s (%.2f s this step, total %.2f s)", len(transactions), currency or "none", time.perf_counter() - t2, time.perf_counter() - t0)
 
-        t3 = time.perf_counter()
-        csv_content = transactions_to_csv(transactions)
-        job_id = create_job_id()
-        summary = _summary_by_category(transactions)
-        is_trial = user_id is None
+def _pdf_error(e: Exception) -> HTTPException:
+    """Map a PDF decrypt/extract failure to the API error the client understands."""
+    if isinstance(e, HTTPException):
+        return e
+    if isinstance(e, PdfPasswordRequired):
+        return HTTPException(
+            422,
+            detail={
+                "detail": "This PDF is password protected. Please enter the password to unlock it.",
+                "code": PDF_PASSWORD_REQUIRED_CODE,
+            },
+        )
+    msg = str(e).strip()
+    if isinstance(e, ValueError) and ("password" in msg.lower() or "decrypt" in msg.lower()):
+        return HTTPException(422, detail={"detail": msg, "code": "PDF_PASSWORD_INCORRECT"})
+    return HTTPException(422, f"PDF parsing failed: {msg}")
 
-        # Owner notification (best-effort, non-blocking): a PDF was scanned.
-        try:
-            notify_scan(
-                email=None,
-                user_id=user_id,
-                is_trial=is_trial,
-                transaction_count=len(transactions),
-                conversion_mode=conversion_mode_val,
-                filename=file.filename,
-            )
-        except Exception as e:  # noqa: BLE001
-            logger.warning("scan notification failed (continuing): %s", e)
 
-        if is_trial or use_free_trial:
-            # Record free run for analytics + durable per-IP trial counting
-            # (no PDF/transaction data; only a salted IP hash is stored).
-            try:
-                record_trial_run(job_id, _client_ip_hash(request))
-            except Exception as e:
-                logger.warning("trial_runs insert failed (continuing): %s", e)
+def _run_scan(req: _ScanRequest, progress: ProgressFn = _no_progress) -> ProcessPdfResponse:
+    """The slow part of a scan (text extraction, AI, billing). Blocking: run it in a thread.
 
-        if is_trial:
-            # Return inline csv_content and raw_text
-            new_count = min(trial_used + 1, trial_limit)
-            payload = ProcessPdfResponse(
-                job_id=job_id,
-                transactions=[Transaction(**t) for t in transactions],
-                summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
-                csv_url="",
-                markdown_url="",
-                currency=currency,
-                csv_content=csv_content,
-                raw_text=raw_text,
-                trial_used=new_count,
-                trial_limit=trial_limit,
-                trial_remaining=max(0, trial_limit - new_count),
-            )
-            logger.info("process-pdf: [step 4/4] trial finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
-            return payload
-        else:
-            logger.info("process-pdf: [step 4/4] finished successfully, job_id=%s (%.2f s this step, total %.2f s)", job_id, time.perf_counter() - t3, time.perf_counter() - t0)
-            payload = ProcessPdfResponse(
-                job_id=job_id,
-                transactions=[Transaction(**t) for t in transactions],
-                summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
-                csv_url=f"/api/jobs/{job_id}/csv",
-                markdown_url=f"/api/jobs/{job_id}/markdown",
-                currency=currency,
-            )
-            if use_free_trial:
-                incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
-                set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito, conversion_mode=conversion_mode_val)
-                new_count = min(trial_used + 1, trial_limit)
-                payload.trial_used = new_count
-                payload.trial_limit = trial_limit
-                payload.trial_remaining = max(0, trial_limit - new_count)
-                return payload
-            cost_cents = SCAN_COST_CENTS.get(conversion_mode_val, SCAN_COST_CENTS["fast"])
-            new_balance = deduct_balance(user_id, cost_cents)
-            if new_balance is None:
-                raise HTTPException(
-                    status_code=402,
-                    detail={
-                        "detail": "Insufficient credits",
-                        "code": INSUFFICIENT_CREDITS_CODE,
-                        "balance_cents": 0,
-                        "required_cents": cost_cents,
-                    },
-                )
-            try:
-                insert_usage_log(user_id, job_id, cost_cents, new_balance, conversion_mode_val)
-            except Exception as e:
-                logger.warning("insert_usage_log failed (continuing): %s", e)
-            incognito = incognito_mode.strip().lower() in ("true", "1", "yes")
-            set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=incognito, conversion_mode=conversion_mode_val)
-            payload.trial_used = min(trial_used, trial_limit)
-            payload.trial_limit = trial_limit
-            payload.trial_remaining = max(0, trial_limit - trial_used)
-            payload.balance_cents = new_balance
-            return payload
+    progress(stage, chunk=None, chunks=None) is called as the scan moves through
+    scan_jobs.STAGES. Raises HTTPException on failure.
+    """
+    try:
+        return _run_scan_inner(req, progress)
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("PDF processing error: %s", e)
         raise HTTPException(500, GENERIC_500_MESSAGE)
+
+
+def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfResponse:
+    t0 = time.perf_counter()
+    user_id = req.user_id
+
+    progress("reading")
+    try:
+        raw_text = extract_text_from_pdf(
+            req.content,
+            req.filename,
+            scanned_method=req.scanned_method,
+            conversion_mode=req.conversion_mode,
+        )
+    except Exception as e:
+        raise _pdf_error(e)
+    logger.info("scan: [1/3] PDF text extraction done, len=%d chars (total %.2f s)", len(raw_text), time.perf_counter() - t0)
+    if not raw_text.strip():
+        raise HTTPException(
+            422,
+            "Could not extract text from PDF (empty or image-only). "
+            "For scanned PDFs, install poppler and Tesseract (see README)."
+        )
+
+    progress("extracting")
+    t2 = time.perf_counter()
+    try:
+        transactions, currency = extract_and_categorize(
+            raw_text, on_chunk=lambda i, n: progress("extracting", chunk=i, chunks=n)
+        )
+    except Exception as e:
+        logger.exception("AI extraction failed: %s", e)
+        raise HTTPException(500, GENERIC_500_MESSAGE)
+    logger.info("scan: [2/3] AI extraction + categorization done, transactions=%d, currency=%s (%.2f s this step, total %.2f s)", len(transactions), currency or "none", time.perf_counter() - t2, time.perf_counter() - t0)
+
+    progress("finalizing")
+    csv_content = transactions_to_csv(transactions)
+    job_id = create_job_id()
+    summary = _summary_by_category(transactions)
+    is_trial = user_id is None
+    trial_used, trial_limit = req.trial_used, req.trial_limit
+
+    # Owner notification (best-effort, non-blocking): a PDF was scanned.
+    try:
+        notify_scan(
+            email=None,
+            user_id=user_id,
+            is_trial=is_trial,
+            transaction_count=len(transactions),
+            conversion_mode=req.conversion_mode,
+            filename=req.filename,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("scan notification failed (continuing): %s", e)
+
+    if is_trial or req.use_free_trial:
+        # Record free run for analytics + durable per-IP trial counting
+        # (no PDF/transaction data; only a salted IP hash is stored).
+        try:
+            record_trial_run(job_id, req.ip_hash)
+        except Exception as e:
+            logger.warning("trial_runs insert failed (continuing): %s", e)
+
+    if is_trial:
+        # Return inline csv_content and raw_text
+        new_count = min(trial_used + 1, trial_limit)
+        payload = ProcessPdfResponse(
+            job_id=job_id,
+            transactions=[Transaction(**t) for t in transactions],
+            summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+            csv_url="",
+            markdown_url="",
+            currency=currency,
+            csv_content=csv_content,
+            raw_text=raw_text,
+            trial_used=new_count,
+            trial_limit=trial_limit,
+            trial_remaining=max(0, trial_limit - new_count),
+        )
+        logger.info("scan: [3/3] trial finished successfully, job_id=%s (total %.2f s)", job_id, time.perf_counter() - t0)
+        return payload
+
+    logger.info("scan: [3/3] finished successfully, job_id=%s (total %.2f s)", job_id, time.perf_counter() - t0)
+    payload = ProcessPdfResponse(
+        job_id=job_id,
+        transactions=[Transaction(**t) for t in transactions],
+        summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+        csv_url=f"/api/jobs/{job_id}/csv",
+        markdown_url=f"/api/jobs/{job_id}/markdown",
+        currency=currency,
+    )
+    if req.use_free_trial:
+        set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=req.incognito, conversion_mode=req.conversion_mode)
+        new_count = min(trial_used + 1, trial_limit)
+        payload.trial_used = new_count
+        payload.trial_limit = trial_limit
+        payload.trial_remaining = max(0, trial_limit - new_count)
+        return payload
+    cost_cents = SCAN_COST_CENTS.get(req.conversion_mode, SCAN_COST_CENTS["fast"])
+    new_balance = deduct_balance(user_id, cost_cents)
+    if new_balance is None:
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "detail": "Insufficient credits",
+                "code": INSUFFICIENT_CREDITS_CODE,
+                "balance_cents": 0,
+                "required_cents": cost_cents,
+            },
+        )
+    try:
+        insert_usage_log(user_id, job_id, cost_cents, new_balance, req.conversion_mode)
+    except Exception as e:
+        logger.warning("insert_usage_log failed (continuing): %s", e)
+    set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=req.incognito, conversion_mode=req.conversion_mode)
+    payload.trial_used = min(trial_used, trial_limit)
+    payload.trial_limit = trial_limit
+    payload.trial_remaining = max(0, trial_limit - trial_used)
+    payload.balance_cents = new_balance
+    return payload
+
+
+@app.post("/api/process-pdf", response_model=ProcessPdfResponse)
+@limiter.limit(_RATE_LIMIT_PROCESS_PDF)
+async def process_pdf(
+    request: Request,
+    file: UploadFile = File(...),
+    scanned_method: str = Form("vision"),
+    incognito_mode: str = Form("false"),
+    conversion_mode: str = Form("fast"),
+    pdf_password: str | None = Form(None),
+    recaptcha_token: str | None = Form(None),
+    user_id: str | None = Depends(get_current_user_optional),
+):
+    """Synchronous scan (waits for the result). Kept for clients cached before
+    /api/scans existed; new clients start a scan and poll its progress."""
+    req = await _prepare_scan(request, file, scanned_method, incognito_mode, conversion_mode, pdf_password, recaptcha_token, user_id)
+    return await run_in_threadpool(_run_scan, req)
+
+
+def _run_scan_job(scan_id: str, req: _ScanRequest) -> None:
+    def progress(stage: str, chunk: int | None = None, chunks: int | None = None) -> None:
+        set_scan_stage(scan_id, stage, chunk, chunks)
+
+    try:
+        payload = _run_scan(req, progress)
+        finish_scan(scan_id, jsonable_encoder(payload))
+    except HTTPException as e:
+        fail_scan(scan_id, e.status_code, e.detail)
+    except Exception as e:  # _run_scan already maps errors; this is a last resort
+        logger.exception("scan %s crashed: %s", scan_id, e)
+        fail_scan(scan_id, 500, GENERIC_500_MESSAGE)
+
+
+@app.options("/api/scans")
+async def preflight_scans(request: Request):
+    return await _preflight_response(request)
+
+
+@app.post("/api/scans", status_code=202)
+@limiter.limit(_RATE_LIMIT_PROCESS_PDF)
+async def start_scan(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    scanned_method: str = Form("vision"),
+    incognito_mode: str = Form("false"),
+    conversion_mode: str = Form("fast"),
+    pdf_password: str | None = Form(None),
+    recaptcha_token: str | None = Form(None),
+    user_id: str | None = Depends(get_current_user_optional),
+):
+    """Start a scan in the background and return its id. Validation, trial/credit
+    checks and password errors are returned here; progress and the result come
+    from GET /api/scans/{scan_id}."""
+    req = await _prepare_scan(request, file, scanned_method, incognito_mode, conversion_mode, pdf_password, recaptcha_token, user_id)
+    scan = create_scan(user_id)
+    background_tasks.add_task(_run_scan_job, scan.id, req)
+    return {"scan_id": scan.id, "status": scan.status, "stage": scan.stage}
+
+
+@app.options("/api/scans/{scan_id}")
+async def preflight_scan_status(request: Request):
+    return await _preflight_response(request)
+
+
+@app.get("/api/scans/{scan_id}")
+@limiter.limit(_RATE_LIMIT_SCAN_STATUS)
+async def scan_status(
+    request: Request,
+    scan_id: str,
+    user_id: str | None = Depends(get_current_user_optional),
+):
+    scan = get_scan(scan_id)
+    if scan is None or scan.user_id != user_id:
+        raise HTTPException(404, "Scan not found")
+    return scan.public()
 
 
 # Each scan can be emailed in a few formats (CSV/Excel, with/without categories).

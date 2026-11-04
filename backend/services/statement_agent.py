@@ -5,7 +5,7 @@ import os
 import re
 import time
 from collections import Counter
-from typing import Any
+from typing import Any, Callable
 
 from google import genai
 from google.genai.types import GenerateContentConfig
@@ -269,11 +269,15 @@ def _merge_chunk_transactions(chunk_results: list[list]) -> list[dict]:
     return merged
 
 
-def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | None]:
+def extract_and_categorize(
+    raw_text: str,
+    on_chunk: Callable[[int, int], None] | None = None,
+) -> tuple[list[dict[str, Any]], str | None]:
     """
     Extract transactions from raw statement text and assign categories using Gemini.
     Also infers currency from the same response. Returns (transactions, currency or None).
     Fallback: if 0 transactions, retry with extract-only then categorize (2 calls).
+    on_chunk(index, total) is called before each chunk's LLM call (index is 1-based).
     """
     if not raw_text or not raw_text.strip():
         return [], None
@@ -321,6 +325,8 @@ def extract_and_categorize(raw_text: str) -> tuple[list[dict[str, Any]], str | N
     chunk_results: list[list] = []
     currency: str | None = None
     for chunk_idx, text_input in enumerate(chunks):
+        if on_chunk:
+            on_chunk(chunk_idx + 1, len(chunks))
         logger.info(
             "extract_and_categorize: single-call extract+categorize+currency (chunk %d/%d)... (total so far %.2f s)",
             chunk_idx + 1,

@@ -90,3 +90,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.loader-detail {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}

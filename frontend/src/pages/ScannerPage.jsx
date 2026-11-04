@@ -10,7 +10,7 @@ import EmailSpreadsheet from "../components/EmailSpreadsheet";
 import FeedbackPrompt from "../components/FeedbackPrompt";
 import { useAuth } from "../contexts/AuthContext";
 import { useUsage } from "../contexts/UsageContext";
-import { processPdf, getJob, updateJobTransactions } from "../api/client";
+import { runScan, getJob, updateJobTransactions } from "../api/client";
 import "./ScannerPage.css";
 import PasswordInput from "../components/PasswordInput";
 
@@ -136,6 +136,8 @@ export default function ScannerPage() {
   const [pendingPasswordFile, setPendingPasswordFile] = useState(null);
   const [passwordError, setPasswordError] = useState(null);
   const [passwordInput, setPasswordInput] = useState("");
+  const [checkingPassword, setCheckingPassword] = useState(false);
+  const [scanProgress, setScanProgress] = useState(null);
   const [emailPopupOpen, setEmailPopupOpen] = useState(false);
   const emailPopupShownFor = useRef(null);
   const [feedbackDue, setFeedbackDue] = useState(false);
@@ -205,7 +207,14 @@ export default function ScannerPage() {
       .finally(() => setLoadingJob(false));
   }, [routeJobId, isLoggedIn]);
 
-  const handleUpload = async (file) => {
+  const handleUpload = async (file, password) => {
+    // With a password the modal stays up ("Unlocking…") until the server accepts it,
+    // then closes and the page loader takes over. Without one, show the loader right away.
+    const viaPassword = password != null;
+    const showLoader = () => {
+      setLoading(true);
+      setLoadingFile({ name: file.name, size: file.size });
+    };
     setError(null);
     setOutOfCredits(false);
     setDownloadError(null);
@@ -215,10 +224,22 @@ export default function ScannerPage() {
     setCurrency(null);
     setDataStatus(null);
     setTrialCsvContent(null);
-    setLoading(true);
-    setLoadingFile({ name: file.name, size: file.size });
+    setScanProgress({ stage: "uploading" });
+    if (!viaPassword) showLoader();
     try {
-      const data = await processPdf(file, { incognitoMode, conversionMode });
+      const data = await runScan(
+        file,
+        { incognitoMode, conversionMode, password },
+        {
+          onStarted: () => {
+            if (viaPassword) {
+              handlePasswordModalClose();
+              showLoader();
+            }
+          },
+          onProgress: setScanProgress,
+        },
+      );
       setJobId(data.job_id);
       setTransactions(data.transactions || []);
       setSummaryByCategory(data.summary_by_category || []);
@@ -234,16 +255,14 @@ export default function ScannerPage() {
         setShowPasswordModal(true);
         setPasswordError(null);
         setPasswordInput("");
-        setError(null);
-        setJobId(null);
-        setTransactions([]);
-        setSummaryByCategory([]);
-        setCurrency(null);
-        setTrialCsvContent(null);
-        setLoading(false);
-        setLoadingFile(null);
         return;
       }
+      if (e.isPdfPasswordIncorrect && viaPassword) {
+        setPasswordError("Incorrect password. Please try again.");
+        return;
+      }
+      // Any other failure is shown on the page, not in the password dialog.
+      if (viaPassword) handlePasswordModalClose();
       if (e.isTrialLimit && !isLoggedIn) {
         goToSignup();
         return;
@@ -254,54 +273,19 @@ export default function ScannerPage() {
       } else {
         setError(e.message || "Upload failed");
       }
-      setJobId(null);
-      setDataStatus(null);
-      setTransactions([]);
-      setSummaryByCategory([]);
-      setCurrency(null);
-      setTrialCsvContent(null);
     } finally {
       setLoading(false);
       setLoadingFile(null);
+      setScanProgress(null);
+      setCheckingPassword(false);
     }
   };
 
-  const handlePasswordSubmit = async (password) => {
+  const handlePasswordSubmit = (password) => {
     if (!pendingPasswordFile) return;
     setPasswordError(null);
-    setLoading(true);
-    setLoadingFile({ name: pendingPasswordFile.name, size: pendingPasswordFile.size });
-    try {
-      const data = await processPdf(pendingPasswordFile, {
-        incognitoMode,
-        conversionMode,
-        password,
-      });
-      // Close modal and clear pending state first so the dialog always dismisses on success
-      setShowPasswordModal(false);
-      setPendingPasswordFile(null);
-      setPasswordInput("");
-      setPasswordError(null);
-      // Then update results (optional chaining so we never throw and block the close)
-      setJobId(data?.job_id ?? null);
-      setTransactions(Array.isArray(data?.transactions) ? data.transactions : []);
-      setSummaryByCategory(Array.isArray(data?.summary_by_category) ? data.summary_by_category : []);
-      setCurrency(data?.currency ?? null);
-      setDataStatus(null);
-      setTrialCsvContent(data?.csv_content ?? null);
-      applyUsage(data);
-      refreshUsage();
-      if (noteScanForFeedback()) setFeedbackDue(true);
-    } catch (e) {
-      if (e.isPdfPasswordIncorrect) {
-        setPasswordError("Incorrect password. Please try again.");
-      } else {
-        setPasswordError(e.message || "Something went wrong.");
-      }
-    } finally {
-      setLoading(false);
-      setLoadingFile(null);
-    }
+    setCheckingPassword(true);
+    handleUpload(pendingPasswordFile, password);
   };
 
   const handlePasswordModalClose = () => {
@@ -429,6 +413,7 @@ export default function ScannerPage() {
           <Loader
             fileName={loadingFile?.name}
             fileSize={loadingFile?.size}
+            progress={scanProgress}
           />
         )}
 
@@ -556,7 +541,7 @@ export default function ScannerPage() {
       {feedbackOpen && <FeedbackPrompt jobId={jobId} isLoggedIn={isLoggedIn} onClose={closeFeedback} />}
 
       {showPasswordModal && (
-        <div className="scanner-password-modal-backdrop" onClick={handlePasswordModalClose} aria-hidden />
+        <div className="scanner-password-modal-backdrop" onClick={checkingPassword ? undefined : handlePasswordModalClose} aria-hidden />
       )}
       {showPasswordModal && (
         <div className="scanner-password-modal" role="dialog" aria-labelledby="pdf-password-title" aria-modal="true">
@@ -582,15 +567,15 @@ export default function ScannerPage() {
               onChange={(e) => setPasswordInput(e.target.value)}
               placeholder="Enter PDF password"
               autoComplete="current-password"
-              disabled={loading}
+              disabled={checkingPassword}
               autoFocus
             />
             <div className="scanner-password-modal-actions">
-              <button type="button" className="scanner-password-modal-btn secondary" onClick={handlePasswordModalClose} disabled={loading}>
+              <button type="button" className="scanner-password-modal-btn secondary" onClick={handlePasswordModalClose} disabled={checkingPassword}>
                 Cancel
               </button>
-              <button type="submit" className="scanner-password-modal-btn primary" disabled={loading || !passwordInput.trim()}>
-                {loading ? "Unlocking…" : "Unlock"}
+              <button type="submit" className="scanner-password-modal-btn primary" disabled={checkingPassword || !passwordInput.trim()}>
+                {checkingPassword ? "Unlocking…" : "Unlock"}
               </button>
             </div>
           </form>
