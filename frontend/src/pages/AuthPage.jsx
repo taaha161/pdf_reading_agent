@@ -6,6 +6,7 @@ import { trackSignup } from "../lib/trackSignup";
 import { useAuth } from "../contexts/AuthContext";
 import logo from "../assets/pdf_to_excel_logo.png";
 import "./AuthPage.css";
+import PasswordInput from "../components/PasswordInput";
 
 const PASSWORD_MIN_LENGTH = 8;
 // Mirrors backend AUTH_TRIAL_LIMIT - ANON_TRIAL_LIMIT (3 free scans signed in, 1 anonymous).
@@ -413,8 +414,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                       autoComplete="email"
                     />
                     <label className="auth-label">Password</label>
-                    <input
-                      type="password"
+                    <PasswordInput
                       className="auth-input"
                       name="password"
                       value={password}
@@ -425,8 +425,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                       autoComplete="new-password"
                     />
                     <label className="auth-label">Confirm password</label>
-                    <input
-                      type="password"
+                    <PasswordInput
                       className="auth-input"
                       name="confirm-password"
                       value={confirmPassword}
@@ -530,8 +529,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                 <label className="auth-label">Password</label>
                 <Link to="/forgot-password" className="auth-link-inline">Forgot password?</Link>
               </div>
-              <input
-                type="password"
+              <PasswordInput
                 className="auth-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

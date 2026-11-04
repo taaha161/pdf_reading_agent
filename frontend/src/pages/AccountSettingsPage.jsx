@@ -7,6 +7,7 @@ import { createCheckoutSession, deleteAccount, getBillingBalance } from "../api/
 import { OFFERS, getOffer } from "../lib/offer";
 import "./AccountSettingsPage.css";
 import "./AuthPage.css";
+import PasswordInput from "../components/PasswordInput";
 
 const PASSWORD_MIN_LENGTH = 8;
 
@@ -194,9 +195,8 @@ export default function AccountSettingsPage() {
           <h2 className="account-settings-section-title">Reset password</h2>
           <form onSubmit={handlePasswordSubmit} className="auth-form">
             <label className="auth-label" htmlFor="settings-password">New password</label>
-            <input
+            <PasswordInput
               id="settings-password"
-              type="password"
               className="auth-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -208,9 +208,8 @@ export default function AccountSettingsPage() {
               Use at least 8 characters including one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&* etc.).
             </p>
             <label className="auth-label" htmlFor="settings-confirm-password">Confirm new password</label>
-            <input
+            <PasswordInput
               id="settings-confirm-password"
-              type="password"
               className="auth-input"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

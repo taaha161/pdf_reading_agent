@@ -12,6 +12,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useUsage } from "../contexts/UsageContext";
 import { processPdf, getJob, updateJobTransactions } from "../api/client";
 import "./ScannerPage.css";
+import PasswordInput from "../components/PasswordInput";
 
 function ChatIcon() {
   return (
@@ -574,9 +575,8 @@ export default function ScannerPage() {
             <label htmlFor="pdf-password-input" className="scanner-password-modal-label">
               Password
             </label>
-            <input
+            <PasswordInput
               id="pdf-password-input"
-              type="password"
               className="scanner-password-modal-input"
               value={passwordInput}
               onChange={(e) => setPasswordInput(e.target.value)}

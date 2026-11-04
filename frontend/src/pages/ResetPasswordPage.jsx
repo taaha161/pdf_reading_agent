@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import "./AuthPage.css";
+import PasswordInput from "../components/PasswordInput";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -104,8 +105,7 @@ export default function ResetPasswordPage() {
         </p>
         <form onSubmit={handleSubmit} className="auth-form">
           <label className="auth-label">New password</label>
-          <input
-            type="password"
+          <PasswordInput
             className="auth-input"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -115,8 +115,7 @@ export default function ResetPasswordPage() {
             autoComplete="new-password"
           />
           <label className="auth-label">Confirm new password</label>
-          <input
-            type="password"
+          <PasswordInput
             className="auth-input"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
