@@ -1,0 +1,136 @@
+---
+/**
+ * "View sample export" dialog: a fictional statement next to the spreadsheet our exporter
+ * produced from it, with real downloads (PDF, XLSX, CSV) and a link that opens the same
+ * sample inside the scanner. Any element with [data-open-sample] opens it.
+ *
+ * Files: marketing/public/samples/*, generated from marketing/src/sampleStatement.json
+ * with backend/services/{csv,xlsx}_export.py so they match a real export byte for byte.
+ */
+import sample from '../sampleStatement.json';
+
+const money = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const rows = sample.transactions;
+---
+
+<dialog class="sample" id="sample-export" aria-labelledby="sample-title">
+  <div class="sample-inner">
+    <header class="sample-head">
+      <div>
+        <p class="sample-eyebrow">Sample export · fictional data</p>
+        <h2 id="sample-title">One statement in, one clean spreadsheet out</h2>
+        <p class="sample-sub">
+          {sample.bank} · {sample.period}. Every row below came from the PDF, with a category added.
+        </p>
+      </div>
+      <button type="button" class="sample-close" data-close-sample aria-label="Close sample">✕</button>
+    </header>
+
+    <div class="sample-tie" role="note">
+      <span>Opening <strong>${money(sample.opening)}</strong></span>
+      <span>+ credits <strong>${money(sample.credits)}</strong></span>
+      <span>− debits <strong>${money(sample.debits)}</strong></span>
+      <span>= closing <strong>${money(sample.closing)}</strong></span>
+      <span class="sample-ok">✓ Matches the statement</span>
+    </div>
+
+    <div class="sample-table-wrap">
+      <table class="sample-table">
+        <thead>
+          <tr><th>Date</th><th>Description</th><th class="num">Amount</th><th>Type</th><th>Category</th></tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr>
+              <td>{r.date}</td>
+              <td>{r.description}</td>
+              <td class={`num ${r.type === 'credit' ? 'pos' : ''}`}>{r.type === 'credit' ? '+' : '−'}{money(Number(r.amount))}</td>
+              <td class="muted">{r.type}</td>
+              <td><span class="chip">{r.category}</span></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="sample-foot">
+      <div class="sample-downloads">
+        <a href="/samples/sample-bank-statement.pdf" target="_blank" rel="noopener" data-cta="sample_pdf">Original PDF</a>
+        <a href="/samples/sample-bank-statement.xlsx" download data-cta="sample_xlsx">Download Excel</a>
+        <a href="/samples/sample-bank-statement.csv" download data-cta="sample_csv">Download CSV</a>
+      </div>
+      <a class="sample-try" href="/scanner?sample=1" data-cta="sample_open_app">Open it in the scanner →</a>
+    </footer>
+  </div>
+</dialog>
+
+<script>
+  const dlg = document.getElementById('sample-export') as HTMLDialogElement | null;
+  if (dlg) {
+    document.querySelectorAll<HTMLElement>('[data-open-sample]').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        dlg.showModal();
+        try {
+          ((window as any).dataLayer = (window as any).dataLayer || []).push({ event: 'sample_view', where: el.dataset.openSample || 'page' });
+        } catch {}
+      });
+    });
+    dlg.querySelector('[data-close-sample]')?.addEventListener('click', () => dlg.close());
+    // Click on the backdrop closes it.
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+  }
+</script>
+
+<style>
+  .sample {
+    width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0;
+    border: 0; border-radius: 18px; box-shadow: 0 30px 80px rgba(15, 23, 42, 0.3);
+    color: var(--color-text); background: var(--color-surface);
+  }
+  .sample::backdrop { background: rgba(15, 23, 42, 0.55); }
+  .sample-inner { display: flex; flex-direction: column; max-height: calc(100vh - 48px); }
+  .sample-head { display: flex; justify-content: space-between; gap: 16px; padding: 24px 24px 12px; }
+  .sample-eyebrow { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-primary); }
+  .sample-head h2 { margin: 0; font-size: clamp(20px, 3vw, 26px); }
+  .sample-sub { margin: 6px 0 0; color: var(--color-text-muted); font-size: 15px; }
+  .sample-close {
+    flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--color-border);
+    background: var(--color-surface); cursor: pointer; font-size: 14px; color: var(--color-text-muted);
+  }
+  .sample-tie {
+    display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin: 0 24px 12px;
+    padding: 12px 14px; border-radius: var(--radius-md); background: #f0fdf4; border: 1px solid #bbf7d0;
+    font-size: 14px; font-variant-numeric: tabular-nums;
+  }
+  .sample-ok { color: #15803d; font-weight: 700; margin-left: auto; }
+  .sample-table-wrap { overflow: auto; margin: 0 24px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+  .sample-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .sample-table th {
+    position: sticky; top: 0; background: #2563eb; color: #fff; text-align: left;
+    font-size: 12px; font-weight: 700; padding: 10px 12px;
+  }
+  .sample-table td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+  .sample-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sample-table .pos { color: #15803d; font-weight: 600; }
+  .sample-table .muted { color: var(--color-text-muted); }
+  .chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--color-primary-subtle); color: var(--color-primary-hover); }
+  .sample-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 24px 22px; }
+  .sample-downloads { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sample-downloads a {
+    font-size: 14px; font-weight: 600; padding: 8px 14px; border-radius: var(--radius-md);
+    border: 1px solid var(--color-border); color: var(--color-text);
+  }
+  .sample-downloads a:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  .sample-try {
+    font-weight: 700; padding: 10px 18px; border-radius: var(--radius-md);
+    background: var(--color-primary); color: var(--color-on-primary);
+  }
+  .sample-try:hover { background: var(--color-primary-hover); color: var(--color-on-primary); }
+  @media (max-width: 600px) {
+    .sample-head, .sample-foot { padding-inline: 16px; }
+    .sample-tie, .sample-table-wrap { margin-inline: 16px; }
+    .sample-ok { margin-left: 0; }
+    .sample-try { width: 100%; text-align: center; }
+  }
+</style>

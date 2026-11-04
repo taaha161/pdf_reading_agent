@@ -1,0 +1,130 @@
+{
+  "opening": 8240.15,
+  "credits": 6702.14,
+  "debits": 4699.0,
+  "closing": 10243.29,
+  "period": "March 1 \u2013 March 31, 2026",
+  "bank": "Northwind Demo Bank",
+  "currency": "USD",
+  "transactions": [
+    {
+      "date": "03/01",
+      "description": "ADOBE *CREATIVE CLOUD",
+      "amount": "54.99",
+      "type": "debit",
+      "category": "Software"
+    },
+    {
+      "date": "03/02",
+      "description": "ACH DEPOSIT ACME CO INVOICE 1042",
+      "amount": "4200.00",
+      "type": "credit",
+      "category": "Income"
+    },
+    {
+      "date": "03/03",
+      "description": "GOOGLE *WORKSPACE",
+      "amount": "28.80",
+      "type": "debit",
+      "category": "Software"
+    },
+    {
+      "date": "03/04",
+      "description": "DELTA AIR LINES 0062347718",
+      "amount": "386.40",
+      "type": "debit",
+      "category": "Travel"
+    },
+    {
+      "date": "03/05",
+      "description": "STAPLES 00112 SPRINGFIELD",
+      "amount": "72.18",
+      "type": "debit",
+      "category": "Office Supplies"
+    },
+    {
+      "date": "03/07",
+      "description": "GUSTO PAYROLL PPD 7781",
+      "amount": "2915.00",
+      "type": "debit",
+      "category": "Payroll"
+    },
+    {
+      "date": "03/09",
+      "description": "UBER TRIP HELP.UBER.COM",
+      "amount": "23.45",
+      "type": "debit",
+      "category": "Travel"
+    },
+    {
+      "date": "03/11",
+      "description": "ACH DEPOSIT GLOBEX LLC INV 1047",
+      "amount": "1850.00",
+      "type": "credit",
+      "category": "Income"
+    },
+    {
+      "date": "03/12",
+      "description": "COMCAST BUSINESS",
+      "amount": "149.99",
+      "type": "debit",
+      "category": "Utilities"
+    },
+    {
+      "date": "03/14",
+      "description": "AMAZON WEB SERVICES",
+      "amount": "211.37",
+      "type": "debit",
+      "category": "Software"
+    },
+    {
+      "date": "03/16",
+      "description": "BLUE BOTTLE COFFEE",
+      "amount": "18.60",
+      "type": "debit",
+      "category": "Meals"
+    },
+    {
+      "date": "03/18",
+      "description": "STATE FARM INSURANCE",
+      "amount": "312.00",
+      "type": "debit",
+      "category": "Insurance"
+    },
+    {
+      "date": "03/21",
+      "description": "ZELLE FROM J SMITH CONSULTING",
+      "amount": "650.00",
+      "type": "credit",
+      "category": "Income"
+    },
+    {
+      "date": "03/24",
+      "description": "WEWORK MEMBERSHIP",
+      "amount": "450.00",
+      "type": "debit",
+      "category": "Rent"
+    },
+    {
+      "date": "03/27",
+      "description": "SHELL OIL 5741",
+      "amount": "61.22",
+      "type": "debit",
+      "category": "Auto & Fuel"
+    },
+    {
+      "date": "03/29",
+      "description": "MONTHLY SERVICE FEE",
+      "amount": "15.00",
+      "type": "debit",
+      "category": "Bank Fees"
+    },
+    {
+      "date": "03/31",
+      "description": "INTEREST PAYMENT",
+      "amount": "2.14",
+      "type": "credit",
+      "category": "Income"
+    }
+  ]
+}

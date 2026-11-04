@@ -4,6 +4,9 @@ import "./FeedbackPrompt.css";
 
 const RATINGS = [1, 2, 3, 4, 5];
 const SUCCESS_CLOSE_MS = 3500;
+/** Public review profile (Trustpilot/G2). Unset = no review ask. Happy raters (4–5) get the link. */
+const REVIEW_URL = import.meta.env.VITE_REVIEW_URL || "";
+const REVIEW_MIN_RATING = 4;
 
 function MessageIcon() {
   return (
@@ -60,11 +63,14 @@ export default function FeedbackPrompt({ jobId, isLoggedIn, onClose }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose, sending]);
 
+  const askForReview = sent && !!REVIEW_URL && rating != null && rating >= REVIEW_MIN_RATING;
+
   useEffect(() => {
-    if (!sent) return;
+    // Keep the card open when it's asking for a public review; it closes via X or the link.
+    if (!sent || askForReview) return;
     const timer = setTimeout(onClose, SUCCESS_CLOSE_MS);
     return () => clearTimeout(timer);
-  }, [sent, onClose]);
+  }, [sent, askForReview, onClose]);
 
   const canSubmit = (rating != null || comment.trim() !== "") && !sending;
 
@@ -105,6 +111,27 @@ export default function FeedbackPrompt({ jobId, isLoggedIn, onClose }) {
           <div>
             <h2 id="feedback-card-title" className="feedback-card-title">Thanks, that helps</h2>
             <p className="feedback-card-sub">We read every response.</p>
+            {askForReview && (
+              <p className="feedback-card-sub">
+                Glad it's working. Would you share that in a quick public review? It helps other accountants find us.{" "}
+                <a
+                  href={REVIEW_URL}
+                  target="_blank"
+                  rel="noopener"
+                  className="feedback-card-review-link"
+                  onClick={() => {
+                    try {
+                      (window.dataLayer = window.dataLayer || []).push({ event: "review_click", rating });
+                    } catch {
+                      /* ignore */
+                    }
+                    onClose();
+                  }}
+                >
+                  Leave a review →
+                </a>
+              </p>
+            )}
           </div>
         </div>
       ) : (

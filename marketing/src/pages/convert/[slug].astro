@@ -1,7 +1,11 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
-import { SITE_NAME, canonical } from '../../consts';
+import ConvertDemo from '../../components/ConvertDemo.astro';
+import SecurityStrip from '../../components/SecurityStrip.astro';
+import SampleExport from '../../components/SampleExport.astro';
+import StickyCta from '../../components/StickyCta.astro';
+import { SITE_NAME, FREE_STATEMENTS_LABEL, canonical } from '../../consts';
 
 export async function getStaticPaths() {
   const banks = await getCollection('banks');
@@ -20,6 +24,7 @@ const related = b.relatedPost
   : undefined;
 
 const path = `/convert/${b.slug}`;
+const demoFile = `${b.shortName.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_statement.xlsx`;
 const url = canonical(path);
 const reviewedIso = b.reviewed.toISOString().slice(0, 10);
 const reviewedLabel = b.reviewed.toLocaleDateString('en-US', {
@@ -84,13 +89,13 @@ const jsonLd = [
       <span class="bank-crumbs-here">{b.name}</span>
     </nav>
 
-    <header class="bank-hero">
+    <header class="bank-hero" data-sticky-after>
       <p class="bank-eyebrow">{b.name} statement converter</p>
       <h1>Convert {b.name} statements to Excel and CSV</h1>
       <p class="bank-intro">{b.intro}</p>
       <div class="bank-cta-row">
-        <a class="bank-btn" href="/scanner">Convert a {b.shortName} statement free</a>
-        <span class="bank-cta-note">5 statements free · No credit card</span>
+        <a class="bank-btn" href="/scanner" data-cta="bank_hero">Convert a {b.shortName} statement free</a>
+        <span class="bank-cta-note">{FREE_STATEMENTS_LABEL} · No credit card · <a href="#sample" data-open-sample="bank_hero" data-cta="bank_sample">See a sample export</a></span>
       </div>
       <dl class="bank-facts">
         <div><dt>Statements</dt><dd>{b.statementTypes.join(' · ')}</dd></div>
@@ -98,6 +103,12 @@ const jsonLd = [
         <div><dt>Export</dt><dd>CSV · Excel (XLSX)</dd></div>
       </dl>
     </header>
+
+    <div class="bank-demo">
+      <ConvertDemo compact fileName={demoFile} rows={b.demoRows} />
+    </div>
+
+    <SecurityStrip inset />
 
     <section class="bank-section">
       <h2>Why not just use {b.shortName}'s own download?</h2>
@@ -127,6 +138,10 @@ const jsonLd = [
           ))
         }
       </ol>
+      <div class="bank-mid-cta">
+        <a class="bank-btn" href="/scanner" data-cta="bank_mid">Upload a {b.shortName} statement</a>
+        <span>or drop the PDF anywhere on this page</span>
+      </div>
     </section>
 
     <section class="bank-section">
@@ -170,7 +185,7 @@ const jsonLd = [
     <section class="bank-final">
       <h2>Turn your {b.shortName} PDFs into a spreadsheet</h2>
       <p>Upload a statement and export clean rows in under a minute. Use incognito mode if you don't want anything saved.</p>
-      <a class="bank-btn" href="/scanner">Upload a {b.shortName} statement</a>
+      <a class="bank-btn" href="/scanner" data-cta="bank_final">Upload a {b.shortName} statement</a>
     </section>
 
     <footer class="bank-foot">
@@ -199,6 +214,8 @@ const jsonLd = [
       </nav>
     </footer>
   </article>
+  <SampleExport />
+  <StickyCta label={`Convert a ${b.shortName} statement free`} />
 </Base>
 
 <style>
@@ -235,6 +252,9 @@ const jsonLd = [
     color: var(--color-text-muted); margin-bottom: 2px;
   }
   .bank-facts dd { margin: 0; font-size: 15px; font-weight: 500; }
+
+  .bank-demo { margin-top: 36px; }
+  .bank-mid-cta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 24px; font-size: 14px; color: var(--color-text-muted); }
 
   .bank-section { margin-top: 48px; }
   .bank-section h2, .bank-final h2 { font-size: 26px; margin: 0 0 14px; line-height: 1.25; }

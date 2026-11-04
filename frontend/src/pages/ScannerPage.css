@@ -462,3 +462,24 @@
 .scanner-password-modal-btn.primary:hover:not(:disabled) {
   filter: brightness(1.05);
 }
+
+.scanner-sample-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.875rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+  border: 1px solid var(--color-primary-muted, rgba(37, 99, 235, 0.35));
+  color: var(--color-text);
+}
+
+.scanner-sample-banner-cta {
+  font-weight: 600;
+  color: var(--color-primary);
+}

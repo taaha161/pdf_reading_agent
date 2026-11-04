@@ -1,0 +1,134 @@
+---
+/**
+ * Real upload box on marketing pages. A dropped or picked file is stored in IndexedDB
+ * (same origin as /scanner, which Vercel proxies to the app) and the scanner page picks
+ * it up on load and starts the scan. See frontend/src/lib/fileHandoff.js.
+ *
+ * Dropping a file anywhere on the page also lands here, so a stray drop never opens the
+ * PDF in the browser and takes the visitor off the site.
+ */
+interface Props {
+  hint?: string;
+  cta?: string;
+}
+const {
+  hint = 'Supports Chase, Wells Fargo, Amex, and 100+ more institutions.',
+  cta = 'hero',
+} = Astro.props;
+---
+
+<div class="upload-card" data-dropzone data-cta-name={cta}>
+  <span class="upload-badge">Drag &amp; drop bank statements</span>
+  <span class="upload-sub">PDF, scans, or photos</span>
+  <div class="upload-drop" role="button" tabindex="0" aria-describedby="dz-hint" aria-label="Upload a bank statement">
+    <span class="upload-icon" aria-hidden="true">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <path d="M12 14V4m0 0l-3.5 3.5M12 4l3.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 14.5v3A2.5 2.5 0 006.5 20h11A2.5 2.5 0 0020 17.5v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    <span class="upload-title" data-dz-title>Drop a statement here</span>
+    <span class="upload-hint" id="dz-hint">{hint}</span>
+    <span class="btn btn-primary upload-btn">Upload PDF for free</span>
+    <span class="upload-limits"><span>MAX 50MB</span> · <span>Computer-generated or scanned PDF only</span></span>
+    <span class="upload-error" data-dz-error role="alert" hidden></span>
+  </div>
+  <input type="file" accept="application/pdf,.pdf,image/*" data-dz-input hidden />
+</div>
+
+<script>
+  import { handOffFile } from '../lib/fileHandoff';
+
+  const MAX_BYTES = 50 * 1024 * 1024;
+  const zone = document.querySelector<HTMLElement>('[data-dropzone]');
+  if (zone) {
+    const drop = zone.querySelector<HTMLElement>('.upload-drop')!;
+    const input = zone.querySelector<HTMLInputElement>('[data-dz-input]')!;
+    const title = zone.querySelector<HTMLElement>('[data-dz-title]')!;
+    const err = zone.querySelector<HTMLElement>('[data-dz-error]')!;
+    const cta = zone.dataset.ctaName || 'hero';
+    let busy = false;
+
+    const push = (data: Record<string, unknown>) => {
+      try { ((window as any).dataLayer = (window as any).dataLayer || []).push(data); } catch {}
+    };
+    const showError = (msg: string) => { err.textContent = msg; err.hidden = false; };
+
+    const accept = async (file: File | undefined, how: 'drop' | 'pick') => {
+      if (!file || busy) return;
+      err.hidden = true;
+      const ok = file.type === 'application/pdf' || /\.pdf$/i.test(file.name) || file.type.startsWith('image/');
+      if (!ok) return showError('That file type isn’t supported. Upload a PDF, scan, or photo.');
+      if (file.size > MAX_BYTES) return showError('That file is over 50MB. Try a smaller PDF.');
+      busy = true;
+      zone.classList.add('is-busy');
+      title.textContent = `Opening ${file.name}…`;
+      push({ event: 'hero_drop', cta, method: how, file_type: file.type || 'unknown' });
+      const stored = await handOffFile(file);
+      // If storage is blocked (private mode etc.), still go to the scanner; they re-pick the file there.
+      window.location.href = stored ? '/scanner?handoff=1' : '/scanner';
+    };
+
+    drop.addEventListener('click', () => input.click());
+    drop.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+    });
+    input.addEventListener('change', () => accept(input.files?.[0], 'pick'));
+
+    // Whole-window drop target: highlight the card while a file is dragged over the page.
+    let depth = 0;
+    const hasFiles = (e: DragEvent) => !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');
+    window.addEventListener('dragenter', (e) => {
+      if (!hasFiles(e)) return;
+      depth++;
+      zone.classList.add('is-over');
+    });
+    window.addEventListener('dragleave', () => {
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) zone.classList.remove('is-over');
+    });
+    window.addEventListener('dragover', (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    });
+    window.addEventListener('drop', (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      depth = 0;
+      zone.classList.remove('is-over');
+      accept(e.dataTransfer?.files?.[0], 'drop');
+    });
+  }
+</script>
+
+<style>
+  .upload-card {
+    display: flex; flex-direction: column; gap: 4px; background: var(--color-surface);
+    border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+    padding: 20px; box-shadow: var(--shadow-lg); color: inherit;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .upload-badge { font-weight: 600; }
+  .upload-sub { font-size: 13px; color: var(--color-text-muted); }
+  .upload-drop {
+    display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+    border: 2px dashed var(--color-primary-muted); border-radius: var(--radius-md);
+    padding: 28px 20px; margin-top: 12px; background: var(--color-primary-subtle);
+    cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .upload-drop:hover { border-color: var(--color-primary); }
+  .upload-card.is-over { transform: scale(1.015); box-shadow: 0 0 0 4px var(--color-primary-muted), var(--shadow-lg); }
+  .upload-card.is-over .upload-drop { border-color: var(--color-primary); background: rgba(37, 99, 235, 0.16); }
+  .upload-card.is-busy .upload-drop { cursor: progress; opacity: 0.8; }
+  .upload-icon { color: var(--color-primary); }
+  .upload-title { font-weight: 600; }
+  .upload-hint { font-size: 13px; color: var(--color-text-muted); max-width: 34ch; }
+  .upload-btn {
+    display: inline-block; margin-top: 6px; font-weight: 600; font-size: 16px; padding: 12px 22px;
+    border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-on-primary);
+  }
+  .upload-drop:hover .upload-btn { background: var(--color-primary-hover); }
+  .upload-limits { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
+  .upload-error { font-size: 13px; color: var(--color-error); font-weight: 600; }
+</style>

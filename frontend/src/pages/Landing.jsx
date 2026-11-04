@@ -260,7 +260,7 @@ export default function Landing() {
             <div className="landing-hero-meta">
               <span>No credit card required</span>
               <span className="landing-hero-dot" aria-hidden />
-              <span>Upload up to 5 statements free</span>
+              <span>Upload up to 3 statements free</span>
             </div>
             <div className="landing-hero-stats" id="results">
               <div>
