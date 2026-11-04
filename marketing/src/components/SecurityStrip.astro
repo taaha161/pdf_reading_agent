@@ -47,7 +47,8 @@ const items = [
   @media (max-width: 600px) {
     .sec { padding-block: 16px; }
     .sec-inner { gap: 12px; }
-    .sec-list, .sec--inset .sec-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .sec-inner { justify-content: center; }
+    .sec-list, .sec--inset .sec-list { grid-template-columns: repeat(2, auto); justify-content: center; gap: 12px 24px; flex: 0 1 auto; }
     .sec-list li { align-items: center; gap: 8px; }
     .sec-list strong { font-size: 13px; line-height: 1.3; }
     .sec-body { display: none; }
