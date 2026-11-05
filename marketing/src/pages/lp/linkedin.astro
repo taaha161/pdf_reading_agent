@@ -14,6 +14,7 @@
 import Base from '../../layouts/Base.astro';
 import BankLogoMarquee from '../../components/BankLogoMarquee.astro';
 import ConvertDemo from '../../components/ConvertDemo.astro';
+import ProductVideo from '../../components/ProductVideo.astro';
 import logo from '../../assets/pdf_to_excel_logo.png';
 import { SITE_NAME } from '../../consts';
 
@@ -155,6 +156,24 @@ const faqs = [
         <div><strong>0</strong><span>rows typed by you</span></div>
         <div><strong>100+</strong><span>banks and card issuers</span></div>
         <div><strong>Excel &amp; CSV</strong><span>ready for QuickBooks &amp; Xero</span></div>
+      </div>
+    </section>
+
+    <!-- 2b. Product video: watch the typing disappear -->
+    <section class="section watch" aria-labelledby="watch-h">
+      <div class="container watch-inner">
+        <header class="head">
+          <h2 id="watch-h">Watch a statement become a spreadsheet in 22 seconds.</h2>
+          <p>Drop in the PDF. Every transaction comes back categorized and checked against the balances. You type nothing.</p>
+        </header>
+        <ProductVideo />
+        <div class="center">
+          <a class="btn btn-primary btn-lg js-cta" href={CTA_HREF} data-cta="video">{CTA_LABEL} →</a>
+          <ul class="reassure reassure--center">
+            {REASSURE.map((r) => <li>{r}</li>)}
+          </ul>
+        </div>
+        <p class="watch-credit">Music: “Happy Beats / Business Moves Vol. 11” by Sascha Ende (ende.app), CC BY 4.0.</p>
       </div>
     </section>
 
@@ -376,6 +395,12 @@ const faqs = [
   .head h2 { font-size: clamp(28px, 4vw, 40px); margin: 0; letter-spacing: -0.01em; }
   .head p { font-size: 18px; color: var(--color-text-muted); margin: 14px 0 0; }
   .center { text-align: center; margin-top: 40px; }
+
+  /* Product video */
+  .watch { padding-bottom: 56px; }
+  .watch-inner { max-width: 1000px; }
+  .watch .center { margin-top: 32px; }
+  .watch-credit { margin: 20px 0 0; text-align: center; font-size: 12px; color: var(--color-text-muted); }
 
   /* Pain vs. outcome: one panel, rows aligned side by side */
   .vs {
