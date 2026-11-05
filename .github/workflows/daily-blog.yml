@@ -26,3 +26,40 @@ jobs:
           # Settings -> Secrets and variables -> Actions
           BACKEND_URL: ${{ secrets.BACKEND_URL }} # e.g. https://pdf-statement-api.onrender.com
           API_AUTH_SECRET: ${{ secrets.API_AUTH_SECRET }}
+
+      # IndexNow (Bing, Yandex, Seznam, Naver): tell search engines about the new post.
+      # Waits for Vercel to finish deploying so the engines don't fetch a 404.
+      # Key is public by design; it must match marketing/public/<key>.txt.
+      - name: Ping IndexNow
+        continue-on-error: true # never fail the run over a ping
+        run: |
+          set -euo pipefail
+          status=$(jq -r '.status' /tmp/out.json)
+          if [ "$status" != "published" ]; then
+            echo "Nothing published ($status); skipping IndexNow."
+            exit 0
+          fi
+          url=$(jq -r '.url' /tmp/out.json)
+          echo "Waiting for $url to go live..."
+          for i in $(seq 1 40); do # up to ~10 min
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "$url" || true)
+            [ "$code" = "200" ] && break
+            sleep 15
+          done
+          if [ "$code" != "200" ]; then
+            echo "Post still not live (HTTP $code); skipping IndexNow."
+            exit 0
+          fi
+          payload=$(jq -n --arg key "$INDEXNOW_KEY" --arg url "$url" '{
+            host: "bankstatementscanner.com",
+            key: $key,
+            keyLocation: ("https://bankstatementscanner.com/" + $key + ".txt"),
+            urlList: [$url, "https://bankstatementscanner.com/blog"]
+          }')
+          code=$(curl -sS -o /tmp/indexnow.txt -w '%{http_code}' \
+            -X POST https://api.indexnow.org/indexnow \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$payload")
+          echo "IndexNow HTTP $code"; cat /tmp/indexnow.txt; echo
+        env:
+          INDEXNOW_KEY: b9adf4cfef144c605a24bcaac1502517

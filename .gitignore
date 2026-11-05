@@ -45,6 +45,7 @@ Thumbs.db
 # scripts
 /scripts/
 *.txt
+!marketing/public/*.txt
 
 #docs
 /docs/
