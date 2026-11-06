@@ -8,9 +8,12 @@
  * double-counts the same signup.
  */
 
-// Campaign Manager → Analyze → Conversion tracking → conversion "Sign up"
+// Campaign Manager → Measure → Conversion tracking → "Sign up (Insight Tag)"
 // (method: Insight Tag, event-specific). Public value, safe in client code.
-const LINKEDIN_SIGNUP_CONVERSION_ID = 30227628;
+// Must be an Insight Tag conversion: lintrk() events are ignored by Conversions
+// API (Direct API) conversions. 30227628 is the server-side "Subscription
+// purchase (CAPI)" conversion used by backend/services/linkedin_capi.py.
+const LINKEDIN_SIGNUP_CONVERSION_ID = 30227852;
 
 // OAuth users have no separate "sign up" step: treat a SIGNED_IN whose account
 // was created within this window as a new signup.
