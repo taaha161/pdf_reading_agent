@@ -7,6 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import logo from "../assets/pdf_to_excel_logo.png";
 import "./AuthPage.css";
 import PasswordInput from "../components/PasswordInput";
+import { claimOfferForUser } from "../lib/offer";
 
 const PASSWORD_MIN_LENGTH = 8;
 // Mirrors backend AUTH_TRIAL_LIMIT - ANON_TRIAL_LIMIT (3 free scans signed in, 1 anonymous).
@@ -190,6 +191,8 @@ export default function AuthPage({ mode: initialMode = "login" }) {
       if (error) throw error;
       sendTikTokSignupEvent({ email: email.trim() });
       trackSignup({ method: "email", userId: signUpData?.user?.id });
+      // Bind the ad offer now: the confirmation link may open in another tab.
+      claimOfferForUser(signUpData?.user);
       setSignupSuccess(true);
       setSuccess("Check your email to confirm your account. Then you can log in.");
     } catch (err) {

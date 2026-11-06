@@ -1,51 +1,74 @@
 // Ad-campaign offer carried from a marketing landing page (e.g. /lp/linkedin)
 // through signup to Stripe checkout. The server validates the code against its
 // own allowlist, so this is only a hint — never trusted for pricing.
-const KEY = "bss_offer";
-const TTL_MS = 30 * 24 * 60 * 60 * 1000; // keep the offer for 30 days
+//
+// Two stages, so the offer only reaches accounts that signed up from the ad:
+//  1. Pending (sessionStorage): set when a page opens with ?offer=<code>. Lives
+//     only for this tab's visit, so a later, unrelated visit doesn't carry it.
+//  2. Claimed (localStorage): when a brand-new account is created during that
+//     visit, the offer is bound to that account's id and kept for 30 days.
+// getOffer(user) only returns an offer claimed by that exact account.
+const PENDING_KEY = "bss_offer_pending";
+const CLAIMED_KEY = "bss_offer_claimed";
+const LEGACY_KEY = "bss_offer"; // pre-binding format; ignored and removed
+const TTL_MS = 30 * 24 * 60 * 60 * 1000; // claimed offer lasts 30 days
+// An account counts as "just created" if its created_at is this recent.
+const NEW_ACCOUNT_MS = 10 * 60 * 1000;
 
 export const OFFERS = {
   linkedin1m: { label: "LinkedIn offer: your first month is free", cta: "Start free month" },
 };
 
-/** Persist ?offer=<code> from the current URL if it's a known offer. */
+function readJson(storage, key) {
+  try {
+    return JSON.parse(storage.getItem(key) || "null");
+  } catch {
+    return null;
+  }
+}
+
+/** Remember ?offer=<code> from the current URL for this visit, if it's a known offer. */
 export function captureOfferFromUrl() {
   try {
+    localStorage.removeItem(LEGACY_KEY);
     const code = new URLSearchParams(window.location.search).get("offer")?.trim().toLowerCase();
     if (code && OFFERS[code]) {
-      localStorage.setItem(KEY, JSON.stringify({ code, at: Date.now() }));
+      sessionStorage.setItem(PENDING_KEY, JSON.stringify({ code, at: Date.now() }));
     }
   } catch {
     /* storage blocked: offer just won't persist */
   }
 }
 
-// Allow for clock skew between this browser and the auth server.
-const SIGNUP_SKEW_MS = 10 * 60 * 1000;
-
 /**
- * Active offer code for this signed-in user, or null.
- *
- * The offer is stored per browser, so on its own it would follow any account
- * that signs in here (e.g. an existing customer who clicked an ad link once).
- * It only applies to accounts created after the offer link was opened.
+ * Bind a pending offer to `user` if the account was just created. Call right
+ * after email signup and on OAuth sign-in. Existing accounts never claim it.
  */
-export function getOffer(user) {
+export function claimOfferForUser(user) {
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (!saved || !OFFERS[saved.code] || Date.now() - saved.at >= TTL_MS) return null;
-    const createdAt = Date.parse(user?.created_at ?? "");
-    if (Number.isNaN(createdAt) || createdAt < saved.at - SIGNUP_SKEW_MS) return null;
-    return saved.code;
+    const pending = readJson(sessionStorage, PENDING_KEY);
+    if (!pending || !OFFERS[pending.code] || !user?.id) return;
+    const createdAt = Date.parse(user.created_at ?? "");
+    if (Number.isNaN(createdAt) || Date.now() - createdAt > NEW_ACCOUNT_MS) return;
+    localStorage.setItem(CLAIMED_KEY, JSON.stringify({ code: pending.code, userId: user.id, at: Date.now() }));
+    sessionStorage.removeItem(PENDING_KEY);
   } catch {
     /* ignore */
   }
-  return null;
+}
+
+/** Offer code claimed by this signed-in account, or null. */
+export function getOffer(user) {
+  const claimed = readJson(localStorage, CLAIMED_KEY);
+  if (!claimed || !OFFERS[claimed.code] || !user?.id || claimed.userId !== user.id) return null;
+  if (Date.now() - claimed.at >= TTL_MS) return null;
+  return claimed.code;
 }
 
 export function clearOffer() {
   try {
-    localStorage.removeItem(KEY);
+    localStorage.removeItem(CLAIMED_KEY);
+    sessionStorage.removeItem(PENDING_KEY);
   } catch {
     /* ignore */
   }

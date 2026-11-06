@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { supabase } from "../lib/supabase";
 import { notifyLogin } from "../api/client";
 import { trackOAuthSignupIfNew } from "../lib/trackSignup";
+import { claimOfferForUser } from "../lib/offer";
 
 const AuthContext = createContext(null);
 
@@ -27,6 +28,8 @@ export function AuthProvider({ children }) {
       setLoading(false);
       // New Google/OAuth account → signup conversion (email signups fire in AuthPage).
       if (event === "SIGNED_IN") trackOAuthSignupIfNew(s?.user);
+      // New account created during an ad visit → bind the ad offer to it.
+      if (event === "SIGNED_IN") claimOfferForUser(s?.user);
       // Owner login notification: only on a real SIGNED_IN (not INITIAL_SESSION
       // or TOKEN_REFRESHED), deduped to once per browser session per user.
       if (event === "SIGNED_IN" && s?.user?.id && s?.access_token) {
