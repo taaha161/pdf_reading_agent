@@ -9,6 +9,13 @@
  */
 import sample from '../sampleStatement.json';
 
+interface Props {
+  /** Extra query string for the "Open it in the scanner" link, e.g. "offer=linkedin1m". */
+  params?: string;
+}
+const { params = '' } = Astro.props;
+const scannerHref = `/scanner?sample=1${params ? `&${params}` : ''}`;
+
 const money = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const rows = sample.transactions;
 ---
@@ -59,7 +66,7 @@ const rows = sample.transactions;
         <a href="/samples/sample-bank-statement.xlsx" download data-cta="sample_xlsx">Download Excel</a>
         <a href="/samples/sample-bank-statement.csv" download data-cta="sample_csv">Download CSV</a>
       </div>
-      <a class="sample-try" href="/scanner?sample=1" data-cta="sample_open_app">Open it in the scanner →</a>
+      <a class="sample-try" href={scannerHref} data-cta="sample_open_app">Open it in the scanner →</a>
     </footer>
   </div>
 </dialog>

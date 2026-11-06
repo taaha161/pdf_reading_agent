@@ -15,6 +15,7 @@ import Base from '../../layouts/Base.astro';
 import BankLogoMarquee from '../../components/BankLogoMarquee.astro';
 import HeroDropzone from '../../components/HeroDropzone.astro';
 import ProductVideo from '../../components/ProductVideo.astro';
+import SampleExport from '../../components/SampleExport.astro';
 import logo from '../../assets/pdf_to_excel_logo.png';
 import { SITE_NAME } from '../../consts';
 
@@ -160,7 +161,7 @@ const faqs = [
             hint="Client statements from Chase, Wells Fargo, Amex and 100+ more banks."
           />
           <p class="hero-sample">
-            No statement handy? <a class="js-cta" href={`/scanner?sample=1&offer=${OFFER}`} data-cta="sample">See a sample result →</a>
+            No statement handy? <a class="js-cta" href="#sample" data-open-sample="lp_linkedin_hero" data-cta="sample">See a sample result →</a>
           </p>
         </div>
       </div>
@@ -355,6 +356,8 @@ const faqs = [
       });
     });
   </script>
+
+  <SampleExport params={`offer=${OFFER}`} />
 </Base>
 
 <style>
