@@ -10,14 +10,17 @@
 interface Props {
   hint?: string;
   cta?: string;
+  /** Extra query string for the /scanner redirect, e.g. "offer=linkedin1m". */
+  params?: string;
 }
 const {
   hint = 'Supports Chase, Wells Fargo, Amex, and 100+ more institutions.',
   cta = 'hero',
+  params = '',
 } = Astro.props;
 ---
 
-<div class="upload-card" data-dropzone data-cta-name={cta}>
+<div class="upload-card" data-dropzone data-cta-name={cta} data-params={params}>
   <span class="upload-badge">Drag &amp; drop bank statements</span>
   <span class="upload-sub">PDF, scans, or photos</span>
   <div class="upload-drop" role="button" tabindex="0" aria-describedby="dz-hint" aria-label="Upload a bank statement">
@@ -66,7 +69,8 @@ const {
       push({ event: 'hero_drop', cta, method: how, file_type: file.type || 'unknown' });
       const stored = await handOffFile(file);
       // If storage is blocked (private mode etc.), still go to the scanner; they re-pick the file there.
-      window.location.href = stored ? '/scanner?handoff=1' : '/scanner';
+      const query = [stored ? 'handoff=1' : '', zone.dataset.params || ''].filter(Boolean).join('&');
+      window.location.href = query ? `/scanner?${query}` : '/scanner';
     };
 
     drop.addEventListener('click', () => input.click());

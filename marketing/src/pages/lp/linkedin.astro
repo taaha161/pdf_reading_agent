@@ -13,7 +13,7 @@
  */
 import Base from '../../layouts/Base.astro';
 import BankLogoMarquee from '../../components/BankLogoMarquee.astro';
-import ConvertDemo from '../../components/ConvertDemo.astro';
+import HeroDropzone from '../../components/HeroDropzone.astro';
 import ProductVideo from '../../components/ProductVideo.astro';
 import logo from '../../assets/pdf_to_excel_logo.png';
 import { SITE_NAME } from '../../consts';
@@ -152,8 +152,17 @@ const faqs = [
           </div>
         </div>
 
-        <!-- Visual of the big idea: the PDF goes in behind, the finished spreadsheet comes out in front -->
-        <ConvertDemo />
+        <!-- Real upload box: the dropped PDF is handed to /scanner, which starts the free scan on arrival -->
+        <div class="hero-drop">
+          <HeroDropzone
+            cta="lp_linkedin_hero"
+            params={`offer=${OFFER}`}
+            hint="Client statements from Chase, Wells Fargo, Amex and 100+ more banks."
+          />
+          <p class="hero-sample">
+            No statement handy? <a class="js-cta" href={`/scanner?sample=1&offer=${OFFER}`} data-cta="sample">See a sample result →</a>
+          </p>
+        </div>
       </div>
     </section>
 
@@ -377,6 +386,9 @@ const faqs = [
   /* Hero */
   .hero { background: var(--landing-bg); padding-block: 56px 64px; }
   .hero-inner { display: grid; grid-template-columns: 1fr 1.05fr; gap: 48px; align-items: center; }
+  .hero-drop { width: 100%; max-width: 520px; justify-self: center; }
+  .hero-sample { margin: 12px 0 0; text-align: center; font-size: 14px; color: var(--color-text-muted); }
+  .hero-sample a { color: var(--color-primary); font-weight: 600; }
   .eyebrow { margin: 0 0 14px; font-size: 14px; font-weight: 600; color: var(--color-text-muted); }
   h1 { font-size: clamp(36px, 5.6vw, 58px); line-height: 1.04; margin: 0; letter-spacing: -0.02em; }
   .hero-sub { font-size: 19px; color: var(--color-text-muted); margin: 20px 0 28px; max-width: 46ch; }
