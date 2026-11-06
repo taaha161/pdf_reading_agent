@@ -3,6 +3,19 @@ import { supabase } from "../lib/supabase";
 import { notifyLogin } from "../api/client";
 import { trackOAuthSignupIfNew } from "../lib/trackSignup";
 import { claimOfferForUser } from "../lib/offer";
+import { getAttribution } from "../lib/attribution";
+
+// OAuth signups skip AuthPage's signUp() (where email signups attach
+// attribution), so save it on the first sign-in of a just-created account.
+const NEW_ACCOUNT_MS = 10 * 60 * 1000;
+function saveAttributionIfNew(user) {
+  if (!user?.id || user.user_metadata?.attribution) return;
+  const age = Date.now() - Date.parse(user.created_at ?? "");
+  if (!(age >= 0 && age < NEW_ACCOUNT_MS)) return;
+  const attribution = getAttribution();
+  if (!attribution) return;
+  supabase.auth.updateUser({ data: { attribution } }).catch(() => {});
+}
 
 const AuthContext = createContext(null);
 
@@ -30,6 +43,8 @@ export function AuthProvider({ children }) {
       if (event === "SIGNED_IN") trackOAuthSignupIfNew(s?.user);
       // New account created during an ad visit → bind the ad offer to it.
       if (event === "SIGNED_IN") claimOfferForUser(s?.user);
+      // New account → record which campaign brought it in (once).
+      if (event === "SIGNED_IN") saveAttributionIfNew(s?.user);
       // Owner login notification: only on a real SIGNED_IN (not INITIAL_SESSION
       // or TOKEN_REFRESHED), deduped to once per browser session per user.
       if (event === "SIGNED_IN" && s?.user?.id && s?.access_token) {

@@ -21,9 +21,15 @@ import { SITE_NAME } from '../../consts';
 const OFFER = 'linkedin1m';
 const CTA_HREF = `/login?mode=signup&offer=${OFFER}`;
 const CTA_LABEL = 'Claim my free month';
+// Primary path: try a real statement before signing up (1 free scan, no account).
+// The offer rides along in the URL; the app keeps it for 7 days so a later signup
+// (e.g. from the "your spreadsheet" email) still gets the free month.
+const SCAN_HREF = `/scanner?offer=${OFFER}`;
+const SCAN_LABEL = 'Convert a statement free';
+const ALT_LABEL = 'or claim your free month now';
 
 // Risk reversal right under every CTA: answers "what will this cost me?" at the moment of the click.
-const REASSURE = ['No card to sign up', '$0 for 30 days', 'Cancel anytime'];
+const REASSURE = ['No signup to try', 'First month free when you join', 'No card needed'];
 
 // Message match: each LinkedIn ad links with ?v=<key> so the eyebrow and subhead
 // echo the ad the visitor just clicked. The H1 (the big idea) never changes.
@@ -55,7 +61,7 @@ const svg = (d: string) =>
 const steps = [
   {
     title: 'Drop in the PDF',
-    tag: 'Free to sign up',
+    tag: 'Free, no signup',
     body: 'Any bank or credit card statement: digital, scanned, or a phone photo.',
     icon: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 18v-6m0 0-2.5 2.5M12 12l2.5 2.5"/>'),
   },
@@ -104,9 +110,10 @@ const faqs = [
   noindex
   bare
 >
-  <!-- Store the offer on landing too, so it survives even if the visitor signs up later from another page. -->
+  <!-- Store the offer on landing too (same key/format as frontend/src/lib/offer.js),
+       so it survives even if the visitor scans first and signs up later. -->
   <script is:inline define:vars={{ OFFER }}>
-    try { localStorage.setItem('bss_offer', JSON.stringify({ code: OFFER, at: Date.now() })); } catch (e) {}
+    try { localStorage.setItem('bss_offer_pending', JSON.stringify({ code: OFFER, at: Date.now() })); } catch (e) {}
   </script>
 
   <div class="lp">
@@ -130,7 +137,8 @@ const faqs = [
             Upload the PDF. Get a clean, categorized spreadsheet back in seconds. No retyping, no
             copy-paste, no fixing columns.
           </p>
-          <a class="btn btn-primary btn-lg js-cta" href={CTA_HREF} data-cta="hero">{CTA_LABEL} →</a>
+          <a class="btn btn-primary btn-lg js-cta" href={SCAN_HREF} data-cta="hero">{SCAN_LABEL} →</a>
+          <a class="cta-alt js-cta" href={CTA_HREF} data-cta="hero-signup">{ALT_LABEL}</a>
           <ul class="reassure">
             {REASSURE.map((r) => <li>{r}</li>)}
           </ul>
@@ -168,7 +176,8 @@ const faqs = [
         </header>
         <ProductVideo />
         <div class="center">
-          <a class="btn btn-primary btn-lg js-cta" href={CTA_HREF} data-cta="video">{CTA_LABEL} →</a>
+          <a class="btn btn-primary btn-lg js-cta" href={SCAN_HREF} data-cta="video">{SCAN_LABEL} →</a>
+          <a class="cta-alt js-cta" href={CTA_HREF} data-cta="video-signup">{ALT_LABEL}</a>
           <ul class="reassure reassure--center">
             {REASSURE.map((r) => <li>{r}</li>)}
           </ul>
@@ -225,7 +234,8 @@ const faqs = [
           ))}
         </ol>
         <div class="center">
-          <a class="btn btn-primary btn-lg js-cta" href={CTA_HREF} data-cta="steps">{CTA_LABEL} →</a>
+          <a class="btn btn-primary btn-lg js-cta" href={SCAN_HREF} data-cta="steps">{SCAN_LABEL} →</a>
+          <a class="cta-alt js-cta" href={CTA_HREF} data-cta="steps-signup">{ALT_LABEL}</a>
           <ul class="reassure reassure--center">
             {REASSURE.map((r) => <li>{r}</li>)}
           </ul>
@@ -291,8 +301,9 @@ const faqs = [
     <section class="final">
       <div class="container">
         <h2>Never type a bank statement into Excel again.</h2>
-        <p>Your first month is free. Sign up takes 30 seconds.</p>
-        <a class="btn btn-invert btn-lg js-cta" href={CTA_HREF} data-cta="final">{CTA_LABEL} →</a>
+        <p>Try it on one of your own statements, free. No signup needed.</p>
+        <a class="btn btn-invert btn-lg js-cta" href={SCAN_HREF} data-cta="final">{SCAN_LABEL} →</a>
+        <a class="cta-alt cta-alt--light js-cta" href={CTA_HREF} data-cta="final-signup">{ALT_LABEL}</a>
         <ul class="reassure reassure--center reassure--light">
           {REASSURE.map((r) => <li>{r}</li>)}
         </ul>
@@ -309,7 +320,7 @@ const faqs = [
 
     <!-- Sticky mobile CTA: the button is always one thumb away -->
     <div class="sticky-cta">
-      <a class="btn btn-primary js-cta" href={CTA_HREF} data-cta="sticky">{CTA_LABEL} →</a>
+      <a class="btn btn-primary js-cta" href={SCAN_HREF} data-cta="sticky">{SCAN_LABEL} →</a>
     </div>
   </div>
 
@@ -395,6 +406,9 @@ const faqs = [
   .head h2 { font-size: clamp(28px, 4vw, 40px); margin: 0; letter-spacing: -0.01em; }
   .head p { font-size: 18px; color: var(--color-text-muted); margin: 14px 0 0; }
   .center { text-align: center; margin-top: 40px; }
+  .cta-alt { display: block; width: fit-content; margin-top: 12px; font-size: 15px; font-weight: 600; color: var(--color-text-muted); text-decoration: underline; text-underline-offset: 3px; }
+  .center .cta-alt, .final .cta-alt { margin-left: auto; margin-right: auto; }
+  .cta-alt--light { color: rgba(255,255,255,0.85); }
 
   /* Product video */
   .watch { padding-bottom: 56px; }

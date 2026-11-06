@@ -8,6 +8,7 @@ import logo from "../assets/pdf_to_excel_logo.png";
 import "./AuthPage.css";
 import PasswordInput from "../components/PasswordInput";
 import { claimOfferForUser } from "../lib/offer";
+import { getAttribution } from "../lib/attribution";
 
 const PASSWORD_MIN_LENGTH = 8;
 // Mirrors backend AUTH_TRIAL_LIMIT - ANON_TRIAL_LIMIT (3 free scans signed in, 1 anonymous).
@@ -185,7 +186,8 @@ export default function AuthPage({ mode: initialMode = "login" }) {
         email: email.trim(),
         password,
         options: {
-          data: { full_name: nameTrimmed },
+          // attribution: which ad campaign (if any) brought this signup in.
+          data: { full_name: nameTrimmed, attribution: getAttribution() ?? undefined },
         },
       });
       if (error) throw error;

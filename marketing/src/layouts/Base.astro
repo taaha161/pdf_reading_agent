@@ -73,6 +73,22 @@ const fullTitle =
           if (v) window.clarity("set", k, v);
         });
       })();
+      // Last-touch campaign attribution for the app to save on the user at
+      // signup. Same key/format as frontend/src/lib/attribution.js.
+      (function () {
+        try {
+          var p = new URLSearchParams(window.location.search);
+          var touch = {}, any = false;
+          ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "li_fat_id"].forEach(function (k) {
+            var v = (p.get(k) || "").trim();
+            if (v) { touch[k] = v.slice(0, 200); any = true; }
+          });
+          if (!any) return;
+          touch.landing_path = window.location.pathname.slice(0, 200);
+          touch.at = new Date().toISOString();
+          localStorage.setItem("bss_attribution", JSON.stringify(touch));
+        } catch (e) {}
+      })();
     </script>
     <!-- End Microsoft Clarity -->
     <!-- OAuth/session fragments (e.g. Supabase Google login) redirect to the site

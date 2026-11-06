@@ -14,6 +14,7 @@ import { runScan, getJob, updateJobTransactions } from "../api/client";
 import "./ScannerPage.css";
 import PasswordInput from "../components/PasswordInput";
 import { takeHandedOffFile } from "../lib/fileHandoff";
+import { trackLinkedInConversion, LINKEDIN_TRIAL_SCAN_CONVERSION_ID } from "../lib/linkedinConversions";
 import sampleStatement from "../lib/sampleStatement.json";
 
 function ChatIcon() {
@@ -277,6 +278,8 @@ export default function ScannerPage() {
       applyUsage(data);
       refreshUsage();
       pushDataLayer({ event: "scan_completed", rows: (data.transactions || []).length, logged_in: isLoggedIn });
+      // Anonymous free scan = top of the scan-first funnel for LinkedIn ads.
+      if (!isLoggedIn) trackLinkedInConversion(LINKEDIN_TRIAL_SCAN_CONVERSION_ID, data.job_id);
       if (noteScanForFeedback()) setFeedbackDue(true);
     } catch (e) {
       if (e.isPdfPasswordRequired) {
