@@ -418,3 +418,38 @@
   border-radius: 8px;
   white-space: nowrap;
 }
+
+/* Guest (logged-out) shell */
+.app-layout-guest-login {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+  padding: 6px 10px;
+}
+.app-layout-guest-signup {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--color-primary);
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+}
+.app-layout-guest-signup:hover {
+  color: #fff;
+  background: var(--color-primary-hover);
+}
+.app-layout--guest .app-layout-main {
+  padding-top: 32px;
+}
+@media (max-width: 640px) {
+  .app-layout--guest .app-layout-header {
+    flex-wrap: nowrap;
+  }
+  .app-layout--guest .app-layout-brand-name {
+    display: none;
+  }
+  .app-layout--guest .app-layout-main {
+    padding: 20px 16px;
+  }
+}

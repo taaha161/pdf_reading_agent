@@ -9,10 +9,13 @@ import "./AppLayout.css";
 
 export default function AppLayout({ children }) {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const { usage } = useUsage();
   const email = user?.email ?? "";
   const isLoggedIn = user != null;
+  // Logged-out visitors (e.g. ad traffic landing on /scanner) get a stripped-down
+  // shell: no app sidebar or account menu, just the logo and log in / sign up.
+  const isGuest = !authLoading && !isLoggedIn;
 
   // Real scan-limit numbers come from the server (trial count is per client
   // IP; credits live in billing). Counting local jobs — the old
@@ -30,7 +33,7 @@ export default function AppLayout({ children }) {
   const showOffer = isLoggedIn && offer && usage && !usage.subscription_active;
 
   return (
-    <div className="app-layout">
+    <div className={"app-layout" + (isGuest ? " app-layout--guest" : "")}>
       <header className="app-layout-header">
         <div className="app-layout-brand">
           <Link to="/" className="app-layout-logo-wrap" aria-label="Home">
@@ -40,6 +43,12 @@ export default function AppLayout({ children }) {
           </Link>
           <span className="app-layout-brand-name">Bank Statement Scanner</span>
         </div>
+        {isGuest ? (
+          <div className="app-layout-header-actions">
+            <Link to="/login" className="app-layout-guest-login">Log in</Link>
+            <Link to="/signup" className="app-layout-guest-signup">Sign up free</Link>
+          </div>
+        ) : (
         <div className="app-layout-header-actions">
           <button
             type="button"
@@ -66,9 +75,11 @@ export default function AppLayout({ children }) {
             </button>
           </div>
         </div>
+        )}
       </header>
 
       <div className="app-layout-body">
+        {!isGuest && (
         <aside className="app-layout-sidebar">
           <nav className="app-layout-nav" aria-label="App navigation">
             <NavLink to="/dashboard" className={({ isActive }) => "app-layout-nav-link" + (isActive ? " is-active" : "")} end>
@@ -111,7 +122,8 @@ export default function AppLayout({ children }) {
             </div>
           )}
         </aside>
-        {isMobileNavOpen && (
+        )}
+        {isMobileNavOpen && !isGuest && (
           <nav className="app-layout-mobile-menu" aria-label="Mobile navigation">
             <button
               type="button"

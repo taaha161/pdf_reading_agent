@@ -126,7 +126,7 @@ function markFeedbackPrompted() {
 }
 
 export default function ScannerPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { usage, refreshUsage, applyUsage } = useUsage();
   const navigate = useNavigate();
   const { jobId: routeJobId } = useParams();
@@ -157,7 +157,17 @@ export default function ScannerPage() {
   const [feedbackDue, setFeedbackDue] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const isLoggedIn = !!user;
+  const isGuest = !authLoading && !isLoggedIn;
   const isSample = jobId === SAMPLE_JOB_ID;
+
+  // Funnel top: one view event per page load once we know who's here, so
+  // GA can compare scanner_view → scan_started → scan_completed (by logged_in).
+  const viewTracked = useRef(false);
+  useEffect(() => {
+    if (authLoading || viewTracked.current) return;
+    viewTracked.current = true;
+    pushDataLayer({ event: "scanner_view", logged_in: isLoggedIn });
+  }, [authLoading, isLoggedIn]);
   const canEmailSpreadsheet = !isLoggedIn && !!jobId && !isSample && !!trialCsvContent && transactions.length > 0;
 
   // Anonymous trial: pop up "Email me this spreadsheet" shortly after results load (once per scan).
@@ -349,6 +359,12 @@ export default function ScannerPage() {
 
   const hasResults = !!jobId;
 
+  // Results render below the upload card; bring the sample into view so it's not missed on phones.
+  const sampleBannerRef = useRef(null);
+  useEffect(() => {
+    if (isSample) sampleBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [isSample]);
+
   const handleTransactionChange = async (index, field, value) => {
     if (!Array.isArray(transactions) || index < 0 || index >= transactions.length) {
       return;
@@ -416,13 +432,54 @@ export default function ScannerPage() {
   return (
     <AppLayout>
       <div className="scanner-page">
-        <div className="scanner-head">
-          <h1 className="scanner-title">Process statement</h1>
-          <p className="scanner-subtitle">Upload a PDF or open a past job from your dashboard.</p>
-        </div>
+        {isGuest ? (
+          <div className="scanner-head scanner-head--guest">
+            <h1 className="scanner-title">Turn your bank statement PDF into a spreadsheet</h1>
+            <p className="scanner-subtitle">
+              Drop the PDF below and get every transaction back as a clean, categorized table in seconds.
+            </p>
+            <ul className="scanner-trust" aria-label="Why it's easy">
+              <li>Free, no signup needed</li>
+              <li>Encrypted upload</li>
+              <li>Download as CSV</li>
+            </ul>
+          </div>
+        ) : (
+          <div className="scanner-head">
+            <h1 className="scanner-title">Process statement</h1>
+            <p className="scanner-subtitle">Upload a PDF or open a past job from your dashboard.</p>
+          </div>
+        )}
 
         <div className="scanner-main">
         <div className="scanner-upload-card">
+          {isGuest && trialExhausted && (
+            <p className="scanner-trial-note" role="status">
+              The free scan for your network has been used.{" "}
+              <button type="button" className="scanner-alert-link" onClick={goToSignup}>
+                Create a free account
+              </button>{" "}
+              to keep scanning, or view the sample below.
+            </p>
+          )}
+          {isGuest && (
+            <FileUpload
+              onUpload={handleUpload}
+              disabled={loading}
+              blocked={trialExhausted}
+              onBlocked={goToSignup}
+            />
+          )}
+          {isGuest && !loading && (
+            <div className="scanner-sample-cta">
+              <span>No PDF handy?</span>
+              <button type="button" className="scanner-sample-btn" onClick={loadSample}>
+                See a sample result
+              </button>
+            </div>
+          )}
+          <details className="scanner-advanced" open={!isGuest || undefined}>
+          <summary className="scanner-advanced-summary">Advanced options</summary>
           <div className="scanner-conversion-mode">
             <label htmlFor="conversion-mode" className="scanner-conversion-mode-label">Conversion mode</label>
             <select
@@ -453,12 +510,15 @@ export default function ScannerPage() {
               <p className="scanner-incognito-hint">Do not store transaction data, currency, or raw text (job count is still recorded).</p>
             </>
           )}
-          <FileUpload
-            onUpload={handleUpload}
-            disabled={loading}
-            blocked={trialExhausted}
-            onBlocked={goToSignup}
-          />
+          </details>
+          {!isGuest && (
+            <FileUpload
+              onUpload={handleUpload}
+              disabled={loading}
+              blocked={trialExhausted}
+              onBlocked={goToSignup}
+            />
+          )}
         </div>
 
         {loading && (
@@ -509,7 +569,7 @@ export default function ScannerPage() {
         )}
 
         {isSample && (
-          <div className="scanner-sample-banner" role="status">
+          <div className="scanner-sample-banner" role="status" ref={sampleBannerRef}>
             <div>
               <strong>This is a sample statement.</strong>{" "}
               {sampleStatement.bank} is fictional. Opening balance ${sampleStatement.opening.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
