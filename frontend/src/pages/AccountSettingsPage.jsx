@@ -110,7 +110,7 @@ export default function AccountSettingsPage() {
     }
   };
 
-  const offer = getOffer();
+  const offer = getOffer(user);
 
   const handleSubscribe = async () => {
     setBillingLoading(true);

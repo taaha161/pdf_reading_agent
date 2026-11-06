@@ -20,11 +20,23 @@ export function captureOfferFromUrl() {
   }
 }
 
-/** Active offer code, or null. */
-export function getOffer() {
+// Allow for clock skew between this browser and the auth server.
+const SIGNUP_SKEW_MS = 10 * 60 * 1000;
+
+/**
+ * Active offer code for this signed-in user, or null.
+ *
+ * The offer is stored per browser, so on its own it would follow any account
+ * that signs in here (e.g. an existing customer who clicked an ad link once).
+ * It only applies to accounts created after the offer link was opened.
+ */
+export function getOffer(user) {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (saved && OFFERS[saved.code] && Date.now() - saved.at < TTL_MS) return saved.code;
+    if (!saved || !OFFERS[saved.code] || Date.now() - saved.at >= TTL_MS) return null;
+    const createdAt = Date.parse(user?.created_at ?? "");
+    if (Number.isNaN(createdAt) || createdAt < saved.at - SIGNUP_SKEW_MS) return null;
+    return saved.code;
   } catch {
     /* ignore */
   }

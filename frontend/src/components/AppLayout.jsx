@@ -29,7 +29,7 @@ export default function AppLayout({ children }) {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   // Ad-campaign offer (e.g. LinkedIn first month free) until they subscribe.
-  const offer = getOffer();
+  const offer = getOffer(user);
   const showOffer = isLoggedIn && offer && usage && !usage.subscription_active;
 
   return (
