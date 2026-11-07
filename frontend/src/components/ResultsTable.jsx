@@ -101,6 +101,8 @@ export default function ResultsTable({
   onDownloadError,
   onTransactionChange,
   onSaveTransaction,
+  categoryFilter = null,
+  onClearCategoryFilter,
 }) {
   const [editingIndex, setEditingIndex] = useState(null);
   const [draft, setDraft] = useState({ date: "", description: "", category: "", type: "", amount: "" });
@@ -137,6 +139,15 @@ export default function ResultsTable({
     }
   };
 
+  // Keep original indices so edits target the right row in the full list.
+  // Blank categories are grouped as "Other" in the summary, so match that.
+  const visibleRows = (transactions || [])
+    .map((t, i) => ({ t, i }))
+    .filter(
+      ({ t }) =>
+        !categoryFilter || ((t.category || "").trim() || "Other") === categoryFilter
+    );
+
   const handleSaveEdit = () => {
     if (editingIndex == null) return;
     const validation = validateTransactionDraft(draft);
@@ -166,7 +177,22 @@ export default function ResultsTable({
   return (
     <section className="results-section" data-clarity-mask="true">
       <div className="results-header">
-        <h2>Transactions</h2>
+        <div className="results-header-title">
+          <h2>Transactions</h2>
+          {categoryFilter && (
+            <span className="results-filter-pill">
+              {categoryFilter} · {visibleRows.length} of {transactions.length}
+              <button
+                type="button"
+                className="results-filter-clear"
+                onClick={onClearCategoryFilter}
+                aria-label={`Clear ${categoryFilter} filter, show all transactions`}
+              >
+                ×
+              </button>
+            </span>
+          )}
+        </div>
         <div className="results-header-actions">
           {transactions?.length > 0 && (
             <DownloadMenu transactions={transactions} onError={onDownloadError} />
@@ -193,7 +219,7 @@ export default function ResultsTable({
             </tr>
           </thead>
           <tbody role="rowgroup">
-            {transactions.map((t, i) => {
+            {visibleRows.map(({ t, i }) => {
               const chipClass = getCategoryChipClass(t.category);
               const amountClass = getAmountClass(t.type, t.amount);
               return (

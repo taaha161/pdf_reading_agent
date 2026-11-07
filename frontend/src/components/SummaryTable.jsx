@@ -39,12 +39,43 @@ function formatTotal(value, currency) {
   }).format(n);
 }
 
-export default function SummaryTable({ summaryByCategory, currency }) {
+export default function SummaryTable({
+  summaryByCategory,
+  currency,
+  activeCategory = null,
+  onSelectCategory,
+}) {
   if (!summaryByCategory?.length) return null;
+
+  const interactive = typeof onSelectCategory === "function";
+  const select = (category) => {
+    if (!interactive) return;
+    // Clicking the active category again toggles back to "All".
+    onSelectCategory(category === activeCategory ? null : category);
+  };
+  const rowProps = (category) =>
+    interactive
+      ? {
+          className: `summary-row--clickable${category === activeCategory ? " summary-row--active" : ""}`,
+          onClick: () => select(category),
+          onKeyDown: (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              select(category);
+            }
+          },
+          tabIndex: 0,
+          role: "button",
+          "aria-pressed": category === activeCategory,
+        }
+      : {};
 
   return (
     <section className="summary-section" data-clarity-mask="true">
       <h2>Summary by category</h2>
+      {interactive && (
+        <p className="summary-hint">Click a category to filter transactions.</p>
+      )}
       <div className="table-wrap">
         <table className="summary-table">
           <thead>
@@ -54,8 +85,14 @@ export default function SummaryTable({ summaryByCategory, currency }) {
             </tr>
           </thead>
           <tbody>
+            {interactive && (
+              <tr {...rowProps(null)} aria-label="Show all categories">
+                <td>All</td>
+                <td className="amount-col" />
+              </tr>
+            )}
             {summaryByCategory.map((row, i) => (
-              <tr key={i}>
+              <tr key={row.category ?? i} {...rowProps(row.category)} aria-label={interactive ? `Filter by ${row.category}` : undefined}>
                 <td>{row.category}</td>
                 <td className="amount-col">{formatTotal(row.total, currency)}</td>
               </tr>

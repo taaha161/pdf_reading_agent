@@ -135,6 +135,7 @@ export default function ScannerPage() {
   const [jobId, setJobId] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [summaryByCategory, setSummaryByCategory] = useState([]);
+  const [categoryFilter, setCategoryFilter] = useState(null);
   const [currency, setCurrency] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingFile, setLoadingFile] = useState(null);
@@ -164,6 +165,11 @@ export default function ScannerPage() {
   // Funnel top: one view event per page load once we know who's here, so
   // GA can compare scanner_view → scan_started → scan_completed (by logged_in).
   const viewTracked = useRef(false);
+  // New scan / job → reset category filter to "All".
+  useEffect(() => {
+    setCategoryFilter(null);
+  }, [jobId]);
+
   useEffect(() => {
     if (authLoading || viewTracked.current) return;
     viewTracked.current = true;
@@ -361,6 +367,11 @@ export default function ScannerPage() {
   };
 
   const hasResults = !!jobId;
+  // Fall back to "All" if the selected category no longer exists (e.g. after an edit).
+  const activeCategoryFilter =
+    categoryFilter && summaryByCategory.some((s) => s.category === categoryFilter)
+      ? categoryFilter
+      : null;
 
   // Results render below the upload card; bring the sample into view so it's not missed on phones.
   const sampleBannerRef = useRef(null);
@@ -596,9 +607,16 @@ export default function ScannerPage() {
                 </button>
               )}
               <div className="scanner-results-tables">
-                <SummaryTable summaryByCategory={summaryByCategory} currency={currency} />
+                <SummaryTable
+                  summaryByCategory={summaryByCategory}
+                  currency={currency}
+                  activeCategory={activeCategoryFilter}
+                  onSelectCategory={setCategoryFilter}
+                />
                 <ResultsTable
                   transactions={transactions}
+                  categoryFilter={activeCategoryFilter}
+                  onClearCategoryFilter={() => setCategoryFilter(null)}
                   jobId={jobId}
                   onDownloadError={setDownloadError}
                   onTransactionChange={handleTransactionChange}
