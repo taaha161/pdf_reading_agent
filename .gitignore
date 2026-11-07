@@ -52,3 +52,6 @@ Thumbs.db
 /assets/linkedin-ads
 # /brag launch video output
 brag-output*/
+
+# Claude Ads local state (profiles, runs)
+.claude-ads/
