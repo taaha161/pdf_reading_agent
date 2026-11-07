@@ -3,11 +3,11 @@
 // a source (the database otherwise can't tell a LinkedIn signup from organic).
 //
 // Last non-empty touch wins: any landing with UTM params or a LinkedIn click
-// id (li_fat_id) overwrites the stored value. Kept 30 days. The marketing site
+// id (li_fat_id, or Google gclid/gbraid/wbraid) overwrites the stored value. Kept 30 days. The marketing site
 // (marketing/src/layouts/Base.astro) writes the same key in the same format.
 const KEY = "bss_attribution";
 const TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const PARAMS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "li_fat_id"];
+const PARAMS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "li_fat_id", "gclid", "gbraid", "wbraid"];
 const MAX_LEN = 200;
 
 /** Store attribution from the current URL, if it carries any campaign params. */

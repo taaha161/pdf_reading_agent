@@ -125,6 +125,11 @@ export default function EmailSpreadsheet({ jobId, transactions, onClose }) {
       await emailSpreadsheet(jobId, address, transactions, { format, includeCategories, marketingOptIn: optIn });
       setSentTo(address);
       trackLinkedInConversion(LINKEDIN_SPREADSHEET_EMAILED_CONVERSION_ID, jobId);
+      try {
+        (window.dataLayer = window.dataLayer || []).push({ event: "spreadsheet_emailed", format });
+      } catch {
+        /* analytics must never break the send */
+      }
     } catch (err) {
       setError(err.message || "Failed to send email");
     } finally {
