@@ -102,6 +102,8 @@ class CheckoutSessionRequest(BaseModel):
     mode: str  # "subscription" | "topup"
     email: Optional[str] = None  # optional, for Stripe Customer
     offer: Optional[str] = None  # ad-campaign offer code (see billing.OFFERS); validated server-side
+    ga_client_id: Optional[str] = Field(default=None, max_length=64)  # GA4 ids for server-side subscribe/purchase events
+    ga_session_id: Optional[str] = Field(default=None, max_length=64)
 
 
 class CheckoutSessionResponse(BaseModel):

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { emailSpreadsheet } from "../api/client";
 import { trackLinkedInConversion, LINKEDIN_SPREADSHEET_EMAILED_CONVERSION_ID } from "../lib/linkedinConversions";
+import { trackEvent } from "../lib/analytics";
 import "./EmailSpreadsheet.css";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -125,11 +126,7 @@ export default function EmailSpreadsheet({ jobId, transactions, onClose }) {
       await emailSpreadsheet(jobId, address, transactions, { format, includeCategories, marketingOptIn: optIn });
       setSentTo(address);
       trackLinkedInConversion(LINKEDIN_SPREADSHEET_EMAILED_CONVERSION_ID, jobId);
-      try {
-        (window.dataLayer = window.dataLayer || []).push({ event: "spreadsheet_emailed", format });
-      } catch {
-        /* analytics must never break the send */
-      }
+      trackEvent("spreadsheet_emailed", { format });
     } catch (err) {
       setError(err.message || "Failed to send email");
     } finally {

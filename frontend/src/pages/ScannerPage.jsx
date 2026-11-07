@@ -14,6 +14,7 @@ import { runScan, getJob, updateJobTransactions } from "../api/client";
 import "./ScannerPage.css";
 import PasswordInput from "../components/PasswordInput";
 import { takeHandedOffFile } from "../lib/fileHandoff";
+import { trackEvent } from "../lib/analytics";
 import { trackLinkedInConversion, LINKEDIN_TRIAL_SCAN_CONVERSION_ID } from "../lib/linkedinConversions";
 import sampleStatement from "../lib/sampleStatement.json";
 
@@ -283,7 +284,7 @@ export default function ScannerPage() {
       setTrialCsvContent(data.csv_content ?? null);
       applyUsage(data);
       refreshUsage();
-      pushDataLayer({ event: "scan_completed", rows: (data.transactions || []).length, logged_in: isLoggedIn });
+      trackEvent("scan_completed", { rows: (data.transactions || []).length, logged_in: isLoggedIn });
       // Anonymous free scan = top of the scan-first funnel for LinkedIn ads.
       if (!isLoggedIn) trackLinkedInConversion(LINKEDIN_TRIAL_SCAN_CONVERSION_ID, data.job_id);
       if (noteScanForFeedback()) setFeedbackDue(true);

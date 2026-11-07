@@ -6,6 +6,7 @@ from typing import Literal
 import stripe
 from stripe import StripeError
 
+from services.ga4_mp import ga_ids_from_metadata, track_event
 from services.linkedin_capi import track_subscription_purchase
 from store import add_balance, get_billing, get_user_id_by_stripe_customer_id, set_balance, set_stripe_ids
 
@@ -93,11 +94,15 @@ def create_checkout_session(
     cancel_url: str | None = None,
     email: str | None = None,
     offer: str | None = None,
+    ga_client_id: str | None = None,
+    ga_session_id: str | None = None,
 ) -> dict | None:
     """Create Stripe Checkout Session. Returns { 'url': str } or None on error.
 
     `offer` (subscription only): a code from OFFERS. Applied as a free trial
     when the customer has never subscribed before; silently ignored otherwise.
+    `ga_client_id`/`ga_session_id`: the browser's GA4 ids, stored in Stripe metadata
+    so webhook events (subscribe, purchase) attribute to the visitor's ad session.
     """
     if not _stripe_available():
         logger.warning("Stripe not configured; cannot create checkout session")
@@ -108,9 +113,10 @@ def create_checkout_session(
     customer_id = get_or_create_stripe_customer(user_id, email)
     if not customer_id:
         return None
+    ga_meta = {k: str(v)[:64] for k, v in (("ga_client_id", ga_client_id), ("ga_session_id", ga_session_id)) if v}
     try:
         if mode == "subscription":
-            subscription_data: dict = {"metadata": {"user_id": user_id}}
+            subscription_data: dict = {"metadata": {"user_id": user_id, **ga_meta}}
             trial_days = offer_trial_days(offer)
             if trial_days and not _has_had_subscription(customer_id):
                 subscription_data["trial_period_days"] = trial_days
@@ -123,6 +129,7 @@ def create_checkout_session(
                 cancel_url=cancel_url,
                 client_reference_id=user_id,
                 subscription_data=subscription_data,
+                metadata={"user_id": user_id, **ga_meta},
                 allow_promotion_codes=True,
             )
         else:
@@ -133,7 +140,7 @@ def create_checkout_session(
                 success_url=success_url,
                 cancel_url=cancel_url,
                 client_reference_id=user_id,
-                metadata={"user_id": user_id, "topup": "1"},
+                metadata={"user_id": user_id, "topup": "1", **ga_meta},
                 allow_promotion_codes=True,
             )
         return {"url": session.url, "sessionId": session.id}
@@ -199,6 +206,19 @@ def _handle_invoice_paid(event) -> tuple[bool, str]:
                 )
             except Exception as e:  # noqa: BLE001
                 logger.warning("LinkedIn purchase conversion failed (continuing): %s", e)
+        if amount_paid > 0:
+            _track_ga4(
+                user_id,
+                "purchase",
+                {
+                    "transaction_id": invoice.get("id"),
+                    "value": amount_paid / 100,
+                    "currency": (invoice.get("currency") or "usd").upper(),
+                    "payment_type": "subscription_first" if billing_reason == "subscription_create" else "subscription_renewal",
+                    "items": [{"item_id": "monthly", "item_name": "Monthly subscription", "price": amount_paid / 100, "quantity": 1}],
+                },
+                _invoice_subscription_metadata(invoice),
+            )
         return True, "Balance set to 1000"
 
     # One-time payment (top-up): no subscription on invoice
@@ -232,14 +252,30 @@ def _handle_subscription_deleted(event) -> tuple[bool, str]:
 
 
 def _handle_checkout_completed(event) -> tuple[bool, str]:
-    """Handle one-time top-up payments created via Checkout (mode=payment)."""
+    """Top-up payments (mode=payment) credit the balance; subscription checkouts report `subscribe` to GA4."""
     session = event["data"]["object"]
+    metadata = session.get("metadata") or {}
+
+    if session.get("mode") == "subscription":
+        user_id = metadata.get("user_id") or session.get("client_reference_id")
+        if user_id:
+            _track_ga4(
+                user_id,
+                "subscribe",
+                {
+                    "transaction_id": session.get("id"),
+                    "value": (session.get("amount_total") or 0) / 100,
+                    "currency": (session.get("currency") or "usd").upper(),
+                    "trial": "yes" if not session.get("amount_total") else "no",
+                },
+                metadata,
+            )
+        return True, "Subscription checkout tracked"
 
     # Only care about payment mode sessions
     if session.get("mode") != "payment":
         return True, "Ignored checkout.session.completed (not payment mode)"
 
-    metadata = session.get("metadata") or {}
     is_topup = str(metadata.get("topup", "")).strip() == "1"
     if not is_topup:
         return True, "Ignored checkout.session.completed (not top-up)"
@@ -258,10 +294,36 @@ def _handle_checkout_completed(event) -> tuple[bool, str]:
 
     try:
         add_balance(user_id, amount)
-        return True, "Top-up applied (checkout.session.completed)"
     except Exception as e:
         logger.exception("add_balance failed on checkout.session.completed: %s", e)
         return False, str(e)
+    _track_ga4(
+        user_id,
+        "purchase",
+        {
+            "transaction_id": session.get("id"),
+            "value": amount / 100,
+            "currency": (session.get("currency") or "usd").upper(),
+            "payment_type": "topup",
+            "items": [{"item_id": "topup", "item_name": "Credit top-up", "price": amount / 100, "quantity": 1}],
+        },
+        metadata,
+    )
+    return True, "Top-up applied (checkout.session.completed)"
+
+
+def _invoice_subscription_metadata(invoice) -> dict:
+    """Subscription metadata copied onto the invoice (older and newer Stripe API shapes)."""
+    details = invoice.get("subscription_details") or (invoice.get("parent") or {}).get("subscription_details") or {}
+    return details.get("metadata") or {}
+
+
+def _track_ga4(user_id: str, event_name: str, params: dict, metadata: dict | None) -> None:
+    try:
+        client_id, session_id = ga_ids_from_metadata(metadata)
+        track_event(user_id, event_name, params, client_id, session_id)
+    except Exception as e:  # noqa: BLE001 - analytics must never fail a webhook
+        logger.warning("GA4 %s event failed (continuing): %s", event_name, e)
 
 
 def _user_id_from_customer(stripe_customer_id: str | None, subscription_id: str | None, client_reference_id: str | None) -> str | None:
