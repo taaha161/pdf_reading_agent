@@ -1,6 +1,8 @@
+import { trackEvent } from "./analytics";
+
 /**
  * Fire signup conversion to every ad/analytics tool on the page:
- *  - GTM dataLayer `sign_up` (GA4 recommended event name)
+ *  - GA4 `sign_up` via gtag (+ GTM dataLayer event), see analytics.js
  *  - LinkedIn Insight conversion (needs LINKEDIN_SIGNUP_CONVERSION_ID)
  *  - Microsoft Clarity custom event + tag (filter recordings to converters)
  *
@@ -33,7 +35,7 @@ export function trackSignup({ method, userId }) {
   }
 
   const w = window;
-  (w.dataLayer = w.dataLayer || []).push({ event: "sign_up", method });
+  trackEvent("sign_up", { method });
 
   if (LINKEDIN_SIGNUP_CONVERSION_ID && typeof w.lintrk === "function") {
     w.lintrk("track", { conversion_id: LINKEDIN_SIGNUP_CONVERSION_ID });

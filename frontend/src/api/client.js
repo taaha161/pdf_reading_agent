@@ -1,4 +1,5 @@
 import { getRecaptchaToken } from "../lib/recaptcha";
+import { getGaIds } from "../lib/analytics";
 
 let API_BASE = "http://localhost:8000";
 
@@ -213,7 +214,7 @@ export async function getUsage() {
 }
 
 export async function createCheckoutSession(mode, email = null, offer = null) {
-  const body = { mode };
+  const body = { mode, ...getGaIds() };
   if (email) body.email = email;
   if (offer) body.offer = offer;
   const res = await fetch(`${API_BASE}/api/billing/checkout-session`, {

@@ -1087,7 +1087,14 @@ def create_billing_checkout_session(body: CheckoutSessionRequest, user_id: str =
     """Create Stripe Checkout session for subscription or top-up. Returns URL to redirect user."""
     if body.mode not in ("subscription", "topup"):
         raise HTTPException(400, "mode must be 'subscription' or 'topup'")
-    result = create_checkout_session(user_id, body.mode, email=body.email, offer=body.offer)
+    result = create_checkout_session(
+        user_id,
+        body.mode,
+        email=body.email,
+        offer=body.offer,
+        ga_client_id=body.ga_client_id,
+        ga_session_id=body.ga_session_id,
+    )
     if not result or not result.get("url"):
         raise HTTPException(502, "Could not create checkout session. Please try again.")
     return CheckoutSessionResponse(url=result["url"], sessionId=result.get("sessionId"))
