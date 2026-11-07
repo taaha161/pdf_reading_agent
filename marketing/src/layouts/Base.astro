@@ -79,7 +79,7 @@ const fullTitle =
         try {
           var p = new URLSearchParams(window.location.search);
           var touch = {}, any = false;
-          ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "li_fat_id"].forEach(function (k) {
+          ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "li_fat_id", "gclid", "gbraid", "wbraid"].forEach(function (k) {
             var v = (p.get(k) || "").trim();
             if (v) { touch[k] = v.slice(0, 200); any = true; }
           });
