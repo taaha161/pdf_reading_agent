@@ -1,29 +1,39 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { comparePages } from '../../comparePages';
+import { comparePages, compareCategories } from '../../comparePages';
+
+const groups = compareCategories
+  .map((name) => ({ name, pages: comparePages.filter((p) => p.category === name) }))
+  .filter((g) => g.pages.length);
 
 ---
 
 <Base
   title="Compare Bank Statement Converters"
-  description="Honest comparisons of Bank Statement Scanner with DocuClipper and ChatGPT for converting bank statements to Excel and CSV."
+  description={`Honest comparisons of Bank Statement Scanner with ${comparePages.length} bank statement converters, document parsers, and bookkeeping tools, including where each one wins.`}
   path="/compare"
 >
   <section class="container cmpi">
     <h1>Compare bank statement converters</h1>
     <p class="cmpi-lede">Side-by-side comparisons covering pricing, contracts, exports, and accuracy, including where the other option wins.</p>
-    <ul class="cmpi-grid" role="list">
-      {
-        comparePages.map((p) => (
-          <li>
-            <a href={p.href}>
-              <span class="cmpi-title">{p.title}</span>
-              <span class="cmpi-body">{p.body}</span>
-            </a>
-          </li>
-        ))
-      }
-    </ul>
+    {
+      groups.map((g) => (
+        <section class="cmpi-group">
+          <h2>{g.name}</h2>
+          <ul class="cmpi-grid" role="list">
+            {g.pages.map((p) => (
+              <li>
+                <a href={p.href}>
+                  <span class="cmpi-title">{p.title}</span>
+                  <span class="cmpi-body">{p.body}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+    <p class="cmpi-note">Details about other products come from their own websites and are dated on each page. Every comparison lists where the other tool is the better choice.</p>
   </section>
 </Base>
 
@@ -31,6 +41,9 @@ import { comparePages } from '../../comparePages';
   .cmpi { max-width: 900px; padding-block: 48px 24px; }
   .cmpi h1 { font-size: clamp(30px, 5vw, 42px); margin: 0 0 14px; }
   .cmpi-lede { font-size: 18px; line-height: 1.65; color: var(--color-text-muted); max-width: 640px; margin: 0 0 32px; }
+  .cmpi-group { margin-top: 36px; }
+  .cmpi-group h2 { font-size: 22px; margin: 0 0 14px; }
+  .cmpi-note { margin-top: 36px; font-size: 14px; color: var(--color-text-muted); }
   .cmpi-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
   .cmpi-grid a {
     display: flex; flex-direction: column; gap: 6px; padding: 20px; height: 100%;

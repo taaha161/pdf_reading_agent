@@ -1,0 +1,29 @@
+---
+import ComparePage from '../../components/ComparePage.astro';
+import { competitors, type Competitor } from '../../competitors';
+
+export function getStaticPaths() {
+  return competitors.map((c) => ({ params: { slug: c.slug }, props: { c } }));
+}
+
+const { c } = Astro.props as { c: Competitor };
+---
+
+<ComparePage
+  path={`/compare/${c.slug}`}
+  seoTitle={c.seoTitle}
+  description={c.description}
+  crumb={c.crumb}
+  eyebrow={c.eyebrow}
+  h1={c.h1}
+  intro={c.intro}
+  themName={c.themName}
+  rows={c.rows}
+  tableNote={c.tableNote}
+  sections={c.sections}
+  fit={c.fit}
+  faqs={c.faqs}
+  sources={c.sources}
+  checked={c.checked}
+  disclaimer={`${c.themName} is a trademark of its owner. Bank Statement Scanner isn't affiliated with ${c.themName}.`}
+/>

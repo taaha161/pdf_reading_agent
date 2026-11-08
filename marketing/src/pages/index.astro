@@ -354,7 +354,7 @@ const steps = [
       <div>
         <h2>How we compare</h2>
         <ul role="list">
-          {comparePages.map((c) => <li><a href={c.href}>{c.title}</a></li>)}
+          {comparePages.filter((c) => c.featured).map((c) => <li><a href={c.href}>{c.title}</a></li>)}
           <li><a href="/compare">All comparisons →</a></li>
         </ul>
       </div>
