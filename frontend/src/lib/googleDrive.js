@@ -89,6 +89,12 @@ function showPicker({ token, apiKey, appId }) {
  * Open the Drive picker. Resolves to a File, or null if the user cancelled.
  * @param {number} maxBytes reject files larger than this before downloading
  */
+function tooLargeError(size, maxBytes) {
+  const e = new Error("That PDF is too large.");
+  e.fileTooLarge = { size_bytes: size, max_bytes: maxBytes };
+  return e;
+}
+
 export async function pickPdfFromGoogleDrive(maxBytes) {
   const { googleClientId, googleApiKey, googleAppId } = getConfig() || {};
   if (!googleClientId || !googleApiKey) throw new Error("Google Drive upload isn't configured.");
@@ -100,7 +106,7 @@ export async function pickPdfFromGoogleDrive(maxBytes) {
   const id = doc[window.google.picker.Document.ID];
   const name = doc[window.google.picker.Document.NAME] || "statement.pdf";
   const size = Number(doc.sizeBytes || 0);
-  if (maxBytes && size > maxBytes) throw new Error("That PDF is too large (max 20 MB).");
+  if (maxBytes && size > maxBytes) throw tooLargeError(size, maxBytes);
 
   const res = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -110,6 +116,6 @@ export async function pickPdfFromGoogleDrive(maxBytes) {
     throw new Error("Couldn't download that file from Google Drive. Please try again.");
   }
   const blob = await res.blob();
-  if (maxBytes && blob.size > maxBytes) throw new Error("That PDF is too large (max 20 MB).");
+  if (maxBytes && blob.size > maxBytes) throw tooLargeError(blob.size, maxBytes);
   return new File([blob], name.toLowerCase().endsWith(".pdf") ? name : `${name}.pdf`, { type: "application/pdf" });
 }

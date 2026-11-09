@@ -57,7 +57,7 @@ from models.schemas import (
 )
 from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
 from services.chat_service import get_reply
-from services.remote_pdf import RemotePdfError, fetch_pdf
+from services.remote_pdf import RemotePdfError, RemotePdfTooLarge, fetch_pdf
 from services.csv_export import transactions_to_csv
 from services.xlsx_export import XLSX_MIME, transactions_to_xlsx
 from services.notifications import (
@@ -257,7 +257,12 @@ app.add_middleware(PreflightMiddleware)
 app.add_middleware(AddCorsToResponseMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
-MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
+_MB = 1024 * 1024
+# Upload size limit by tier. Mirrored client-side via /api/usage max_file_bytes.
+MAX_FILE_SIZE = 20 * _MB  # anonymous
+MAX_FILE_SIZE_SIGNED_IN = 30 * _MB  # free account
+MAX_FILE_SIZE_PAID = 50 * _MB  # active subscription
+FILE_TOO_LARGE_CODE = "FILE_TOO_LARGE"
 ALLOWED_CONTENT_TYPE = "application/pdf"
 
 
@@ -465,6 +470,49 @@ ANON_TRIAL_LIMIT = 1  # Free statements before sign-up
 AUTH_TRIAL_LIMIT = 3  # Total free statements once signed in (includes the anonymous one)
 TRIAL_LIMIT_MESSAGE = "Trial limit reached. Please log in to process more PDFs."
 INSUFFICIENT_CREDITS_CODE = "INSUFFICIENT_CREDITS"
+
+
+def _subscription_active(billing: dict | None) -> bool:
+    return bool(billing and billing.get("stripe_subscription_id"))
+
+
+_UNLOADED = object()
+
+
+def _max_file_size(user_id: str | None, billing=_UNLOADED) -> int:
+    """Upload limit for this caller: anonymous < signed in < subscribed.
+    Pass `billing` (row or None) if already loaded to skip the lookup."""
+    if user_id is None:
+        return MAX_FILE_SIZE
+    if billing is _UNLOADED:
+        billing = get_billing(user_id)
+    return MAX_FILE_SIZE_PAID if _subscription_active(billing) else MAX_FILE_SIZE_SIGNED_IN
+
+
+def _file_too_large(size_bytes: int, max_bytes: int, user_id: str | None, source: str, filename: str = "") -> HTTPException:
+    """Log the rejection (with size, so it can be investigated) and build the 413 the client understands.
+    `upgrade` tells the client what raises the limit: "signup", "subscribe", or None (already at max)."""
+    tier = "anonymous" if user_id is None else ("paid" if max_bytes >= MAX_FILE_SIZE_PAID else "free")
+    logger.warning(
+        "%s: rejected, file too large: filename=%s, size=%d bytes (%.1f MB), limit=%d MB, tier=%s",
+        source, filename, size_bytes, size_bytes / _MB, max_bytes // _MB, tier,
+    )
+    if user_id is None:
+        upgrade, hint = "signup", f" Create a free account to upload up to {MAX_FILE_SIZE_SIGNED_IN // _MB} MB."
+    elif max_bytes < MAX_FILE_SIZE_PAID:
+        upgrade, hint = "subscribe", f" Subscribe to upload up to {MAX_FILE_SIZE_PAID // _MB} MB."
+    else:
+        upgrade, hint = None, " Try splitting it into smaller PDFs."
+    return HTTPException(
+        status_code=413,
+        detail={
+            "detail": f"This PDF is {size_bytes / _MB:.1f} MB. The maximum file size is {max_bytes // _MB} MB.{hint}",
+            "code": FILE_TOO_LARGE_CODE,
+            "size_bytes": size_bytes,
+            "max_bytes": max_bytes,
+            "upgrade": upgrade,
+        },
+    )
 RECAPTCHA_FAILED_CODE = "RECAPTCHA_FAILED"
 
 
@@ -498,12 +546,18 @@ async def preflight_fetch_pdf_url(request: Request):
 
 @app.post("/api/fetch-pdf-url")
 @limiter.limit(_RATE_LIMIT_FETCH_URL)
-async def fetch_pdf_url(request: Request, body: FetchPdfUrlRequest):
+async def fetch_pdf_url(
+    request: Request,
+    body: FetchPdfUrlRequest,
+    user_id: str | None = Depends(get_current_user_optional),
+):
     """Download a PDF from a public link (direct URL, Google Drive/Dropbox share link) and
     return its bytes. The client then submits it to /api/process-pdf like a local file,
     so reCAPTCHA, trial and credit checks all still apply there."""
     try:
-        content, filename = await fetch_pdf(body.url, MAX_FILE_SIZE)
+        content, filename = await fetch_pdf(body.url, _max_file_size(user_id))
+    except RemotePdfTooLarge as e:
+        raise _file_too_large(e.size_bytes, e.max_bytes, user_id, "fetch-pdf-url", body.url[:200])
     except RemotePdfError as e:
         raise HTTPException(status_code=400, detail=str(e))
     logger.info("fetch-pdf-url: downloaded %d bytes", len(content))
@@ -574,10 +628,11 @@ async def _prepare_scan(
         conversion_mode_val = "fast"
     logger.info("scan: request started, filename=%s, scanned_method=%s, conversion_mode=%s", file.filename or "statement.pdf", scanned_method_val, conversion_mode_val)
 
+    billing = get_billing(user_id) if user_id is not None else None
+
     # Authenticated: check credits before running pipeline (skip if still within trial)
     if user_id is not None and not use_free_trial:
         cost_cents = SCAN_COST_CENTS.get(conversion_mode_val, SCAN_COST_CENTS["fast"])
-        billing = get_billing(user_id)
         balance_cents = billing["balance_cents"] if billing else None
         if balance_cents is None or balance_cents < cost_cents:
             raise HTTPException(
@@ -592,9 +647,12 @@ async def _prepare_scan(
 
     if file.content_type and file.content_type != ALLOWED_CONTENT_TYPE:
         raise HTTPException(400, "File must be a PDF")
+    max_bytes = _max_file_size(user_id, billing)
+    if file.size is not None and file.size > max_bytes:
+        raise _file_too_large(file.size, max_bytes, user_id, "scan", file.filename or "")
     content = await file.read()
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(400, "File too large")
+    if len(content) > max_bytes:
+        raise _file_too_large(len(content), max_bytes, user_id, "scan", file.filename or "")
     if not content:
         raise HTTPException(400, "Empty file")
 
@@ -1047,7 +1105,7 @@ def get_billing_balance(user_id: str = Depends(get_current_user)):
     """Return current credit balance and subscription status."""
     billing = get_billing(user_id)
     balance_cents = billing["balance_cents"] if billing else 0
-    subscription_active = bool(billing and billing.get("stripe_subscription_id"))
+    subscription_active = _subscription_active(billing)
     return BillingBalanceResponse(balance_cents=balance_cents, subscription_active=subscription_active)
 
 
@@ -1066,11 +1124,10 @@ def get_usage(
     trial_used = _trial_used(request, trial_limit)
 
     balance_cents = None
-    subscription_active = False
+    billing = None
     if user_id is not None:
         billing = get_billing(user_id)
         balance_cents = billing["balance_cents"] if billing else 0
-        subscription_active = bool(billing and billing.get("stripe_subscription_id"))
 
     return UsageResponse(
         authenticated=user_id is not None,
@@ -1078,7 +1135,8 @@ def get_usage(
         trial_limit=trial_limit,
         trial_remaining=max(0, trial_limit - trial_used),
         balance_cents=balance_cents,
-        subscription_active=subscription_active,
+        subscription_active=_subscription_active(billing),
+        max_file_bytes=_max_file_size(user_id, billing),
     )
 
 

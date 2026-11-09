@@ -96,6 +96,7 @@ class UsageResponse(BaseModel):
     trial_remaining: int
     balance_cents: Optional[int] = None  # only for authenticated users
     subscription_active: bool = False
+    max_file_bytes: int = 20 * 1024 * 1024  # upload limit for this caller's tier
 
 
 class CheckoutSessionRequest(BaseModel):

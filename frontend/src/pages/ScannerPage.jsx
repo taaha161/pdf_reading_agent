@@ -15,6 +15,7 @@ import "./ScannerPage.css";
 import PasswordInput from "../components/PasswordInput";
 import { takeHandedOffFile } from "../lib/fileHandoff";
 import { trackEvent } from "../lib/analytics";
+import { fileTooLarge, formatMB, maxFileBytes, MAX_FILE_BYTES_SIGNED_IN, MB } from "../lib/fileSize";
 import { trackLinkedInConversion, LINKEDIN_TRIAL_SCAN_CONVERSION_ID } from "../lib/linkedinConversions";
 import sampleStatement from "../lib/sampleStatement.json";
 
@@ -102,6 +103,7 @@ function transactionsToCsvBrowser(transactions) {
 const SAMPLE_JOB_ID = "sample";
 
 const TRIAL_LIMIT_NOTICE = "You've used your free scan. Create a free account to get more free scans.";
+const FILE_SIZE_NOTICE = `Free accounts can upload PDFs up to ${formatMB(MAX_FILE_BYTES_SIGNED_IN)}.`;
 
 const FEEDBACK_SCAN_COUNT_KEY = "bss_scan_count";
 const FEEDBACK_PROMPTED_KEY = "bss_feedback_prompted";
@@ -148,6 +150,7 @@ export default function ScannerPage() {
   const [dataStatus, setDataStatus] = useState(null);
   const [trialCsvContent, setTrialCsvContent] = useState(null);
   const [outOfCredits, setOutOfCredits] = useState(false);
+  const [tooLargeUpgrade, setTooLargeUpgrade] = useState(null); // "signup" | "subscribe" | null
   const [chatOpen, setChatOpen] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [pendingPasswordFile, setPendingPasswordFile] = useState(null);
@@ -212,10 +215,32 @@ export default function ScannerPage() {
       }),
     [navigate]
   );
+  const goToSignupForFileSize = useCallback(
+    () =>
+      navigate("/signup", {
+        state: { from: { pathname: "/scanner" }, notice: FILE_SIZE_NOTICE, reason: "file-too-large" },
+      }),
+    [navigate]
+  );
+
+  // Upload limit for this user's tier (20 MB guest / 30 MB free account / 50 MB subscriber).
+  const fileLimit = maxFileBytes(usage, isLoggedIn);
+  const showFileTooLarge = (sizeBytes, maxBytes = fileLimit) => {
+    const { message, upgrade } = fileTooLarge(sizeBytes, maxBytes);
+    setOutOfCredits(false);
+    setError(message);
+    setTooLargeUpgrade(upgrade);
+    trackEvent("file_too_large", {
+      size_mb: Math.round(sizeBytes / MB),
+      limit_mb: Math.round(maxBytes / MB),
+      logged_in: isLoggedIn,
+    });
+  };
 
   // Load existing job when opening from dashboard (e.g. /scanner/:jobId)
   useEffect(() => {
     if (!routeJobId) return;
+    setTooLargeUpgrade(null);
     if (!isLoggedIn) {
       setError("Sign in to view this job.");
       setLoadingJob(false);
@@ -244,12 +269,19 @@ export default function ScannerPage() {
     // With a password the modal stays up ("Unlocking…") until the server accepts it,
     // then closes and the page loader takes over. Without one, show the loader right away.
     const viaPassword = password != null;
+    // Reject oversized files before uploading. Skipped while auth is still loading (the tier
+    // isn't known yet); the server enforces the same limit either way.
+    if (!authLoading && file.size > fileLimit) {
+      showFileTooLarge(file.size);
+      return;
+    }
     const showLoader = () => {
       setLoading(true);
       setLoadingFile({ name: file.name, size: file.size });
     };
     setError(null);
     setOutOfCredits(false);
+    setTooLargeUpgrade(null);
     setDownloadError(null);
     setJobId(null);
     setTransactions([]);
@@ -302,6 +334,10 @@ export default function ScannerPage() {
       }
       // Any other failure is shown on the page, not in the password dialog.
       if (viaPassword) handlePasswordModalClose();
+      if (e.fileTooLarge) {
+        showFileTooLarge(e.fileTooLarge.size_bytes, e.fileTooLarge.max_bytes);
+        return;
+      }
       if (e.isTrialLimit && !isLoggedIn) {
         goToSignup();
         return;
@@ -358,6 +394,7 @@ export default function ScannerPage() {
   const loadSample = () => {
     const rows = sampleStatement.transactions;
     setError(null);
+    setTooLargeUpgrade(null);
     setJobId(SAMPLE_JOB_ID);
     setTransactions(rows);
     setSummaryByCategory(computeSummaryByCategory(rows));
@@ -483,6 +520,8 @@ export default function ScannerPage() {
               disabled={loading}
               blocked={trialExhausted}
               onBlocked={goToSignup}
+              maxBytes={fileLimit}
+              onTooLarge={showFileTooLarge}
             />
           )}
           {isGuest && !loading && (
@@ -532,6 +571,8 @@ export default function ScannerPage() {
               disabled={loading}
               blocked={trialExhausted}
               onBlocked={goToSignup}
+              maxBytes={fileLimit}
+              onTooLarge={showFileTooLarge}
             />
           )}
         </div>
@@ -558,6 +599,22 @@ export default function ScannerPage() {
                     {" "}
                     <button type="button" className="scanner-alert-link" onClick={() => navigate("/login")}>
                       Log in to process more
+                    </button>
+                  </>
+                )}
+                {tooLargeUpgrade === "signup" && (
+                  <>
+                    {" "}
+                    <button type="button" className="scanner-alert-link" onClick={goToSignupForFileSize}>
+                      Create a free account
+                    </button>
+                  </>
+                )}
+                {tooLargeUpgrade === "subscribe" && (
+                  <>
+                    {" "}
+                    <button type="button" className="scanner-alert-link" onClick={() => navigate("/settings")}>
+                      Subscribe
                     </button>
                   </>
                 )}
