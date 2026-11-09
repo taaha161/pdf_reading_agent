@@ -598,10 +598,14 @@
 
 .auth-photo-card {
   margin-top: 1.25rem;
-  height: 140px;
+  min-height: 140px;
+  padding: 1.5rem;
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(148, 163, 184, 0.15), rgba(37, 99, 235, 0.25));
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .auth-shell-footer {
@@ -713,11 +717,17 @@
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.95);
+  color: #fff;
   font-size: 0.75rem;
 }
 
 .auth-trust-label {
   font-size: 0.85rem;
+}
+
+.auth-photo-card .auth-trust-label {
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 @media (max-width: 900px) {

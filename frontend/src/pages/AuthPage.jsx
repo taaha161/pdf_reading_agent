@@ -95,6 +95,24 @@ function validatePasswordStrength(password) {
   return { ok: true };
 }
 
+/** Avatars + "Trusted by 10,000+" social proof, shared by the login and signup panels. */
+function TrustRow() {
+  return (
+    <div className="auth-trust-row">
+      <div className="auth-avatar-group" aria-hidden>
+        {/* Add your images to public/auth-avatars/ as avatar-1.jpg, avatar-2.jpg, avatar-3.jpg */}
+        <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-1.jpg)" }} />
+        <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-2.jpg)" }} />
+        <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-3.jpg)" }} />
+        <span className="auth-badge">10k+</span>
+      </div>
+      <div className="auth-trust-copy">
+        <span className="auth-trust-label">Trusted by 10,000+ finance professionals</span>
+      </div>
+    </div>
+  );
+}
+
 export default function AuthPage({ mode: initialMode = "login" }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -360,7 +378,9 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                 </div>
               </div>
             </div>
-            <div className="auth-photo-card" aria-hidden />
+            <div className="auth-photo-card">
+              <TrustRow />
+            </div>
             <footer className="auth-shell-footer">
               <Link to="/contact" className="auth-footer-link">Help Center</Link>
               <button type="button" className="auth-footer-link">Security</button>
@@ -658,18 +678,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
               Connect your statements, scan and categorize transactions with AI, and sync everything to your favorite
               accounting software in seconds.
             </p>
-            <div className="auth-trust-row">
-              <div className="auth-avatar-group" aria-hidden>
-                {/* Add your images to public/auth-avatars/ as avatar-1.jpg, avatar-2.jpg, avatar-3.jpg */}
-                <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-1.jpg)" }} />
-                <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-2.jpg)" }} />
-                <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-3.jpg)" }} />
-                <span className="auth-badge">10k+</span>
-              </div>
-              <div className="auth-trust-copy">
-                <span className="auth-trust-label">Trusted by 10,000+ finance professionals</span>
-              </div>
-            </div>
+            <TrustRow />
           </div>
         </section>
       </main>
