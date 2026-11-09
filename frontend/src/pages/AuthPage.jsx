@@ -8,11 +8,13 @@ import logo from "../assets/pdf_to_excel_logo.png";
 import "./AuthPage.css";
 import PasswordInput from "../components/PasswordInput";
 import { claimOfferForUser } from "../lib/offer";
+import { PLAN_SUBSCRIPTION, PLAN_TRIAL, rememberSignupPlan } from "../lib/signupPlan";
 import { getAttribution } from "../lib/attribution";
 
 const PASSWORD_MIN_LENGTH = 8;
 // Mirrors backend AUTH_TRIAL_LIMIT - ANON_TRIAL_LIMIT (3 free scans signed in, 1 anonymous).
 const FREE_SCANS_ON_SIGNUP = 2;
+const TOTAL_FREE_SCANS = 3;
 
 /** Google G logo SVG (official brand colors) */
 function GoogleLogo({ className }) {
@@ -114,6 +116,11 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const [message, setMessage] = useState({ type: "", text: "" });
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [plan, setPlan] = useState(PLAN_SUBSCRIPTION);
+  const isSubscription = plan === PLAN_SUBSCRIPTION;
+  const trialScansLabel = trialExhausted
+    ? `${FREE_SCANS_ON_SIGNUP} more free scans`
+    : `${TOTAL_FREE_SCANS} free scans`;
 
   useEffect(() => {
     setView(mode);
@@ -138,6 +145,8 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const handleSocialLogin = async (provider) => {
     setLoading(true);
     clearMessage();
+    // OAuth accounts don't exist yet, so keep the plan choice for first sign-in.
+    if (view === "signup") rememberSignupPlan(plan);
     try {
       const { error } = await supabase.auth.signInWithOAuth({ provider });
       if (error) setError(error.message);
@@ -187,7 +196,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
         password,
         options: {
           // attribution: which ad campaign (if any) brought this signup in.
-          data: { full_name: nameTrimmed, attribution: getAttribution() ?? undefined },
+          data: { full_name: nameTrimmed, attribution: getAttribution() ?? undefined, signup_plan: plan },
         },
       });
       if (error) throw error;
@@ -195,6 +204,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
       trackSignup({ method: "email", userId: signUpData?.user?.id });
       // Bind the ad offer now: the confirmation link may open in another tab.
       claimOfferForUser(signUpData?.user);
+      rememberSignupPlan(plan);
       setSignupSuccess(true);
       setSuccess("Check your email to confirm your account. Then you can log in.");
     } catch (err) {
@@ -373,18 +383,21 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                   </div>
                 </div>
               )}
-              <h2 className="auth-title">{trialExhausted ? "Create your free account" : "Create your account"}</h2>
+              <h2 className="auth-title">Create your account</h2>
               <p className="auth-description">
-                {trialExhausted
-                  ? `Sign up and get ${FREE_SCANS_ON_SIGNUP} more free scans instantly.`
-                  : "Start managing your finances securely today."}
+                {isSubscription
+                  ? "Subscribe for $10/month and get $10 in scan credits every month."
+                  : `Try it free with ${trialScansLabel}. No credit card needed.`}
               </p>
 
               {signupSuccess ? (
                 <div className="auth-success-block">
                   <p className="auth-message auth-message-success">
                     We sent a confirmation link to <strong>{email}</strong>. Click the link in that email to activate your
-                    account{trialExhausted ? ` and unlock your ${FREE_SCANS_ON_SIGNUP} free scans` : ""}, then log in below.
+                    account, then log in below.{" "}
+                    {isSubscription
+                      ? "We'll take you to checkout to start your subscription."
+                      : `Your ${trialScansLabel} will be ready.`}
                   </p>
                   <Link
                     to="/login"
@@ -440,6 +453,41 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                       minLength={PASSWORD_MIN_LENGTH}
                       autoComplete="new-password"
                     />
+                    <fieldset className="auth-plan-picker">
+                      <legend className="auth-label">Choose your plan</legend>
+                      <label className={`auth-plan-option${isSubscription ? " is-selected" : ""}`}>
+                        <input
+                          type="radio"
+                          name="signup-plan"
+                          value={PLAN_SUBSCRIPTION}
+                          checked={isSubscription}
+                          onChange={() => setPlan(PLAN_SUBSCRIPTION)}
+                        />
+                        <span className="auth-plan-text">
+                          <span className="auth-plan-title">
+                            Monthly plan <span className="auth-plan-price">$10/month</span>
+                          </span>
+                          <span className="auth-plan-desc">$10 in scan credits every month. Cancel anytime.</span>
+                        </span>
+                      </label>
+                      <label className={`auth-plan-option${!isSubscription ? " is-selected" : ""}`}>
+                        <input
+                          type="radio"
+                          name="signup-plan"
+                          value={PLAN_TRIAL}
+                          checked={!isSubscription}
+                          onChange={() => setPlan(PLAN_TRIAL)}
+                        />
+                        <span className="auth-plan-text">
+                          <span className="auth-plan-title">
+                            Free trial <span className="auth-plan-price">$0</span>
+                          </span>
+                          <span className="auth-plan-desc">
+                            {trialScansLabel}. No credit card needed.
+                          </span>
+                        </span>
+                      </label>
+                    </fieldset>
                     <label className="auth-checkbox-row">
                       <input type="checkbox" required />
                       <span>
@@ -452,9 +500,9 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                     <button type="submit" className="auth-btn auth-btn-primary auth-btn-block" disabled={loading}>
                       {loading
                         ? "Creating account…"
-                        : trialExhausted
-                          ? `Create account & get ${FREE_SCANS_ON_SIGNUP} free scans →`
-                          : "Create Account →"}
+                        : isSubscription
+                          ? "Create account & subscribe →"
+                          : `Create account & get ${trialScansLabel} →`}
                     </button>
                   </form>
 
