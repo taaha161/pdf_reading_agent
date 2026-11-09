@@ -51,6 +51,9 @@ function scanError(status, detail, fallback) {
   if (status === 401 && typeof msg === "string" && msg.toLowerCase().includes("trial limit")) e.isTrialLimit = true;
   if (status === 422 && obj?.code === "PDF_PASSWORD_REQUIRED") e.isPdfPasswordRequired = true;
   if (status === 422 && obj?.code === "PDF_PASSWORD_INCORRECT") e.isPdfPasswordIncorrect = true;
+  if (status === 413 && obj?.code === "FILE_TOO_LARGE") {
+    e.fileTooLarge = { size_bytes: obj.size_bytes, max_bytes: obj.max_bytes, upgrade: obj.upgrade ?? null };
+  }
   return e;
 }
 
@@ -166,6 +169,7 @@ export async function fetchPdfFromUrl(url) {
   if (!res.ok) {
     if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
     const err = await res.json().catch(() => ({ detail: res.statusText }));
+    if (res.status === 413) throw scanError(413, err.detail, "That PDF is too large");
     const detail = Array.isArray(err.detail) ? "Please enter a valid URL." : err.detail;
     throw new Error(detail || "Couldn't download that PDF");
   }

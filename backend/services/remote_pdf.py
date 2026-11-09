@@ -28,6 +28,15 @@ class RemotePdfError(Exception):
     """User-facing error (message is safe to show)."""
 
 
+class RemotePdfTooLarge(RemotePdfError):
+    """The remote PDF exceeds max_bytes. size_bytes is the declared or downloaded-so-far size."""
+
+    def __init__(self, size_bytes: int, max_bytes: int):
+        super().__init__(f"That PDF is too large (max {max_bytes // (1024 * 1024)} MB).")
+        self.size_bytes = size_bytes
+        self.max_bytes = max_bytes
+
+
 _GDRIVE_FILE_RE = re.compile(r"^/file/d/([A-Za-z0-9_-]+)")
 
 
@@ -149,12 +158,12 @@ async def fetch_pdf(url: str, max_bytes: int, transport: httpx.AsyncBaseTranspor
 
                     declared = resp.headers.get("content-length")
                     if declared and declared.isdigit() and int(declared) > max_bytes:
-                        raise RemotePdfError("That PDF is too large (max 20 MB).")
+                        raise RemotePdfTooLarge(int(declared), max_bytes)
                     buf = bytearray()
                     async for chunk in resp.aiter_bytes():
                         buf.extend(chunk)
                         if len(buf) > max_bytes:
-                            raise RemotePdfError("That PDF is too large (max 20 MB).")
+                            raise RemotePdfTooLarge(len(buf), max_bytes)
                     content = bytes(buf)
                     if b"%PDF-" not in content[:1024]:
                         raise RemotePdfError(

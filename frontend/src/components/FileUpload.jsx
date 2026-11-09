@@ -1,15 +1,23 @@
 import { useCallback, useState } from "react";
 import { fetchPdfFromUrl } from "../api/client";
 import { isGoogleDriveConfigured, pickPdfFromGoogleDrive } from "../lib/googleDrive";
+import { formatMB, MAX_FILE_BYTES_ANON } from "../lib/fileSize";
 import "./FileUpload.css";
-
-const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
 /**
  * `blocked` + `onBlocked`: when the user can't scan (e.g. out of free scans), any attempt to
  * start an upload (click, drop, Drive, URL) calls onBlocked instead of opening a picker.
+ * `maxBytes`: the user's upload limit. onUpload checks size for every file; Drive/URL
+ * imports that are over the limit before download call `onTooLarge(sizeBytes)` instead.
  */
-export default function FileUpload({ onUpload, disabled, blocked = false, onBlocked }) {
+export default function FileUpload({
+  onUpload,
+  disabled,
+  blocked = false,
+  onBlocked,
+  maxBytes = MAX_FILE_BYTES_ANON,
+  onTooLarge,
+}) {
   const [drag, setDrag] = useState(false);
   const [showUrl, setShowUrl] = useState(false);
   const [url, setUrl] = useState("");
@@ -62,7 +70,8 @@ export default function FileUpload({ onUpload, disabled, blocked = false, onBloc
     try {
       file = await getFile();
     } catch (err) {
-      setImportError(err.message || "Import failed");
+      if (err.fileTooLarge && onTooLarge) onTooLarge(err.fileTooLarge.size_bytes);
+      else setImportError(err.message || "Import failed");
     } finally {
       setImporting(null);
     }
@@ -73,7 +82,7 @@ export default function FileUpload({ onUpload, disabled, blocked = false, onBloc
     }
   };
 
-  const onDriveClick = (e) => !intercept(e) && runImport("drive", () => pickPdfFromGoogleDrive(MAX_FILE_BYTES));
+  const onDriveClick = (e) => !intercept(e) && runImport("drive", () => pickPdfFromGoogleDrive(maxBytes));
 
   const onUrlSubmit = (e) => {
     e.preventDefault();
@@ -111,7 +120,7 @@ export default function FileUpload({ onUpload, disabled, blocked = false, onBloc
             </svg>
           </span>
           <span className="file-upload-headline">Drop your bank statement PDF here</span>
-          <span className="file-upload-subtext">or click to choose</span>
+          <span className="file-upload-subtext">or click to choose · up to {formatMB(maxBytes)}</span>
         </label>
       </div>
 
