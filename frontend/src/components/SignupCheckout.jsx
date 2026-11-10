@@ -19,18 +19,23 @@ export default function SignupCheckout() {
     startedFor.current = user.id;
     (async () => {
       try {
-        const balance = await getBillingBalance();
+        // Pass the token explicitly: this effect runs before AppContent's effect
+        // hands the new session token to the API client, so relying on the
+        // shared getter sends the request unauthenticated (401).
+        const balance = await getBillingBalance(accessToken);
         if (balance?.subscription_active) {
           await markSignupCheckoutStarted();
           return;
         }
         setRedirecting(true);
-        const url = await createCheckoutSession("subscription", user.email ?? undefined, getOffer(user));
+        const url = await createCheckoutSession("subscription", user.email ?? undefined, getOffer(user), accessToken);
         await markSignupCheckoutStarted();
         if (url) window.location.href = url;
         else setRedirecting(false);
-      } catch {
+      } catch (err) {
         // Billing unavailable: leave them on the free trial; they can subscribe from Account.
+        // Not marked as started, so the next sign-in tries again.
+        console.error("Signup checkout redirect failed:", err);
         setRedirecting(false);
       }
     })();

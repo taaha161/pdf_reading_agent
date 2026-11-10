@@ -178,9 +178,9 @@ export async function fetchPdfFromUrl(url) {
   return new File([blob], name, { type: "application/pdf" });
 }
 
-export async function getBillingBalance() {
+export async function getBillingBalance(token) {
   const res = await fetch(`${API_BASE}/api/billing/balance`, {
-    headers: authHeaders(),
+    headers: authHeaders(token),
     credentials: "include",
   });
   if (!res.ok) {
@@ -217,13 +217,13 @@ export async function getUsage() {
   return res.json();
 }
 
-export async function createCheckoutSession(mode, email = null, offer = null) {
+export async function createCheckoutSession(mode, email = null, offer = null, token = undefined) {
   const body = { mode, ...getGaIds() };
   if (email) body.email = email;
   if (offer) body.offer = offer;
   const res = await fetch(`${API_BASE}/api/billing/checkout-session`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
     credentials: "include",
     body: JSON.stringify(body),
   });
