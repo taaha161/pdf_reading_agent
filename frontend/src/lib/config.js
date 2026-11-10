@@ -4,30 +4,57 @@
  */
 let cached = null;
 
+const RETRY_DELAYS_MS = [400, 1200, 3000];
+const FETCH_TIMEOUT_MS = 8000;
+
+/** Shown to visitors when config cannot be fetched (network blip, timeout). */
+export const CONFIG_NETWORK_ERROR =
+  "We couldn't connect to Bank Statement Scanner. Check your connection and try again.";
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Fetch /api/config, retrying transient failures (network error, timeout, 5xx other than
+ * a config-incomplete 503). Returns parsed data, or null when the endpoint does not exist
+ * (local dev). Throws for a misconfigured deployment.
+ */
+async function fetchRemoteConfig() {
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    if (attempt > 0) await sleep(RETRY_DELAYS_MS[attempt - 1]);
+    let res;
+    try {
+      res = await fetch("/api/config", {
+        cache: attempt === 0 ? "default" : "no-store",
+        signal: AbortSignal.timeout ? AbortSignal.timeout(FETCH_TIMEOUT_MS) : undefined,
+      });
+    } catch {
+      continue; // network error or timeout: retry
+    }
+    const data = await res.json().catch(() => null);
+    if (res.ok && data?.supabaseUrl) return data;
+    if (res.status === 503 && data?.message) throw new Error(data.message); // env vars missing
+    if (res.status === 404 || (res.ok && data === null)) return null; // no endpoint (local dev)
+    // other 5xx or bad body: retry
+  }
+  return import.meta.env.PROD ? "unreachable" : null;
+}
+
 export async function loadConfig() {
   if (cached) return cached;
-  try {
-    const res = await fetch("/api/config", { cache: "default" });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.supabaseUrl) {
-      cached = {
-        apiUrl: data.apiUrl || "",
-        supabaseUrl: data.supabaseUrl,
-        supabasePublishableKey: data.supabasePublishableKey || "",
-        recaptchaSiteKey: data.recaptchaSiteKey || "",
-        googleClientId: data.googleClientId || "",
-        googleApiKey: data.googleApiKey || "",
-        googleAppId: data.googleAppId || "",
-      };
-      return cached;
-    }
-    if (res.status === 503 && data.message) {
-      throw new Error(data.message);
-    }
-  } catch (e) {
-    if (e instanceof Error && e.message.includes("SUPABASE")) throw e;
-    // e.g. no /api/config in local dev or network error
+  const data = await fetchRemoteConfig();
+  if (data && data !== "unreachable") {
+    cached = {
+      apiUrl: data.apiUrl || "",
+      supabaseUrl: data.supabaseUrl,
+      supabasePublishableKey: data.supabasePublishableKey || "",
+      recaptchaSiteKey: data.recaptchaSiteKey || "",
+      googleClientId: data.googleClientId || "",
+      googleApiKey: data.googleApiKey || "",
+      googleAppId: data.googleAppId || "",
+    };
+    return cached;
   }
+  if (data === "unreachable") throw new Error(CONFIG_NETWORK_ERROR);
   // Dev fallback: use values injected by Vite (vite.config define), or defaults
   const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
   const supabasePublishableKey =
