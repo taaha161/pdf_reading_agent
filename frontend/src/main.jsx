@@ -7,7 +7,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { JobsProvider } from './contexts/JobsContext'
 import { UsageProvider } from './contexts/UsageContext'
 import App from './App.jsx'
-import { loadConfig } from './lib/config'
+import { loadConfig, CONFIG_NETWORK_ERROR } from './lib/config'
 import { initSupabase } from './lib/supabase'
 import { setApiBase } from './api/client'
 import { captureOfferFromUrl } from './lib/offer'
@@ -37,7 +37,26 @@ function BootstrappedApp() {
       .catch((e) => setError(e?.message || "Config failed"));
   }, []);
 
-  if (error) return <div style={{ padding: '2rem', textAlign: 'center' }}>Config failed: {error}</div>;
+  if (error) {
+    const isNetwork = error === CONFIG_NETWORK_ERROR;
+    return (
+      <div style={{ padding: '3rem 1.5rem', textAlign: 'center', fontFamily: 'system-ui, sans-serif', color: '#0f172a' }}>
+        <p style={{ fontSize: '1.125rem', fontWeight: 600, margin: '0 0 0.5rem' }}>
+          {isNetwork ? "Couldn't load the page" : 'Something went wrong'}
+        </p>
+        <p style={{ color: '#64748b', margin: '0 0 1.25rem' }}>
+          {isNetwork ? error : 'Please try again in a moment.'}
+        </p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          style={{ background: '#2563eb', color: '#fff', border: 0, borderRadius: 8, padding: '0.7rem 1.4rem', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
   if (!ready) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading…</div>;
 
   return (
