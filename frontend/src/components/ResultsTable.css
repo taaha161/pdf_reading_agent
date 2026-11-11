@@ -299,6 +299,18 @@
   border-color: rgba(251, 113, 133, 0.4);
 }
 
+.results-chip--credit {
+  background: var(--color-success-muted);
+  color: #15803d;
+  border-color: var(--color-success);
+}
+
+.results-chip--debit {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border-color: var(--color-error-border);
+}
+
 .results-chip--muted {
   background: var(--color-bg);
   color: var(--color-text-muted);

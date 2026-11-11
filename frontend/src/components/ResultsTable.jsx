@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import DownloadMenu from "./DownloadMenu";
+import { filterLabel, getDirection, matchesFilter } from "../lib/transactionDirection";
 import "./ResultsTable.css";
 
 const CATEGORY_COLORS = [
@@ -26,6 +27,15 @@ function hashCategory(s) {
     h = (h * 31 + str.charCodeAt(i)) | 0;
   }
   return Math.abs(h);
+}
+
+// Chips show money direction: green when money was added, red when it was deducted.
+// Falls back to the category's colour only when the direction is unknown.
+function getChipClass(t) {
+  const direction = getDirection(t);
+  if (direction === "credit") return "results-chip--credit";
+  if (direction === "debit") return "results-chip--debit";
+  return getCategoryChipClass(t.category);
 }
 
 function getCategoryChipClass(category) {
@@ -140,13 +150,9 @@ export default function ResultsTable({
   };
 
   // Keep original indices so edits target the right row in the full list.
-  // Blank categories are grouped as "Other" in the summary, so match that.
   const visibleRows = (transactions || [])
     .map((t, i) => ({ t, i }))
-    .filter(
-      ({ t }) =>
-        !categoryFilter || ((t.category || "").trim() || "Other") === categoryFilter
-    );
+    .filter(({ t }) => matchesFilter(t, categoryFilter));
 
   const handleSaveEdit = () => {
     if (editingIndex == null) return;
@@ -181,12 +187,12 @@ export default function ResultsTable({
           <h2>Transactions</h2>
           {categoryFilter && (
             <span className="results-filter-pill">
-              {categoryFilter} · {visibleRows.length} of {transactions.length}
+              {filterLabel(categoryFilter)} · {visibleRows.length} of {transactions.length}
               <button
                 type="button"
                 className="results-filter-clear"
                 onClick={onClearCategoryFilter}
-                aria-label={`Clear ${categoryFilter} filter, show all transactions`}
+                aria-label={`Clear ${filterLabel(categoryFilter)} filter, show all transactions`}
               >
                 ×
               </button>
@@ -220,7 +226,7 @@ export default function ResultsTable({
           </thead>
           <tbody role="rowgroup">
             {visibleRows.map(({ t, i }) => {
-              const chipClass = getCategoryChipClass(t.category);
+              const chipClass = getChipClass(t);
               const amountClass = getAmountClass(t.type, t.amount);
               return (
                 <tr key={i} className="results-row" role="row">

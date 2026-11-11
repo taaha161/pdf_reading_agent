@@ -1,4 +1,5 @@
 import DownloadMenu from "./DownloadMenu";
+import { CREDIT_FILTER, DEBIT_FILTER, directionTotals } from "../lib/transactionDirection";
 import "./SummaryTable.css";
 
 // Map common currency names to ISO 4217 codes for Intl.NumberFormat
@@ -49,6 +50,7 @@ export default function SummaryTable({
   onDownloadError,
 }) {
   if (!summaryByCategory?.length) return null;
+  const totals = directionTotals(transactions);
 
   const interactive = typeof onSelectCategory === "function";
   const select = (category) => {
@@ -99,6 +101,18 @@ export default function SummaryTable({
                 <td className="amount-col" />
               </tr>
             )}
+            <tr {...rowProps(CREDIT_FILTER)} aria-label={interactive ? "Filter by credits (money in)" : undefined}>
+              <td className="summary-direction summary-direction--credit">Credits (money in)</td>
+              <td className="amount-col summary-direction--credit">{formatTotal(totals.credit, currency)}</td>
+            </tr>
+            <tr
+              {...rowProps(DEBIT_FILTER)}
+              className={`${rowProps(DEBIT_FILTER).className ?? ""} summary-row--direction-end`.trim()}
+              aria-label={interactive ? "Filter by debits (money out)" : undefined}
+            >
+              <td className="summary-direction summary-direction--debit">Debits (money out)</td>
+              <td className="amount-col summary-direction--debit">{formatTotal(totals.debit, currency)}</td>
+            </tr>
             {summaryByCategory.map((row, i) => (
               <tr key={row.category ?? i} {...rowProps(row.category)} aria-label={interactive ? `Filter by ${row.category}` : undefined}>
                 <td>{row.category}</td>
