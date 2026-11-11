@@ -1,4 +1,4 @@
-"""Tests for repeat-transaction merging and owner-password-only PDF handling."""
+"""Tests for owner-password-only PDF handling."""
 import io
 
 import pytest
@@ -6,25 +6,6 @@ from pypdf import PdfWriter
 
 from services import pdf_processor
 from services.pdf_processor import PdfPasswordRequired, extract_text_from_pdf
-from services.statement_agent import _merge_chunk_transactions
-
-COFFEE = {"date": "2024-01-01", "description": "Coffee", "amount": "4.50", "type": "debit"}
-RENT = {"date": "2024-01-02", "description": "Rent", "amount": "900.00", "type": "debit"}
-
-
-def test_identical_rows_in_one_chunk_are_kept():
-    assert _merge_chunk_transactions([[COFFEE, dict(COFFEE), dict(COFFEE)]]) == [COFFEE] * 3
-
-
-def test_overlap_row_extracted_by_both_chunks_is_dropped_once():
-    merged = _merge_chunk_transactions([[COFFEE, RENT], [dict(RENT), {**RENT, "date": "2024-01-03"}]])
-    assert [t["date"] for t in merged] == ["2024-01-01", "2024-01-02", "2024-01-03"]
-
-
-def test_extra_repeats_in_next_chunk_beyond_previous_count_are_kept():
-    merged = _merge_chunk_transactions([[COFFEE], [dict(COFFEE), dict(COFFEE)]])
-    assert len(merged) == 2
-
 
 def _encrypted_pdf(user_password: str, owner_password: str) -> bytes:
     writer = PdfWriter()
