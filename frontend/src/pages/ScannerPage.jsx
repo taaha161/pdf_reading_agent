@@ -18,6 +18,7 @@ import { trackEvent } from "../lib/analytics";
 import { fileTooLarge, formatMB, maxFileBytes, MAX_FILE_BYTES_SIGNED_IN, MB } from "../lib/fileSize";
 import { trackLinkedInConversion, LINKEDIN_TRIAL_SCAN_CONVERSION_ID } from "../lib/linkedinConversions";
 import sampleStatement from "../lib/sampleStatement.json";
+import { isDirectionFilter } from "../lib/transactionDirection";
 
 function ChatIcon() {
   return (
@@ -407,7 +408,8 @@ export default function ScannerPage() {
   const hasResults = !!jobId;
   // Fall back to "All" if the selected category no longer exists (e.g. after an edit).
   const activeCategoryFilter =
-    categoryFilter && summaryByCategory.some((s) => s.category === categoryFilter)
+    categoryFilter &&
+    (isDirectionFilter(categoryFilter) || summaryByCategory.some((s) => s.category === categoryFilter))
       ? categoryFilter
       : null;
 

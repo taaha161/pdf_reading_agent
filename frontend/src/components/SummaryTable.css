@@ -110,3 +110,20 @@
   color: var(--color-on-primary, #fff);
   font-weight: 600;
 }
+
+.summary-direction {
+  font-weight: 600;
+}
+
+.summary-table .summary-direction--credit {
+  color: #15803d;
+}
+
+.summary-table .summary-direction--debit {
+  color: var(--color-error);
+}
+
+/* Separate the Credits / Debits totals from the per-category rows. */
+.summary-table tr.summary-row--direction-end td {
+  border-bottom: 2px solid var(--color-border);
+}
