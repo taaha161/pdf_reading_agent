@@ -276,21 +276,23 @@ def _parse_amount(amount_str: str) -> float:
 
 
 def _summary_by_category(transactions: list[dict]) -> list[tuple[str, float]]:
-    """Group by category. For Income: sum credits (inflow). For other categories: sum debits (outflow)."""
-    totals: dict[str, float] = {}
+    """Group by category. Income, and any category that has only credits (e.g. "Cash Deposits",
+    "From: <name>"), sums credits (money in). Every other category sums debits (money out)."""
+    debits: dict[str, float] = {}
+    credits: dict[str, float] = {}
+    has_debit: set[str] = set()
     for t in transactions:
         magnitude = abs(_parse_amount(t.get("amount")))
-        is_debit = str(t.get("type", "")).lower() == "debit"
         cat = str(t.get("category", "")).strip() or "Other"
-        if cat == "Income":
-            # Income: count credits only (money in)
-            if is_debit:
-                magnitude = 0.0
+        if str(t.get("type", "")).lower() == "debit":
+            has_debit.add(cat)
+            debits[cat] = debits.get(cat, 0) + magnitude
         else:
-            # All other categories: count debits only (money out)
-            if not is_debit:
-                magnitude = 0.0
-        totals[cat] = totals.get(cat, 0) + magnitude
+            credits[cat] = credits.get(cat, 0) + magnitude
+    totals = {
+        cat: credits.get(cat, 0.0) if cat == "Income" or cat not in has_debit else debits[cat]
+        for cat in debits.keys() | credits.keys()
+    }
     return sorted(totals.items(), key=lambda x: -x[1])
 
 
