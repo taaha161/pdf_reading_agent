@@ -4,11 +4,11 @@ import logging
 import os
 import re
 import time
-from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable
 
 from google import genai
-from google.genai.types import GenerateContentConfig
+from google.genai.types import FinishReason, GenerateContentConfig, ThinkingConfig, ThinkingLevel
 
 logger = logging.getLogger("statement_agent")
 
@@ -58,9 +58,20 @@ Use the FULL description, reference, and memo to infer merchant or purpose. Pick
 - Other: only when the transaction clearly does not fit any of the above; avoid overusing.
 """
 
-# Max chars of statement text to send to extraction in one go
+EXTRACTION_MODEL = "gemini-3.1-flash-lite-preview"
+# Text sent to the model, used only by the zero-transaction fallback.
 EXTRACTION_TEXT_CAP = 100000
-EXTRACTION_CHUNK_OVERLAP = 3000
+# Chars of statement text per extraction call. Output is ~1 JSON object per table row, so the
+# chunk must stay small enough that the full array fits in EXTRACTION_MAX_OUTPUT_TOKENS.
+# At 100k chars a 580-row statement overflowed and whole chunks were silently dropped.
+# Chunks are cut on line boundaries (a markdown table row is one line), so they don't overlap:
+# overlapping chunks re-extracted boundary rows with slightly different wording, which made
+# them impossible to dedupe reliably.
+EXTRACTION_CHUNK_CHARS = 20000
+EXTRACTION_MAX_OUTPUT_TOKENS = 65536
+EXTRACTION_MAX_PARALLEL = 6
+# A truncated chunk is split in half and retried; below this size we salvage what parsed.
+EXTRACTION_MIN_SPLIT_CHARS = 2000
 
 
 def _get_client() -> genai.Client:
@@ -195,7 +206,7 @@ def _parse_currency_from_response(response_text: str) -> str | None:
     for line in response_text.splitlines():
         line = line.strip()
         if line.upper().startswith("CURRENCY:"):
-            code = line[9:].strip()
+            code = line[9:].strip().strip("`").strip()
             if not code or code.upper() == "UNKNOWN":
                 return None
             return code
@@ -229,44 +240,107 @@ def _infer_currency_fallback(raw_text: str, client: genai.Client) -> str | None:
         return None
 
 
-def _generate(client: genai.Client, system: str, user_content: str, max_tokens: int = 32768) -> str:
-    """Single Gemini generate_content call with system instruction."""
+def _generate_with_reason(
+    client: genai.Client, system: str, user_content: str, max_tokens: int = 32768
+) -> tuple[str, Any]:
+    """Single Gemini call. Returns (text, finish_reason). Thinking is kept minimal because
+    thinking tokens count against max_output_tokens and this is a transcription task."""
     response = client.models.generate_content(
-        model="gemini-3.1-flash-lite-preview",
+        model=EXTRACTION_MODEL,
         contents=user_content,
         config=GenerateContentConfig(
             system_instruction=system,
             temperature=1.0,
             max_output_tokens=max_tokens,
+            thinking_config=ThinkingConfig(thinking_level=ThinkingLevel.MINIMAL),
         ),
     )
-    return (response.text or "").strip()
+    candidates = getattr(response, "candidates", None) or []
+    reason = getattr(candidates[0], "finish_reason", None) if candidates else None
+    return (response.text or "").strip(), reason
 
 
-def _tx_key(t: dict) -> tuple[str, str, str]:
-    return (str(t.get("date", "")), str(t.get("description", "")), str(t.get("amount", "")))
+def _generate(client: genai.Client, system: str, user_content: str, max_tokens: int = 32768) -> str:
+    """Single Gemini generate_content call with system instruction."""
+    return _generate_with_reason(client, system, user_content, max_tokens)[0]
 
 
-def _merge_chunk_transactions(chunk_results: list[list]) -> list[dict]:
+def _split_into_chunks(text: str, size: int) -> list[str]:
+    """Split on line boundaries into non-overlapping chunks of at most ~size chars, so table rows
+    are never cut. A single line longer than size becomes its own chunk."""
+    chunks: list[str] = []
+    current: list[str] = []
+    n = 0
+    for line in text.splitlines(keepends=True):
+        if current and n + len(line) > size:
+            chunks.append("".join(current))
+            current, n = [], 0
+        current.append(line)
+        n += len(line)
+    if current:
+        chunks.append("".join(current))
+    return chunks
+
+
+def _split_in_half(text: str) -> list[str]:
+    """Split at the line boundary nearest the middle (no overlap)."""
+    mid = len(text) // 2
+    cut = text.rfind("\n", 0, mid)
+    if cut <= 0:
+        cut = text.find("\n", mid)
+    if cut <= 0 or cut >= len(text) - 1:
+        return [text]
+    return [text[: cut + 1], text[cut + 1 :]]
+
+
+def _is_truncated(reason: Any) -> bool:
+    return reason == FinishReason.MAX_TOKENS or str(reason).endswith("MAX_TOKENS")
+
+
+def _extract_chunk(
+    client: genai.Client, system: str, user_template: str, text: str
+) -> tuple[list[dict], str | None]:
     """
-    Merge per-chunk transaction lists. Adjacent chunks share EXTRACTION_CHUNK_OVERLAP chars, so a
-    row in the overlap can be extracted twice: drop a row from chunk N only while chunk N-1 still
-    has an unmatched row with the same key. Never dedupe within a chunk: identical
-    date/description/amount rows are legitimate repeat transactions.
+    Extract one chunk. If the model hit the output limit or returned unparseable JSON, split the
+    chunk in half and retry each half, so rows are never silently dropped. Returns (rows, currency).
     """
-    merged: list[dict] = []
-    prev_counts: Counter = Counter()
-    for chunk_tx in chunk_results:
-        rows = [t for t in chunk_tx if isinstance(t, dict)]
-        budget = prev_counts.copy()
-        for t in rows:
-            key = _tx_key(t)
-            if budget[key] > 0:
-                budget[key] -= 1
-                continue
-            merged.append(t)
-        prev_counts = Counter(_tx_key(t) for t in rows)
-    return merged
+    out, reason = _generate_with_reason(
+        client, system, user_template.format(text=text), EXTRACTION_MAX_OUTPUT_TOKENS
+    )
+    json_str = _extract_json_block(out)
+    rest = out.replace(json_str, "", 1).strip() if json_str else out
+    currency = _parse_currency_from_response(rest)
+    rows: list | None
+    try:
+        rows = json.loads(json_str)
+        if not isinstance(rows, list):
+            rows = None
+    except json.JSONDecodeError:
+        rows = None
+
+    if rows is not None and not _is_truncated(reason):
+        return [t for t in rows if isinstance(t, dict)], currency
+
+    halves = _split_in_half(text) if len(text) >= EXTRACTION_MIN_SPLIT_CHARS else [text]
+    if len(halves) == 2:
+        logger.warning(
+            "extract_and_categorize: chunk of %d chars %s (finish_reason=%s); splitting in half and retrying",
+            len(text),
+            "truncated" if _is_truncated(reason) else "returned unparseable JSON",
+            reason,
+        )
+        results = [_extract_chunk(client, system, user_template, h) for h in halves]
+        return results[0][0] + results[1][0], results[0][1] or results[1][1]
+
+    salvaged = rows if rows is not None else _parse_transaction_objects_from_text(out)
+    logger.warning(
+        "extract_and_categorize: chunk of %d chars could not be split further (finish_reason=%s); "
+        "salvaged %d rows",
+        len(text),
+        reason,
+        len(salvaged),
+    )
+    return [t for t in salvaged if isinstance(t, dict)], currency
 
 
 def extract_and_categorize(
@@ -304,57 +378,49 @@ def extract_and_categorize(
     )
     user_template = "Extract and categorize all transactions from this bank statement markdown. Output the JSON array then a line CURRENCY: ...\n\n{text}"
 
-    if len(text_trimmed) <= EXTRACTION_TEXT_CAP:
-        chunks = [text_trimmed]
-    else:
-        chunks = []
-        start = 0
-        while start < len(text_trimmed):
-            end = start + EXTRACTION_TEXT_CAP
-            chunks.append(text_trimmed[start:end])
-            if end >= len(text_trimmed):
-                break
-            start = end - EXTRACTION_CHUNK_OVERLAP
-        logger.info(
-            "extract_and_categorize: text len=%d, splitting into %d chunks (%.2f s)",
-            len(text_trimmed),
-            len(chunks),
-            time.perf_counter() - t0,
-        )
+    chunks = _split_into_chunks(text_trimmed, EXTRACTION_CHUNK_CHARS)
+    logger.info(
+        "extract_and_categorize: text len=%d, %d chunk(s), up to %d in parallel (%.2f s)",
+        len(text_trimmed),
+        len(chunks),
+        EXTRACTION_MAX_PARALLEL,
+        time.perf_counter() - t0,
+    )
 
-    chunk_results: list[list] = []
-    currency: str | None = None
-    for chunk_idx, text_input in enumerate(chunks):
-        if on_chunk:
-            on_chunk(chunk_idx + 1, len(chunks))
-        logger.info(
-            "extract_and_categorize: single-call extract+categorize+currency (chunk %d/%d)... (total so far %.2f s)",
-            chunk_idx + 1,
-            len(chunks),
-            time.perf_counter() - t0,
-        )
-        t1 = time.perf_counter()
-        out = _generate(client, combined_system, user_template.format(text=text_input))
-        logger.info(
-            "extract_and_categorize: LLM done (%.2f s this chunk, total %.2f s)",
-            time.perf_counter() - t1,
-            time.perf_counter() - t0,
-        )
-        json_str = _extract_json_block(out)
-        if not currency:
-            rest = out.replace(json_str, "", 1).strip() if json_str else out
-            currency = _parse_currency_from_response(rest)
-        try:
-            chunk_tx = json.loads(json_str)
-        except json.JSONDecodeError:
-            chunk_tx = []
-        if isinstance(chunk_tx, list):
-            chunk_results.append(chunk_tx)
+    results: list[tuple[list[dict], str | None] | None] = [None] * len(chunks)
+    if on_chunk:
+        on_chunk(1, len(chunks))
+    done = 0
+    with ThreadPoolExecutor(max_workers=min(EXTRACTION_MAX_PARALLEL, len(chunks))) as pool:
+        futures = {
+            pool.submit(_extract_chunk, client, combined_system, user_template, c): i
+            for i, c in enumerate(chunks)
+        }
+        for fut in as_completed(futures):
+            idx = futures[fut]
+            results[idx] = fut.result()
+            done += 1
+            logger.info(
+                "extract_and_categorize: chunk %d/%d done, %d rows (%d/%d complete, total %.2f s)",
+                idx + 1,
+                len(chunks),
+                len(results[idx][0]),
+                done,
+                len(chunks),
+                time.perf_counter() - t0,
+            )
+            # Progress callback runs on this (caller's) thread, never in workers.
+            if on_chunk and done < len(chunks):
+                on_chunk(done + 1, len(chunks))
 
-    transactions = _merge_chunk_transactions(chunk_results)
+    # Chunks don't overlap, so concatenating in order keeps every row, including identical
+    # repeat transactions (same date/description/amount), which are legitimate.
+    transactions = [t for r in results if r is not None for t in r[0]]
+    currency: str | None = next((r[1] for r in results if r is not None and r[1]), None)
+
     if len(chunks) > 1 and transactions:
         logger.info(
-            "extract_and_categorize: merged %d chunks -> %d transactions (%.2f s)",
+            "extract_and_categorize: combined %d chunks -> %d transactions (%.2f s)",
             len(chunks),
             len(transactions),
             time.perf_counter() - t0,
