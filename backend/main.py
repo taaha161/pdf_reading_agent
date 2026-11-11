@@ -57,6 +57,7 @@ from models.schemas import (
 )
 from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
 from services.chat_service import get_reply
+from services.summary import _parse_amount, _summary_by_category  # noqa: F401
 from services.remote_pdf import RemotePdfError, RemotePdfTooLarge, fetch_pdf
 from services.csv_export import summary_to_csv, transactions_to_csv
 from services.xlsx_export import XLSX_MIME, summary_to_xlsx, transactions_to_xlsx
@@ -264,36 +265,6 @@ MAX_FILE_SIZE_SIGNED_IN = 30 * _MB  # free account
 MAX_FILE_SIZE_PAID = 50 * _MB  # active subscription
 FILE_TOO_LARGE_CODE = "FILE_TOO_LARGE"
 ALLOWED_CONTENT_TYPE = "application/pdf"
-
-
-def _parse_amount(amount_str: str) -> float:
-    """Parse amount string (may contain commas or leading minus) to float. Returns magnitude."""
-    raw = str(amount_str or "0").replace(",", "").strip()
-    try:
-        return float(raw) if raw else 0.0
-    except (ValueError, TypeError):
-        return 0.0
-
-
-def _summary_by_category(transactions: list[dict]) -> list[tuple[str, float]]:
-    """Group by category. Income, and any category that has only credits (e.g. "Cash Deposits",
-    "From: <name>"), sums credits (money in). Every other category sums debits (money out)."""
-    debits: dict[str, float] = {}
-    credits: dict[str, float] = {}
-    has_debit: set[str] = set()
-    for t in transactions:
-        magnitude = abs(_parse_amount(t.get("amount")))
-        cat = str(t.get("category", "")).strip() or "Other"
-        if str(t.get("type", "")).lower() == "debit":
-            has_debit.add(cat)
-            debits[cat] = debits.get(cat, 0) + magnitude
-        else:
-            credits[cat] = credits.get(cat, 0) + magnitude
-    totals = {
-        cat: credits.get(cat, 0.0) if cat == "Income" or cat not in has_debit else debits[cat]
-        for cat in debits.keys() | credits.keys()
-    }
-    return sorted(totals.items(), key=lambda x: -x[1])
 
 
 @app.get("/health")
