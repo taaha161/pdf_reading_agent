@@ -670,6 +670,8 @@ export default function ScannerPage() {
                   currency={currency}
                   activeCategory={activeCategoryFilter}
                   onSelectCategory={setCategoryFilter}
+                  transactions={transactions}
+                  onDownloadError={setDownloadError}
                 />
                 <ResultsTable
                   transactions={transactions}

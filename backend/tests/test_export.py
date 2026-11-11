@@ -48,3 +48,39 @@ def test_xlsx_without_categories(client):
 
 def test_rejects_unknown_format(client):
     assert _export(client, format="pdf").status_code == 422
+
+
+SUMMARY_ROWS = [
+    {"date": "2024-01-01", "description": "Coffee", "amount": "-4.50", "type": "debit", "category": "Food"},
+    {"date": "2024-01-03", "description": "Lunch", "amount": "10.00", "type": "debit", "category": "Food"},
+    {"date": "2024-01-02", "description": "Salary", "amount": "1,200.00", "type": "credit", "category": "Income"},
+    {"date": "2024-01-04", "description": "Misc", "amount": "3.00", "type": "debit", "category": "=cmd"},
+]
+
+
+def _export_summary(client, fmt):
+    return client.post("/api/export", json={"transactions": SUMMARY_ROWS, "format": fmt, "kind": "summary"})
+
+
+def test_summary_csv(client):
+    r = _export_summary(client, "csv")
+    assert r.status_code == 200
+    assert 'filename="statement-summary.csv"' in r.headers["content-disposition"]
+    assert r.text.splitlines() == ["category,total", "Income,1200.00", "Food,14.50", "=cmd,3.00"]
+
+
+def test_summary_xlsx(client):
+    r = _export_summary(client, "xlsx")
+    assert r.status_code == 200
+    assert 'filename="statement-summary.xlsx"' in r.headers["content-disposition"]
+    ws = load_workbook(io.BytesIO(r.content)).active
+    assert [c.value for c in ws[1]] == ["Category", "Total"]
+    assert [(ws.cell(i, 1).value, ws.cell(i, 2).value) for i in range(2, 5)] == [
+        ("Income", 1200.0), ("Food", 14.5), ("=cmd", 3.0)
+    ]
+    assert ws["A4"].data_type == "s"  # text, not a formula
+
+
+def test_rejects_unknown_kind(client):
+    r = client.post("/api/export", json={"transactions": ROWS, "kind": "pivot"})
+    assert r.status_code == 422

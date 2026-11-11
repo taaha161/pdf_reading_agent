@@ -320,13 +320,15 @@ function exportRows(transactions) {
 
 /**
  * Download the current transactions as CSV or Excel, with or without the category column.
+ * kind "summary" downloads the category totals table (built server-side from the same rows).
  * @param {"csv"|"xlsx"} format
+ * @param {"transactions"|"summary"} kind
  */
-export async function exportTransactions(transactions, { format = "csv", includeCategories = true } = {}) {
+export async function exportTransactions(transactions, { format = "csv", includeCategories = true, kind = "transactions" } = {}) {
   const res = await fetch(`${API_BASE}/api/export`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ transactions: exportRows(transactions), format, include_categories: includeCategories }),
+    body: JSON.stringify({ transactions: exportRows(transactions), format, include_categories: includeCategories, kind }),
   });
   if (!res.ok) {
     if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
@@ -334,7 +336,7 @@ export async function exportTransactions(transactions, { format = "csv", include
   }
   const disposition = res.headers.get("Content-Disposition") || "";
   const filename = /filename="([^"]+)"/.exec(disposition)?.[1]
-    || `statement${includeCategories ? "" : "-uncategorized"}.${format}`;
+    || (kind === "summary" ? `statement-summary.${format}` : `statement${includeCategories ? "" : "-uncategorized"}.${format}`);
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

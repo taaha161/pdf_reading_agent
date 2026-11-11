@@ -14,8 +14,12 @@ function ChevronIcon() {
   );
 }
 
-/** "Download" button with CSV / Excel, with or without categories. */
-export default function DownloadMenu({ transactions, onError }) {
+/**
+ * "Download" button with CSV / Excel, with or without categories.
+ * kind="summary" downloads the category totals table instead (no category toggle).
+ */
+export default function DownloadMenu({ transactions, onError, kind = "transactions" }) {
+  const isSummary = kind === "summary";
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(null);
   const wrapRef = useRef(null);
@@ -40,7 +44,7 @@ export default function DownloadMenu({ transactions, onError }) {
     const key = `${format}-${includeCategories}`;
     setBusy(key);
     try {
-      await exportTransactions(transactions, { format, includeCategories });
+      await exportTransactions(transactions, { format, includeCategories, kind });
       setOpen(false);
     } catch (e) {
       onError?.(e.message);
@@ -63,7 +67,23 @@ export default function DownloadMenu({ transactions, onError }) {
       </button>
       {open && (
         <div className="download-menu-panel" role="menu">
-          {OPTIONS.map(({ format, group }) => (
+          {isSummary && OPTIONS.map(({ format, group }) => {
+            const key = `${format}-true`;
+            return (
+              <button
+                key={key}
+                type="button"
+                role="menuitem"
+                className="download-menu-item"
+                onClick={() => download(format, true)}
+                disabled={busy !== null}
+              >
+                <span>{group}</span>
+                {busy === key && <span className="download-menu-spinner" aria-label="Downloading" />}
+              </button>
+            );
+          })}
+          {!isSummary && OPTIONS.map(({ format, group }) => (
             <div key={format} className="download-menu-group" role="group" aria-label={group}>
               <p className="download-menu-heading">{group}</p>
               {[true, false].map((withCategories) => {

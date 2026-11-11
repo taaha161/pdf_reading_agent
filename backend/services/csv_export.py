@@ -20,3 +20,13 @@ def transactions_to_csv(transactions: list[dict[str, Any]], include_categories: 
     for row in transactions:
         writer.writerow({f: row.get(f) or "" for f in fields})
     return out.getvalue()
+
+
+def summary_to_csv(summary: list[tuple[str, float]]) -> str:
+    """Return CSV string with columns: category, total (two decimals)."""
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(["category", "total"])
+    for category, total in summary:
+        writer.writerow([category, f"{total:.2f}"])
+    return out.getvalue()

@@ -58,8 +58,8 @@ from models.schemas import (
 from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
 from services.chat_service import get_reply
 from services.remote_pdf import RemotePdfError, RemotePdfTooLarge, fetch_pdf
-from services.csv_export import transactions_to_csv
-from services.xlsx_export import XLSX_MIME, transactions_to_xlsx
+from services.csv_export import summary_to_csv, transactions_to_csv
+from services.xlsx_export import XLSX_MIME, summary_to_xlsx, transactions_to_xlsx
 from services.notifications import (
     notify_email_capture,
     notify_feedback,
@@ -940,8 +940,15 @@ def _rows_from_trial_csv(csv_content: str) -> list[dict] | None:
     return list(reader)
 
 
-def _build_export(rows: list[dict], fmt: str, include_categories: bool) -> tuple[bytes, str, str]:
+def _build_export(
+    rows: list[dict], fmt: str, include_categories: bool, kind: str = "transactions"
+) -> tuple[bytes, str, str]:
     """Return (file bytes, filename, media type) for a CSV or Excel export."""
+    if kind == "summary":
+        summary = _summary_by_category(rows)
+        if fmt == "xlsx":
+            return summary_to_xlsx(summary), "statement-summary.xlsx", XLSX_MIME
+        return summary_to_csv(summary).encode("utf-8"), "statement-summary.csv", "text/csv; charset=utf-8"
     suffix = "" if include_categories else "-uncategorized"
     if fmt == "xlsx":
         return transactions_to_xlsx(rows, include_categories), f"statement{suffix}.xlsx", XLSX_MIME
@@ -958,7 +965,7 @@ def export_transactions(request: Request, body: ExportRequest):
     edits), so it serves both logged-in and anonymous trial users.
     """
     rows = [t.model_dump() for t in body.transactions]
-    content, filename, media_type = _build_export(rows, body.format, body.include_categories)
+    content, filename, media_type = _build_export(rows, body.format, body.include_categories, body.kind)
     return Response(
         content=content,
         media_type=media_type,

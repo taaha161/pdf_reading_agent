@@ -1,3 +1,4 @@
+import DownloadMenu from "./DownloadMenu";
 import "./SummaryTable.css";
 
 // Map common currency names to ISO 4217 codes for Intl.NumberFormat
@@ -44,6 +45,8 @@ export default function SummaryTable({
   currency,
   activeCategory = null,
   onSelectCategory,
+  transactions,
+  onDownloadError,
 }) {
   if (!summaryByCategory?.length) return null;
 
@@ -72,7 +75,12 @@ export default function SummaryTable({
 
   return (
     <section className="summary-section" data-clarity-mask="true">
-      <h2>Summary by category</h2>
+      <div className="summary-header">
+        <h2>Summary by category</h2>
+        {transactions?.length > 0 && (
+          <DownloadMenu transactions={transactions} onError={onDownloadError} kind="summary" />
+        )}
+      </div>
       {interactive && (
         <p className="summary-hint">Click a category to filter transactions.</p>
       )}

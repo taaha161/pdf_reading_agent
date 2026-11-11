@@ -117,6 +117,8 @@ class PurgeJobsDataRequest(BaseModel):
 
 
 ExportFormat = Literal["csv", "xlsx"]
+# "summary" exports the category totals table instead of the transaction rows.
+ExportKind = Literal["transactions", "summary"]
 MAX_EXPORT_TRANSACTIONS = 20_000
 
 
@@ -133,6 +135,7 @@ class ExportRequest(BaseModel):
     transactions: list[ExportTransaction] = Field(..., max_length=MAX_EXPORT_TRANSACTIONS)
     format: ExportFormat = "csv"
     include_categories: bool = True
+    kind: ExportKind = "transactions"
 
 
 class EmailSpreadsheetRequest(BaseModel):
