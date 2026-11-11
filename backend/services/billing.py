@@ -164,7 +164,7 @@ def handle_webhook(payload: bytes, signature: str) -> tuple[bool, str]:
     # Support both the canonical invoice event type and the variant emitted by some Stripe tools
     if event.type in ("invoice.payment_succeeded", "invoice_payment.paid"):
         return _handle_invoice_paid(event)
-    if event.type == "customer.subscription.updated":
+    if event.type in ("customer.subscription.created", "customer.subscription.updated"):
         return _handle_subscription_updated(event)
     if event.type == "customer.subscription.deleted":
         return _handle_subscription_deleted(event)
@@ -177,7 +177,7 @@ def _handle_invoice_paid(event) -> tuple[bool, str]:
     invoice = event["data"]["object"]
     billing_reason = invoice.get("billing_reason")
     customer_id = invoice.get("customer")
-    subscription_id = invoice.get("subscription")
+    subscription_id = _invoice_subscription_id(invoice)
     if not customer_id:
         return True, "No customer"
 
@@ -310,6 +310,22 @@ def _handle_checkout_completed(event) -> tuple[bool, str]:
         metadata,
     )
     return True, "Top-up applied (checkout.session.completed)"
+
+
+def _invoice_subscription_id(invoice) -> str | None:
+    """Subscription id on an invoice (older and newer Stripe API shapes).
+
+    From API 2025-03-31.basil on, `invoice.subscription` is gone and the id lives
+    at `invoice.parent.subscription_details.subscription`. Reading only the old
+    field made subscription invoices look like top-ups and ignored $0 invoices.
+    """
+    sub = invoice.get("subscription")
+    if not sub:
+        details = (invoice.get("parent") or {}).get("subscription_details") or {}
+        sub = details.get("subscription")
+    if isinstance(sub, dict):  # expanded object
+        sub = sub.get("id")
+    return sub or None
 
 
 def _invoice_subscription_metadata(invoice) -> dict:
