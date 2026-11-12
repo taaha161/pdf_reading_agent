@@ -1,11 +1,14 @@
-"""Turn list of transaction dicts into an Excel (.xlsx) workbook."""
+"""Turn list of transaction dicts into an Excel (.xlsx) workbook.
+
+Written with XlsxWriter, which stores text in a shared-strings table the way Excel does.
+openpyxl 3.1 writes inline strings instead; that is valid, but many phone viewers
+(e.g. Android file/document previewers) ignore them and show only the number cells.
+"""
 import io
 import re
 from typing import Any
 
-from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, PatternFill
-from openpyxl.utils import get_column_letter
+import xlsxwriter
 
 from services.csv_export import export_fields
 
@@ -14,6 +17,7 @@ XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 _HEADERS = {"date": "Date", "description": "Description", "amount": "Amount", "type": "Type", "category": "Category"}
 _WIDTHS = {"date": 12, "description": 48, "amount": 14, "type": 10, "category": 20}
 _NUMBER_RE = re.compile(r"^-?\d+(\.\d+)?$")
+_MONEY_FORMAT = "#,##0.00"
 
 
 def _amount_value(raw: Any) -> float | str:
@@ -22,59 +26,57 @@ def _amount_value(raw: Any) -> float | str:
     return float(text) if _NUMBER_RE.match(text) else str(raw or "")
 
 
-def _write_header(ws, labels: list[str]) -> None:
-    ws.append(labels)
-    for cell in ws[1]:
-        cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = PatternFill("solid", fgColor="2563EB")
-        cell.alignment = Alignment(vertical="center")
-
-
-def _save(wb: Workbook) -> bytes:
+def _new_workbook(sheet_name: str):
     out = io.BytesIO()
-    wb.save(out)
-    return out.getvalue()
+    # in_memory: no temp files; strings_to_*: False so text like "=1+1" or "http://..." stays plain text.
+    wb = xlsxwriter.Workbook(
+        out,
+        {
+            "in_memory": True,
+            "strings_to_formulas": False,
+            "strings_to_urls": False,
+            "strings_to_numbers": False,
+        },
+    )
+    ws = wb.add_worksheet(sheet_name)
+    header = wb.add_format({"bold": True, "font_color": "#FFFFFF", "bg_color": "#2563EB", "valign": "vcenter"})
+    money = wb.add_format({"num_format": _MONEY_FORMAT})
+    return out, wb, ws, header, money
 
 
 def transactions_to_xlsx(transactions: list[dict[str, Any]], include_categories: bool = True) -> bytes:
     """Return .xlsx bytes: bold frozen header, numeric amounts, sized columns, autofilter."""
     fields = export_fields(include_categories)
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Transactions"
+    out, wb, ws, header, money = _new_workbook("Transactions")
 
-    _write_header(ws, [_HEADERS[f] for f in fields])
+    for col, field in enumerate(fields):
+        ws.write_string(0, col, _HEADERS[field], header)
+        ws.set_column(col, col, _WIDTHS[field])
 
-    amount_col = fields.index("amount") + 1
-    for row_idx, tx in enumerate(transactions, start=2):
-        for col_idx, field in enumerate(fields, start=1):
+    for row, tx in enumerate(transactions, start=1):
+        for col, field in enumerate(fields):
             value = _amount_value(tx.get(field)) if field == "amount" else str(tx.get(field) or "")
-            cell = ws.cell(row=row_idx, column=col_idx, value=value)
-            if isinstance(value, str) and value.startswith("="):
-                # openpyxl treats a leading "=" as a formula; keep it as plain text.
-                cell.data_type = "s"
-            if col_idx == amount_col and isinstance(value, float):
-                cell.number_format = "#,##0.00"
+            if isinstance(value, float):
+                ws.write_number(row, col, value, money)
+            elif value:
+                ws.write_string(row, col, value)
 
-    for col_idx, field in enumerate(fields, start=1):
-        ws.column_dimensions[get_column_letter(col_idx)].width = _WIDTHS[field]
-    ws.freeze_panes = "A2"
-    ws.auto_filter.ref = ws.dimensions
-    return _save(wb)
+    ws.freeze_panes(1, 0)
+    ws.autofilter(0, 0, max(len(transactions), 1), len(fields) - 1)
+    wb.close()
+    return out.getvalue()
 
 
 def summary_to_xlsx(summary: list[tuple[str, float]]) -> bytes:
     """Return .xlsx bytes for the category totals table (numeric totals)."""
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Summary"
-    _write_header(ws, ["Category", "Total"])
-    for row_idx, (category, total) in enumerate(summary, start=2):
-        cat_cell = ws.cell(row=row_idx, column=1, value=category)
-        if category.startswith("="):
-            cat_cell.data_type = "s"  # keep as text, not a formula
-        ws.cell(row=row_idx, column=2, value=round(total, 2)).number_format = "#,##0.00"
-    ws.column_dimensions["A"].width = 28
-    ws.column_dimensions["B"].width = 16
-    ws.freeze_panes = "A2"
-    return _save(wb)
+    out, wb, ws, header, money = _new_workbook("Summary")
+    ws.write_string(0, 0, "Category", header)
+    ws.write_string(0, 1, "Total", header)
+    for row, (category, total) in enumerate(summary, start=1):
+        ws.write_string(row, 0, str(category))
+        ws.write_number(row, 1, round(total, 2), money)
+    ws.set_column(0, 0, 28)
+    ws.set_column(1, 1, 16)
+    ws.freeze_panes(1, 0)
+    wb.close()
+    return out.getvalue()
