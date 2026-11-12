@@ -323,8 +323,9 @@ function exportRows(transactions) {
  * kind "summary" downloads the category totals table (built server-side from the same rows).
  * @param {"csv"|"xlsx"} format
  * @param {"transactions"|"summary"} kind
+ * @param {string} [filenameBase] name for the file without extension (defaults to the server's name)
  */
-export async function exportTransactions(transactions, { format = "csv", includeCategories = true, kind = "transactions" } = {}) {
+export async function exportTransactions(transactions, { format = "csv", includeCategories = true, kind = "transactions", filenameBase } = {}) {
   const res = await fetch(`${API_BASE}/api/export`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -335,7 +336,8 @@ export async function exportTransactions(transactions, { format = "csv", include
     throw new Error("Failed to download file");
   }
   const disposition = res.headers.get("Content-Disposition") || "";
-  const filename = /filename="([^"]+)"/.exec(disposition)?.[1]
+  const filename = (filenameBase && `${filenameBase}.${format}`)
+    || /filename="([^"]+)"/.exec(disposition)?.[1]
     || (kind === "summary" ? `statement-summary.${format}` : `statement${includeCategories ? "" : "-uncategorized"}.${format}`);
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
@@ -361,7 +363,7 @@ export async function sendChatMessage(jobId, message) {
     throw new Error(msg);
   }
   const data = await res.json();
-  return data.reply;
+  return { reply: data.reply, transactions: data.transactions || [] };
 }
 
 export async function updateJobTransactions(jobId, transactions) {

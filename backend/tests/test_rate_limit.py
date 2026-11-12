@@ -21,7 +21,7 @@ def mock_chat_deps():
     }
 
     with patch("main.get_job", return_value=minimal_job), patch(
-        "main.get_reply", return_value="Test reply"
+        "main.get_reply", return_value=("Test reply", [])
     ):
         yield
 

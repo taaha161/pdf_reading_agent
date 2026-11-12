@@ -22,6 +22,7 @@ CHAT_MODEL = "gemini-2.5-flash"
 MAX_CSV_CHARS = 400_000
 QUERY_MAX_ROWS = 200
 MAX_TOOL_CALLS = 8
+EXPORT_FIELDS = ("date", "description", "amount", "type", "category")
 
 SYSTEM_INSTRUCTION = """You answer questions about ONE bank statement that the user is looking at in a results table and a summary table.
 
@@ -40,6 +41,11 @@ Ground rules:
   figure can be matched to the summary table.
 - If the data cannot answer the question, say so plainly instead of guessing.
 - Use the statement currency when showing amounts. Be concise; use a short list or table when listing rows.
+- When the user asks to see, list, give, find, show or export transactions (e.g. "give me transactions from John",
+  "show all ATM withdrawals in July"), call attach_transactions with filters that select exactly those rows. The
+  user then gets a button to download them as CSV/Excel. Mention the download in one short sentence, and list the
+  rows in the reply too (if there are more than 20, list the first 20 and say the download has them all).
+  Only the last attach_transactions call is attached, so make it the one that matches the request.
 """
 
 
@@ -86,15 +92,15 @@ def official_totals(transactions: list[dict]) -> dict[str, Any]:
     }
 
 
-def query_rows(
+def _match(
     transactions: list[dict],
     category: str = "",
     category_contains: str = "",
     description_contains: str = "",
     date_contains: str = "",
     type: str = "",
-) -> dict[str, Any]:
-    """Filter rows (all filters ANDed, case-insensitive) and return exact count and sums."""
+) -> list[tuple[int, dict]]:
+    """(row number, row) for rows passing every filter (ANDed, case-insensitive)."""
     cat_eq, cat_in, desc_in, date_in = _norm(category), _norm(category_contains), _norm(description_contains), _norm(date_contains)
     want_type = _norm(type)
     matched = []
@@ -111,6 +117,19 @@ def query_rows(
         if want_type in ("credit", "debit") and str(t.get("type", "")).lower() != want_type:
             continue
         matched.append((i, t))
+    return matched
+
+
+def query_rows(
+    transactions: list[dict],
+    category: str = "",
+    category_contains: str = "",
+    description_contains: str = "",
+    date_contains: str = "",
+    type: str = "",
+) -> dict[str, Any]:
+    """Filter rows (all filters ANDed, case-insensitive) and return exact count and sums."""
+    matched = _match(transactions, category, category_contains, description_contains, date_contains, type)
     credit = sum(abs(_parse_amount(t.get("amount"))) for _, t in matched if not _is_debit(t))
     debit = sum(abs(_parse_amount(t.get("amount"))) for _, t in matched if _is_debit(t))
     by_category: dict[str, dict[str, Any]] = {}
@@ -143,19 +162,36 @@ def query_rows(
     }
 
 
+def export_rows(
+    transactions: list[dict],
+    category: str = "",
+    category_contains: str = "",
+    description_contains: str = "",
+    date_contains: str = "",
+    type: str = "",
+) -> list[dict[str, str]]:
+    """Every matching row (no cap), with only the columns the CSV/Excel export takes."""
+    return [
+        {f: "" if t.get(f) is None else str(t.get(f)) for f in EXPORT_FIELDS}
+        for _, t in _match(transactions, category, category_contains, description_contains, date_contains, type)
+    ]
+
+
 def _numbered_csv(transactions: list[dict]) -> str:
     rows = [{**t, "description": re.sub(r"\s+", " ", str(t.get("description", ""))).strip()} for t in transactions]
     lines = transactions_to_csv(rows).splitlines()
     return "\n".join(["#," + lines[0]] + [f"{i},{line}" for i, line in enumerate(lines[1:], start=1)])
 
 
-def get_reply(job_data: dict[str, Any], message: str) -> str:
+def get_reply(job_data: dict[str, Any], message: str) -> tuple[str, list[dict[str, str]]]:
     """
     Answer `message` about the job. job_data: {"transactions": [...], "currency": "..."}.
+    Returns (reply, rows the model attached for CSV/Excel download; empty if none).
     """
     transactions = [t for t in (job_data.get("transactions") or []) if isinstance(t, dict)]
     if not transactions:
-        return "There are no transactions in this statement to answer from."
+        return "There are no transactions in this statement to answer from.", []
+    attached: list[dict[str, str]] = []
 
     def query_transactions(
         category: str = "",
@@ -181,6 +217,32 @@ def get_reply(job_data: dict[str, Any], message: str) -> str:
         """
         return query_rows(transactions, category, category_contains, description_contains, date_contains, type)
 
+    def attach_transactions(
+        category: str = "",
+        category_contains: str = "",
+        description_contains: str = "",
+        date_contains: str = "",
+        type: str = "",
+    ) -> dict:
+        """Attach the matching statement rows to your reply so the user can download them as CSV or Excel.
+        Use when the user asks to see, list, give, find or export transactions. Same filters as
+        query_transactions (optional, case-insensitive, ANDed). Each call replaces the previous attachment.
+
+        Args:
+            category: Exact category name as shown in the summary table.
+            category_contains: Part of a category name, e.g. a person's name.
+            description_contains: Text that must appear in the description, e.g. a name, merchant or "ATM".
+            date_contains: Text that must appear in the date as written in the statement, e.g. "Jul 2025".
+            type: "credit" (money in) or "debit" (money out).
+
+        Returns:
+            The same result as query_transactions (count, totals, by_category, rows), plus "attached_count".
+        """
+        attached[:] = export_rows(transactions, category, category_contains, description_contains, date_contains, type)
+        result = query_rows(transactions, category, category_contains, description_contains, date_contains, type)
+        result["attached_count"] = len(attached)
+        return result
+
     csv_text = _numbered_csv(transactions)
     truncated_note = ""
     if len(csv_text) > MAX_CSV_CHARS:
@@ -204,8 +266,8 @@ def get_reply(job_data: dict[str, Any], message: str) -> str:
         config=GenerateContentConfig(
             system_instruction=SYSTEM_INSTRUCTION,
             temperature=0,
-            tools=[query_transactions],
+            tools=[query_transactions, attach_transactions],
             automatic_function_calling=AutomaticFunctionCallingConfig(maximum_remote_calls=MAX_TOOL_CALLS),
         ),
     )
-    return (response.text or "").strip()
+    return (response.text or "").strip(), list(attached)
