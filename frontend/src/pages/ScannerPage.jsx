@@ -18,7 +18,7 @@ import { trackEvent } from "../lib/analytics";
 import { fileTooLarge, formatMB, maxFileBytes, MAX_FILE_BYTES_SIGNED_IN, MB } from "../lib/fileSize";
 import { trackLinkedInConversion, LINKEDIN_TRIAL_SCAN_CONVERSION_ID } from "../lib/linkedinConversions";
 import sampleStatement from "../lib/sampleStatement.json";
-import { isDirectionFilter } from "../lib/transactionDirection";
+import { isDirectionFilter, summaryByCategory as computeSummaryByCategory } from "../lib/transactionDirection";
 
 function ChatIcon() {
   return (
@@ -42,35 +42,6 @@ function pushDataLayer(data) {
   } catch {
     /* analytics must never break the scanner */
   }
-}
-
-function parseAmount(amountStr) {
-  const raw = String(amountStr ?? "0").replace(/,/g, "").trim();
-  if (!raw) return 0;
-  const num = Number.parseFloat(raw);
-  if (Number.isNaN(num)) return 0;
-  return Math.abs(num);
-}
-
-function computeSummaryByCategory(transactions) {
-  const totals = {};
-  for (const t of transactions || []) {
-    const type = String(t.type || "").toLowerCase();
-    const isDebit = type === "debit";
-    const category = (t.category || "").trim() || "Other";
-    let magnitude = parseAmount(t.amount);
-    if (category === "Income") {
-      if (isDebit) {
-        magnitude = 0;
-      }
-    } else if (!isDebit) {
-      magnitude = 0;
-    }
-    totals[category] = (totals[category] || 0) + magnitude;
-  }
-  return Object.entries(totals)
-    .sort((a, b) => b[1] - a[1])
-    .map(([category, total]) => ({ category, total }));
 }
 
 function escapeCsvValue(value) {
