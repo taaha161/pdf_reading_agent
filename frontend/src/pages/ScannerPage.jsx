@@ -663,15 +663,15 @@ export default function ScannerPage() {
                 type="button"
                 className="scanner-fab"
                 onClick={() => setChatOpen(true)}
-                aria-label="Open Validate CSV chat"
-                title="Validate using AI"
+                aria-label="Ask your statement"
+                title="Ask your statement"
               >
                 <span className="scanner-fab-icon" aria-hidden>
                   <ChatIcon />
                 </span>
                 <span className="scanner-fab-tooltip">
-                  <span className="scanner-fab-tooltip-text-full">Validate CSV – Ask about your transactions and categories</span>
-                  <span className="scanner-fab-tooltip-text-mobile">Validate using AI</span>
+                  <span className="scanner-fab-tooltip-text-full">Ask your statement – find, total and export transactions</span>
+                  <span className="scanner-fab-tooltip-text-mobile">Ask your statement</span>
                 </span>
               </button>
             </div>}
@@ -682,7 +682,10 @@ export default function ScannerPage() {
             {!isSample && <div className={`scanner-chat-drawer ${chatOpen ? "scanner-chat-drawer--open" : ""}`}>
               <div className="scanner-chat-drawer-inner">
                 <div className="scanner-chat-drawer-header">
-                  <h2 className="scanner-chat-drawer-title">Validate CSV</h2>
+                  <div>
+                    <h2 className="scanner-chat-drawer-title">Ask your statement</h2>
+                    <p className="scanner-chat-drawer-sub">Find, total and export any transactions</p>
+                  </div>
                   <button
                     type="button"
                     className="scanner-chat-drawer-close"

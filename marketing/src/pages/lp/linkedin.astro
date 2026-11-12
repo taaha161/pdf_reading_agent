@@ -16,6 +16,7 @@ import BankLogoMarquee from '../../components/BankLogoMarquee.astro';
 import HeroDropzone from '../../components/HeroDropzone.astro';
 import ProductVideo from '../../components/ProductVideo.astro';
 import SampleExport from '../../components/SampleExport.astro';
+import AskStatement from '../../components/AskStatement.astro';
 import logo from '../../assets/pdf_to_excel_logo.png';
 import { SITE_NAME } from '../../consts';
 
@@ -252,6 +253,9 @@ const faqs = [
         </div>
       </div>
     </section>
+
+    <!-- 4b. Ask your statement -->
+    <AskStatement cta="ask" href={SCAN_HREF} btnClass="js-cta" heading="Need one client's payments? Just ask." />
 
     <!-- 5. Coverage -->
     <section class="section section--tight">

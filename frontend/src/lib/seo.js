@@ -7,7 +7,7 @@ import { getPostBySlug } from "../pages/blogPosts";
 const APP_NAME = "Bank Statement Scanner";
 
 const defaultDescription =
-  "Upload a bank statement PDF to itemize, categorize, and validate transactions with AI—then export to CSV.";
+  "Convert bank statement PDFs into categorized Excel or CSV, then ask the AI for any transactions (like everything from John) and download just those.";
 
 const BLOG_INDEX_META = {
   title: `Blog — ${APP_NAME}`,
@@ -18,7 +18,7 @@ const BLOG_INDEX_META = {
 /** @type {Record<string, { title: string; description: string }>} */
 export const ROUTE_META = {
   "/": {
-    title: `${APP_NAME} — Bank statements, sorted.`,
+    title: `${APP_NAME} — Convert bank statements, then ask them anything.`,
     description: defaultDescription,
   },
   "/login": {

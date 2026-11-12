@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import { SITE_NAME, canonical } from '../consts';
+import AskStatement from './AskStatement.astro';
 
 /**
  * Shared layout for /compare pages. Every claim about another product must be
@@ -123,6 +124,8 @@ const jsonLd = [
         </section>
       ))
     }
+
+    <AskStatement inset cta="compare_ask" heading="Then ask your statement for anything" />
 
     <section class="cmp-section">
       <h2>Which one should you pick?</h2>

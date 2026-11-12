@@ -404,6 +404,12 @@
   color: var(--color-text);
 }
 
+.scanner-chat-drawer-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
 .scanner-chat-drawer-close {
   width: 36px;
   height: 36px;
@@ -422,6 +428,10 @@
 .scanner-chat-drawer-close:hover {
   background: var(--color-primary-subtle);
   color: var(--color-text);
+}
+
+.scanner-chat-drawer-inner .chat-panel .messages {
+  max-height: none;
 }
 
 .scanner-chat-drawer-inner .chat-panel {
