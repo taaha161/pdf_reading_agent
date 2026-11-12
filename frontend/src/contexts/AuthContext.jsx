@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { notifyLogin } from "../api/client";
+import { notifyLogin, setApiAuthToken } from "../api/client";
 import { trackOAuthSignupIfNew } from "../lib/trackSignup";
 import { claimOfferForUser } from "../lib/offer";
 import { getAttribution } from "../lib/attribution";
@@ -19,6 +19,15 @@ function saveAttributionIfNew(user) {
 
 const AuthContext = createContext(null);
 
+// Token the API client reads. Updated before React state so any effect that
+// runs on the resulting re-render (child effects fire before parent ones)
+// already sees it — otherwise a page refresh fires requests without a token.
+let currentAccessToken = null;
+setApiAuthToken(() => currentAccessToken);
+function setCurrentSession(s) {
+  currentAccessToken = s?.access_token ?? null;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
@@ -26,6 +35,7 @@ export function AuthProvider({ children }) {
 
   const loadSession = useCallback(async () => {
     const { data: { session: s } } = await supabase.auth.getSession();
+    setCurrentSession(s);
     setSession(s);
     setUser(s?.user ?? null);
     setLoading(false);
@@ -36,6 +46,7 @@ export function AuthProvider({ children }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, s) => {
+      setCurrentSession(s);
       setSession(s);
       setUser(s?.user ?? null);
       setLoading(false);
@@ -64,6 +75,7 @@ export function AuthProvider({ children }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
+    setCurrentSession(null);
     setUser(null);
     setSession(null);
   }, []);

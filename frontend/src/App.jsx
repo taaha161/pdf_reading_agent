@@ -1,8 +1,6 @@
 import { useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
-import { setApiAuthToken } from "./api/client";
-import { useAuth } from "./contexts/AuthContext";
 import Landing from "./pages/Landing";
 import ScannerPage from "./pages/ScannerPage";
 import Dashboard from "./pages/Dashboard";
@@ -28,11 +26,6 @@ function ScrollToTop() {
 }
 
 function AppContent() {
-  const { accessToken } = useAuth();
-  useEffect(() => {
-    setApiAuthToken(() => accessToken ?? null);
-  }, [accessToken]);
-
   return (
     <>
       <ScrollToTop />
