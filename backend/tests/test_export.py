@@ -84,3 +84,27 @@ def test_summary_xlsx(client):
 def test_rejects_unknown_kind(client):
     r = client.post("/api/export", json={"transactions": ROWS, "kind": "pivot"})
     assert r.status_code == 422
+
+
+def test_xlsx_text_uses_shared_strings_for_phone_viewers():
+    """Phone viewers (e.g. Android previewers) skip inline strings and show only numbers."""
+    import io
+    import zipfile
+
+    from services.xlsx_export import summary_to_xlsx, transactions_to_xlsx
+
+    rows = [
+        {"date": "02 Jul 2025", "description": "=HYPERLINK(\"x\")", "amount": "1,000.00", "type": "credit", "category": "Income"},
+        {"date": "03 Jul 2025", "description": "http://example.com", "amount": "n/a", "type": "debit", "category": "Other"},
+    ]
+    for data in (transactions_to_xlsx(rows), summary_to_xlsx([("Income", 1000.0)])):
+        z = zipfile.ZipFile(io.BytesIO(data))
+        assert "xl/sharedStrings.xml" in z.namelist()
+        assert "inlineStr" not in z.read("xl/worksheets/sheet1.xml").decode()
+
+    ws = load_workbook(io.BytesIO(transactions_to_xlsx(rows))).active
+    assert [c.value for c in ws[1]] == ["Date", "Description", "Amount", "Type", "Category"]
+    assert ws["B2"].value == "=HYPERLINK(\"x\")" and ws["B2"].data_type == "s"  # text, not a formula
+    assert ws["C2"].value == 1000.0 and ws["C2"].number_format == "#,##0.00"
+    assert ws["C3"].value == "n/a" and ws["B3"].value == "http://example.com"
+    assert ws.freeze_panes == "A2" and ws.auto_filter.ref == "A1:E3"
