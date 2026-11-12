@@ -46,6 +46,8 @@ class FetchPdfUrlRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+    # Rows the assistant attached for download (date, description, amount, type, category); empty if none.
+    transactions: list[dict[str, str]] = Field(default_factory=list)
 
 
 class JobListItem(BaseModel):

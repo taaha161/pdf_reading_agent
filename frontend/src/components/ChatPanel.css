@@ -73,6 +73,48 @@
   color: var(--color-text);
 }
 
+.chat-download {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.chat-download-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-right: auto;
+}
+
+.chat-download button {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid var(--color-primary-muted);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.chat-download button:hover:not(:disabled) {
+  background: var(--color-primary-subtle);
+}
+
+.chat-download button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.chat-download-error {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: var(--color-error);
+}
+
 .chat-error {
   color: var(--color-error);
   font-size: 0.85rem;

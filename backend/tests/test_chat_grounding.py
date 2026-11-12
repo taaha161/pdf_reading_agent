@@ -45,7 +45,31 @@ def test_model_receives_every_row_and_totals(monkeypatch):
 
     monkeypatch.setattr(cs, "_get_client", lambda: type("C", (), {"models": FakeModels()})())
     many = [dict(TX[2], date=f"{i:02d} Sep 2025") for i in range(1, 900)]
-    assert cs.get_reply({"transactions": many, "currency": "PKR"}, "how many ATM withdrawals?") == "ok"
+    assert cs.get_reply({"transactions": many, "currency": "PKR"}, "how many ATM withdrawals?") == ("ok", [])
     assert "899 rows" in captured["contents"] and "\n899," in captured["contents"]  # last row present
     assert "'debits_total_money_out': 179800.0" in captured["contents"]
     assert captured["config"].tools  # query tool attached
+
+
+def test_export_rows_returns_every_match_with_export_columns_only():
+    rows = cs.export_rows([dict(TX[0], extra="x", amount=1000.0)] + TX[1:], category_contains="wajid ali")
+    assert rows == [
+        {"date": "02 Jul 2025", "description": "Money Received from WAJID ALI", "amount": "1000.0", "type": "credit", "category": "From: WAJID ALI"},
+        {"date": "03 Jul 2025", "description": "Money Transferred to WAJID ALI", "amount": "400.50", "type": "debit", "category": "To: WAJID ALI"},
+    ]
+    many = [dict(TX[2], date=f"{i} Sep 2025") for i in range(cs.QUERY_MAX_ROWS + 50)]
+    assert len(cs.export_rows(many, description_contains="atm")) == cs.QUERY_MAX_ROWS + 50  # no 200-row cap
+
+
+def test_reply_returns_rows_from_last_attach_call(monkeypatch):
+    class FakeModels:
+        def generate_content(self, model, contents, config):
+            attach = next(f for f in config.tools if f.__name__ == "attach_transactions")
+            attach(description_contains="atm")
+            assert attach(category_contains="wajid ali")["attached_count"] == 2
+            return type("R", (), {"text": "Here they are"})()
+
+    monkeypatch.setattr(cs, "_get_client", lambda: type("C", (), {"models": FakeModels()})())
+    reply, rows = cs.get_reply({"transactions": TX, "currency": "PKR"}, "give me transactions from wajid ali")
+    assert reply == "Here they are"
+    assert [r["category"] for r in rows] == ["From: WAJID ALI", "To: WAJID ALI"]

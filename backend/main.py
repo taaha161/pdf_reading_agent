@@ -1070,12 +1070,15 @@ def chat(request: Request, body: ChatRequest, user_id: str = Depends(get_current
     if job.get("data_status"):
         raise HTTPException(404, "No data for this job")
     try:
-        reply = get_reply(job, body.message)
-        logger.info("chat: job_id=%s, reply len=%d (%.2f s)", body.job_id, len(reply), time.perf_counter() - t0)
+        reply, rows = get_reply(job, body.message)
+        logger.info(
+            "chat: job_id=%s, reply len=%d, attached rows=%d (%.2f s)",
+            body.job_id, len(reply), len(rows), time.perf_counter() - t0,
+        )
     except Exception as e:
         logger.exception("Chat failed: %s", e)
         raise HTTPException(500, GENERIC_500_MESSAGE)
-    return ChatResponse(reply=reply)
+    return ChatResponse(reply=reply, transactions=rows)
 
 
 # --- Billing ---
