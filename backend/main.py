@@ -1070,7 +1070,7 @@ def chat(request: Request, body: ChatRequest, user_id: str = Depends(get_current
     if job.get("data_status"):
         raise HTTPException(404, "No data for this job")
     try:
-        reply, rows = get_reply(job, body.message)
+        reply, rows = get_reply(job, body.message, [t.model_dump() for t in body.history])
         logger.info(
             "chat: job_id=%s, reply len=%d, attached rows=%d (%.2f s)",
             body.job_id, len(reply), len(rows), time.perf_counter() - t0,
