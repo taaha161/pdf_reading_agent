@@ -6,6 +6,7 @@ import HeroDropzone from '../components/HeroDropzone.astro';
 import ConvertDemo from '../components/ConvertDemo.astro';
 import ProductVideo from '../components/ProductVideo.astro';
 import SecurityStrip from '../components/SecurityStrip.astro';
+import AskStatement from '../components/AskStatement.astro';
 import SampleExport from '../components/SampleExport.astro';
 import FounderBlock from '../components/FounderBlock.astro';
 import StickyCta from '../components/StickyCta.astro';
@@ -39,6 +40,10 @@ const faqs = [
   {
     q: 'How much does Bank Statement Scanner cost?',
     a: `Bank Statement Scanner offers a $10/month subscription that adds $10 in credits each billing cycle. Credits are used per scan, from less than 1¢ to $1.50 depending on mode. You can also add one-time credit top-ups. Your first ${FREE_STATEMENTS} statements are free, no credit card required.`,
+  },
+  {
+    q: 'Can I ask the AI for specific transactions?',
+    a: 'Yes. After a statement is converted, open the chat and ask in plain English, for example "Give me all transactions from John" or "Show every ATM withdrawal in March". You get the matching rows with exact totals, plus a one-click download of just those transactions as Excel or CSV.',
   },
   {
     q: 'Can I see the output before uploading my own statement?',
@@ -108,7 +113,7 @@ const steps = [
   <section class="hero" data-sticky-after>
     <div class="container hero-inner">
       <div class="hero-copy">
-        <p class="pill">AI-powered bank statement scanner</p>
+        <p class="pill">New: ask your statement for any transactions</p>
         <h1 class="hero-title" id="home-h1" set:html={H1_VARIANTS.a} />
         <script is:inline define:vars={{ H1_VARIANTS }}>
           // Sticky 50/50 split by cookie; reported to GTM so conversions can be compared per variant.
@@ -126,7 +131,8 @@ const steps = [
         <p class="hero-sub">
           Upload a bank, credit card, or scanned statement. Get every transaction back in clean,
           categorized columns, checked against the statement's balances, ready for Excel, CSV,
-          QuickBooks, or Xero.
+          QuickBooks, or Xero. Then ask for exactly what you need, like every payment from John, and
+          download just those rows.
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="/scanner" data-cta="hero_primary">Get started free</a>
@@ -212,14 +218,21 @@ const steps = [
     </div>
   </section>
 
+  <AskStatement cta="home_ask" tone="tint" />
+
   <!-- Features -->
   <section class="features" aria-label="Features">
     <div class="container">
       <header class="section-head">
-        <h2>Powerful features for seamless finance</h2>
+        <h2>Convert it, ask it, export it</h2>
         <p>Our AI does the heavy lifting so you can focus on making informed financial decisions.</p>
       </header>
       <div class="feature-grid">
+        <article class="feature-card feature-card--new">
+          <span class="feature-new">New</span>
+          <h3>Ask your statement</h3>
+          <p>Ask for “all transactions from John” or “every ATM withdrawal” and download just those rows as Excel or CSV.</p>
+        </article>
         <article class="feature-card">
           <h3>AI-powered extraction</h3>
           <p>Instantly pull line-item data from any computer-generated or scanned PDF with high accuracy.</p>
@@ -457,6 +470,12 @@ const steps = [
     border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);
   }
   .feature-card h3 { font-size: 19px; margin: 0 0 8px; }
+  .feature-card--new { position: relative; border-color: var(--color-primary-muted); box-shadow: var(--shadow-md); }
+  .feature-new {
+    position: absolute; top: -10px; right: 18px; padding: 3px 10px; border-radius: 999px;
+    background: linear-gradient(135deg, var(--color-primary), #7c3aed); color: #fff;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  }
   .feature-card p { color: var(--color-text-muted); font-size: 15px; margin: 0; }
 
   /* Use cases */

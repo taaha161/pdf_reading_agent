@@ -1,9 +1,9 @@
 // Central site constants — single source of truth for SEO + schema.
 export const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://bankstatementscanner.com').replace(/\/$/, '');
 export const SITE_NAME = 'Bank Statement Scanner';
-export const SITE_TAGLINE = 'Bank statements, sorted.';
+export const SITE_TAGLINE = 'Convert bank statements, then ask them anything.';
 export const SITE_DESCRIPTION =
-  'Upload a bank statement PDF to itemize, categorize, and validate transactions with AI—then export to CSV.';
+  'Convert bank statement PDFs into categorized Excel or CSV, then ask the AI for any transactions (like everything from John) and download just those.';
 export const OG_IMAGE = `${SITE_URL}/og-image.png`;
 export const SUPPORT_EMAIL = 'team@bankstatementscanner.com';
 export const LEGAL_ENTITY = 'Chaudhry Abdul Rauf and Co LLC';

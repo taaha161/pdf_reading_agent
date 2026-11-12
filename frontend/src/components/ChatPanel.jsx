@@ -1,6 +1,40 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { exportTransactions, sendChatMessage } from "../api/client";
 import "./ChatPanel.css";
+
+const SUGGESTIONS = [
+  "Show all money received",
+  "List every ATM withdrawal",
+  "Which categories did I spend the most on?",
+  "Give me all transactions from Amazon",
+];
+
+function SparkIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
+      <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />
+    </svg>
+  );
+}
+
+function SendIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M5 12h14" />
+      <path d="m13 6 6 6-6 6" />
+    </svg>
+  );
+}
+
+function TableIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 10h18M9 4v16" />
+    </svg>
+  );
+}
 
 function ChatDownload({ transactions }) {
   const [busy, setBusy] = useState(null);
@@ -19,15 +53,19 @@ function ChatDownload({ transactions }) {
   const count = transactions.length;
   return (
     <div className="chat-download">
+      <span className="chat-download-icon"><TableIcon /></span>
       <span className="chat-download-label">
-        {count} transaction{count === 1 ? "" : "s"}
+        <strong>{count} transaction{count === 1 ? "" : "s"}</strong>
+        <span>ready to download</span>
       </span>
-      <button type="button" onClick={() => download("xlsx")} disabled={!!busy}>
-        {busy === "xlsx" ? "Downloading…" : "Download Excel"}
-      </button>
-      <button type="button" onClick={() => download("csv")} disabled={!!busy}>
-        {busy === "csv" ? "Downloading…" : "Download CSV"}
-      </button>
+      <div className="chat-download-actions">
+        <button type="button" onClick={() => download("xlsx")} disabled={!!busy}>
+          {busy === "xlsx" ? "Downloading…" : "Excel"}
+        </button>
+        <button type="button" onClick={() => download("csv")} disabled={!!busy}>
+          {busy === "csv" ? "Downloading…" : "CSV"}
+        </button>
+      </div>
       {error && <span className="chat-download-error">{error}</span>}
     </div>
   );
@@ -38,15 +76,21 @@ export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogi
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const listRef = useRef(null);
 
-  const send = async () => {
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, loading]);
+
+  const send = async (preset) => {
     if (requireLogin) {
       setError("Please log in to chat.");
       onRequireLogin?.();
       return;
     }
-    const text = input.trim();
-    if (!text || !jobId || disabled) return;
+    const text = (preset ?? input).trim();
+    if (!text || !jobId || disabled || loading) return;
     setInput("");
     setMessages((m) => [...m, { role: "user", content: text }]);
     setLoading(true);
@@ -64,48 +108,73 @@ export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogi
   return (
     <section className="chat-panel" data-clarity-mask="true">
       {!hideHeading && (
-        <>
-          <h2>Validate CSV</h2>
-          <p className="chat-hint">
-            Ask why a transaction was categorized a certain way or to explain any row.
-          </p>
-        </>
+        <header className="chat-head">
+          <span className="chat-head-icon"><SparkIcon /></span>
+          <div>
+            <h2>Ask your statement</h2>
+            <p className="chat-hint">Find, total and export any transactions in plain English.</p>
+          </div>
+        </header>
       )}
-      <div className="messages">
+      <div className="messages" ref={listRef}>
         {messages.length === 0 && (
-          <div className="message placeholder">
-            No messages yet. Ask something like: &ldquo;Why is Amazon in Shopping?&rdquo; or
-            &ldquo;Give me all transactions from John&rdquo; to download them as Excel/CSV.
+          <div className="chat-empty">
+            <p className="chat-empty-title">Ask anything about this statement</p>
+            <p className="chat-empty-body">
+              Pull out the transactions you need, like &ldquo;Give me all transactions from John&rdquo;,
+              then download them as Excel or CSV.
+            </p>
+            <div className="chat-suggestions">
+              {SUGGESTIONS.map((s) => (
+                <button key={s} type="button" onClick={() => send(s)} disabled={disabled || loading}>
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {messages.map((msg, i) => (
           <div key={i} className={`message ${msg.role}`}>
-            <span className="message-role">{msg.role === "user" ? "You" : "Assistant"}</span>
-            <div className="message-content">{msg.content}</div>
-            {msg.transactions?.length > 0 && <ChatDownload transactions={msg.transactions} />}
+            {msg.role === "assistant" && <span className="message-avatar"><SparkIcon /></span>}
+            <div className="message-bubble">
+              <div className="message-content">{msg.content}</div>
+              {msg.transactions?.length > 0 && <ChatDownload transactions={msg.transactions} />}
+            </div>
           </div>
         ))}
         {loading && (
           <div className="message assistant">
-            <span className="message-role">Assistant</span>
-            <div className="message-content">...</div>
+            <span className="message-avatar"><SparkIcon /></span>
+            <div className="message-bubble">
+              <span className="typing" aria-label="Assistant is typing"><i /><i /><i /></span>
+            </div>
           </div>
         )}
       </div>
       {error && <div className="chat-error">{error}</div>}
-      <div className="chat-input-wrap">
+      <form
+        className="chat-input-wrap"
+        onSubmit={(e) => {
+          e.preventDefault();
+          send();
+        }}
+      >
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
-          placeholder="Ask about the data or categories..."
+          placeholder="e.g. Show all transactions from John"
+          aria-label="Ask about your statement"
           disabled={disabled || loading}
         />
-        <button type="button" onClick={send} disabled={disabled || loading || (!requireLogin && !input.trim())}>
-          Send
+        <button
+          type="submit"
+          aria-label="Send"
+          disabled={disabled || loading || (!requireLogin && !input.trim())}
+        >
+          <SendIcon />
         </button>
-      </div>
+      </form>
     </section>
   );
 }

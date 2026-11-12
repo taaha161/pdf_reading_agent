@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import ConvertDemo from '../../components/ConvertDemo.astro';
 import SecurityStrip from '../../components/SecurityStrip.astro';
+import AskStatement from '../../components/AskStatement.astro';
 import SampleExport from '../../components/SampleExport.astro';
 import StickyCta from '../../components/StickyCta.astro';
 import { SITE_NAME, FREE_STATEMENTS_LABEL, canonical } from '../../consts';
@@ -143,6 +144,8 @@ const jsonLd = [
         <span>or drop the PDF anywhere on this page</span>
       </div>
     </section>
+
+    <AskStatement inset cta="bank_ask" heading={`Ask your ${b.shortName} statement for anything`} />
 
     <section class="bank-section">
       <h2>What to know about {b.name} statement layouts</h2>

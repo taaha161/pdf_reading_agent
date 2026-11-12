@@ -1,0 +1,177 @@
+---
+/**
+ * "Ask your statement" feature section: the in-app AI chat finds transactions
+ * ("Give me all transactions from John") and exports just those rows to Excel/CSV.
+ * The chat mock uses fictional data.
+ */
+interface Props {
+  /** data-cta value for the button, so clicks can be compared per page. */
+  cta?: string;
+  /** Link for the button (landing pages may carry an offer param). */
+  href?: string;
+  tone?: 'plain' | 'tint';
+  /** Render as a boxed card inside an existing container (e.g. bank pages). */
+  inset?: boolean;
+  heading?: string;
+  /** Extra class on the button (e.g. 'js-cta' for pages that track clicks by class). */
+  btnClass?: string;
+}
+const {
+  cta = 'ask_statement',
+  href = '/scanner',
+  tone = 'plain',
+  inset = false,
+  heading = 'Ask your statement for anything. Download the answer.',
+  btnClass = '',
+} = Astro.props;
+
+const rows = [
+  { date: 'Mar 02', desc: 'Zelle from JOHN MILLER', amount: '+$1,200.00', credit: true },
+  { date: 'Mar 09', desc: 'Zelle to JOHN MILLER', amount: '−$350.00', credit: false },
+  { date: 'Mar 16', desc: 'Zelle from JOHN MILLER', amount: '+$1,200.00', credit: true },
+  { date: 'Mar 28', desc: 'Zelle to JOHN MILLER', amount: '−$300.00', credit: false },
+];
+const points = [
+  'Find any payee, merchant, category or month in plain English',
+  'Exact totals, worked out from the rows, not guessed by the AI',
+  'Download just those transactions as Excel or CSV in one click',
+];
+---
+
+<section class:list={['ask', `ask--${tone}`, { 'ask--inset': inset }]} aria-labelledby="ask-h">
+  <div class:list={['ask-inner', { container: !inset }]}>
+    <div class="ask-copy">
+      <p class="ask-pill"><span class="ask-new">New</span> AI statement chat</p>
+      <h2 id="ask-h">{heading}</h2>
+      <p class="ask-sub">
+        Once your statement is converted, just ask: <em>“Give me all transactions from John.”</em>
+        You get the matching rows with totals, and a button to download only those transactions.
+      </p>
+      <ul class="ask-points" role="list">
+        {points.map((p) => <li>{p}</li>)}
+      </ul>
+      <a class:list={['ask-btn', btnClass]} href={href} data-cta={cta}>Try it on your statement →</a>
+    </div>
+
+    <div class="ask-demo" role="img" aria-label="Example chat: asking for all transactions from John returns four rows with totals and Excel and CSV download buttons">
+      <div class="chat" aria-hidden="true">
+        <div class="chat-top">
+          <span class="chat-spark">✦</span>
+          <div><strong>Ask your statement</strong><span>march-statement.pdf</span></div>
+        </div>
+        <div class="chat-body">
+          <div class="bubble bubble--user">Give me all transactions from John</div>
+          <div class="bubble bubble--ai">
+            <p>Found <strong>4 transactions</strong> with John Miller: received <strong>$2,400.00</strong>, sent <strong>$650.00</strong>.</p>
+            <table>
+              <tbody>
+                {rows.map((r) => (
+                  <tr>
+                    <td class="d">{r.date}</td>
+                    <td class="desc">{r.desc}</td>
+                    <td class:list={['amt', { 'amt--in': r.credit }]}>{r.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div class="dl">
+              <span class="dl-icon">▦</span>
+              <span class="dl-label"><strong>4 transactions</strong>ready to download</span>
+              <span class="dl-btn dl-btn--solid">Excel</span>
+              <span class="dl-btn">CSV</span>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input"><span>e.g. Show all ATM withdrawals in March</span><span class="chat-send">→</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .ask { padding-block: 72px; }
+  .ask--tint { background: var(--color-bg); border-block: 1px solid var(--color-border); }
+  .ask--inset {
+    margin-top: 28px; padding: 28px; border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); background: var(--landing-bg, var(--color-surface));
+  }
+  .ask-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+  .ask--inset .ask-inner { grid-template-columns: 1fr; gap: 24px; }
+
+  .ask-pill {
+    display: inline-flex; align-items: center; gap: 8px; margin: 0 0 14px;
+    font-size: 13px; font-weight: 600; color: var(--color-primary);
+    background: var(--color-primary-subtle); padding: 4px 12px 4px 4px; border-radius: 999px;
+  }
+  .ask-new {
+    background: linear-gradient(135deg, var(--color-primary), #7c3aed); color: #fff;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 999px;
+  }
+  .ask h2 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0; }
+  .ask--inset h2 { font-size: clamp(22px, 3vw, 28px); }
+  .ask-sub { color: var(--color-text-muted); font-size: 17px; margin: 14px 0 0; max-width: 52ch; }
+  .ask-sub em { color: var(--color-text); font-style: normal; font-weight: 600; }
+  .ask-points { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .ask-points li { position: relative; padding-left: 28px; font-size: 15px; }
+  .ask-points li::before {
+    content: "✓"; position: absolute; left: 0; top: 1px; display: grid; place-items: center;
+    width: 19px; height: 19px; border-radius: 50%; background: #dcfce7; color: #15803d; font-size: 12px; font-weight: 700;
+  }
+  .ask-btn {
+    display: inline-block; margin-top: 26px; padding: 12px 22px; border-radius: var(--radius-md);
+    background: var(--color-primary); color: var(--color-on-primary); font-weight: 600; font-size: 16px;
+  }
+  .ask-btn:hover { background: var(--color-primary-hover); color: var(--color-on-primary); }
+
+  /* Chat mock */
+  .chat {
+    background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 18px;
+    box-shadow: var(--shadow-lg); overflow: hidden; font-size: 14px; max-width: 520px; margin-inline: auto;
+  }
+  .chat-top { display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--color-border); }
+  .chat-top div { display: flex; flex-direction: column; line-height: 1.25; }
+  .chat-top span:not(.chat-spark) { color: var(--color-text-muted); font-size: 12px; }
+  .chat-spark, .chat-send {
+    display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; flex: none;
+    background: linear-gradient(135deg, var(--color-primary), #7c3aed); color: #fff; font-size: 14px;
+  }
+  .chat-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; background: var(--color-bg); }
+  .bubble { padding: 10px 14px; border-radius: 16px; max-width: 92%; }
+  .bubble p { margin: 0 0 10px; line-height: 1.45; }
+  .bubble--user { align-self: flex-end; background: var(--color-primary); color: #fff; border-bottom-right-radius: 4px; }
+  .bubble--ai { align-self: flex-start; background: var(--color-surface); border: 1px solid var(--color-border); border-bottom-left-radius: 4px; width: 92%; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 6px 4px; border-top: 1px solid var(--color-border); }
+  .d { color: var(--color-text-muted); white-space: nowrap; }
+  .desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 0; width: 100%; }
+  .amt { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .amt--in { color: #15803d; }
+  .dl {
+    display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 10px;
+    border: 1px solid var(--color-primary-muted); border-radius: var(--radius-md);
+  }
+  .dl-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: #dcfce7; color: #15803d; flex: none; }
+  .dl-label { display: flex; flex-direction: column; margin-right: auto; font-size: 12px; color: var(--color-text-muted); line-height: 1.25; }
+  .dl-label strong { color: var(--color-text); font-size: 13px; }
+  .dl-btn {
+    padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--color-primary); color: var(--color-primary);
+  }
+  .dl-btn--solid { background: var(--color-primary); color: #fff; }
+  .chat-input {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin: 12px 16px 16px; padding: 5px 5px 5px 14px; border: 1px solid var(--color-border);
+    border-radius: 999px; color: var(--color-text-muted); font-size: 13px;
+  }
+  .chat-input span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  @media (max-width: 860px) {
+    .ask { padding-block: 56px; }
+    .ask-inner { grid-template-columns: 1fr; gap: 32px; }
+    .ask--inset { padding: 20px 16px; }
+  }
+  @media (max-width: 420px) {
+    .dl { flex-wrap: wrap; }
+    .dl-label { flex-basis: 100%; }
+  }
+</style>
