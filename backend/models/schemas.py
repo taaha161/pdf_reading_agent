@@ -35,9 +35,16 @@ class ProcessPdfResponse(BaseModel):
     balance_cents: Optional[int] = None
 
 
+class ChatTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field("", max_length=20_000)
+
+
 class ChatRequest(BaseModel):
     job_id: uuid.UUID
     message: str = Field(..., min_length=1, max_length=4000)
+    # Earlier turns of this chat (oldest first) so follow-ups like "download those" work.
+    history: list[ChatTurn] = Field(default_factory=list, max_length=20)
 
 
 class FetchPdfUrlRequest(BaseModel):

@@ -73,3 +73,51 @@ def test_reply_returns_rows_from_last_attach_call(monkeypatch):
     reply, rows = cs.get_reply({"transactions": TX, "currency": "PKR"}, "give me transactions from wajid ali")
     assert reply == "Here they are"
     assert [r["category"] for r in rows] == ["From: WAJID ALI", "To: WAJID ALI"]
+
+
+def _fake_client(monkeypatch, behaviour):
+    captured = {}
+
+    class FakeModels:
+        def generate_content(self, model, contents, config):
+            captured["contents"] = contents
+            tools = {f.__name__: f for f in config.tools}
+            behaviour(tools)
+            return type("R", (), {"text": "ok"})()
+
+    monkeypatch.setattr(cs, "_get_client", lambda: type("C", (), {"models": FakeModels()})())
+    return captured
+
+
+def test_query_with_several_rows_is_offered_for_download(monkeypatch):
+    _fake_client(monkeypatch, lambda t: t["query_transactions"](category_contains="wajid ali"))
+    _, rows = cs.get_reply({"transactions": TX}, "how much did I pay wajid ali?")
+    assert [r["category"] for r in rows] == ["From: WAJID ALI", "To: WAJID ALI"]
+
+
+def test_single_row_query_is_not_offered(monkeypatch):
+    _fake_client(monkeypatch, lambda t: t["query_transactions"](description_contains="atm"))
+    assert cs.get_reply({"transactions": TX}, "why is the ATM row cash?")[1] == []
+
+
+def test_explicit_attach_wins_over_auto_attach(monkeypatch):
+    def behaviour(t):
+        t["attach_transactions"](description_contains="atm")
+        t["query_transactions"](category_contains="wajid ali")
+
+    _fake_client(monkeypatch, behaviour)
+    _, rows = cs.get_reply({"transactions": TX}, "give me ATM withdrawals")
+    assert [r["category"] for r in rows] == ["Cash Withdrawals"]
+
+
+def test_recent_conversation_reaches_the_model(monkeypatch):
+    captured = _fake_client(monkeypatch, lambda t: None)
+    history = [{"role": "user", "content": f"old question {i}"} for i in range(10)] + [
+        {"role": "assistant", "content": "Found 2 rows for WAJID ALI " + "x" * 5000},
+    ]
+    cs.get_reply({"transactions": TX}, "download those", history)
+    c = captured["contents"]
+    assert "RECENT CONVERSATION" in c and "Assistant: Found 2 rows for WAJID ALI" in c
+    assert "old question 4" not in c and "old question 5" in c  # only the last 6 turns
+    assert "x" * 1600 not in c  # long turns are cut short
+    assert c.rstrip().endswith("User question: download those")

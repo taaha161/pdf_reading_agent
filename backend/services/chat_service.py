@@ -23,6 +23,11 @@ MAX_CSV_CHARS = 400_000
 QUERY_MAX_ROWS = 200
 MAX_TOOL_CALLS = 8
 EXPORT_FIELDS = ("date", "description", "amount", "type", "category")
+# A query matching at least this many rows is offered for download even if the model didn't attach it.
+AUTO_ATTACH_MIN_ROWS = 2
+# Earlier chat turns sent back to the model so follow-ups ("download those") work.
+HISTORY_MAX_TURNS = 6
+HISTORY_MAX_CHARS = 1500
 
 SYSTEM_INSTRUCTION = """You answer questions about ONE bank statement that the user is looking at in a results table and a summary table.
 
@@ -46,6 +51,9 @@ Ground rules:
   user then gets a button to download them as CSV/Excel. Mention the download in one short sentence, and list the
   rows in the reply too (if there are more than 20, list the first 20 and say the download has them all).
   Only the last attach_transactions call is attached, so make it the one that matches the request.
+- RECENT CONVERSATION (if present) is the earlier part of this chat. Use it to resolve follow-ups such as
+  "download those", "only the ones from March" or "what about debits?": work out which filters the earlier
+  answer used and call the tools again with them (narrowed as asked). Never reuse numbers from it; always re-query.
 """
 
 
@@ -183,15 +191,36 @@ def _numbered_csv(transactions: list[dict]) -> str:
     return "\n".join(["#," + lines[0]] + [f"{i},{line}" for i, line in enumerate(lines[1:], start=1)])
 
 
-def get_reply(job_data: dict[str, Any], message: str) -> tuple[str, list[dict[str, str]]]:
+def _history_text(history: list[dict[str, str]] | None) -> str:
+    """Last few chat turns as plain text, oldest first; long answers are cut short."""
+    lines = []
+    for turn in (history or [])[-HISTORY_MAX_TURNS:]:
+        content = re.sub(r"\s+", " ", str(turn.get("content") or "")).strip()
+        if not content:
+            continue
+        if len(content) > HISTORY_MAX_CHARS:
+            content = content[:HISTORY_MAX_CHARS] + " …"
+        who = "Assistant" if turn.get("role") == "assistant" else "User"
+        lines.append(f"{who}: {content}")
+    return "\n".join(lines)
+
+
+def get_reply(
+    job_data: dict[str, Any], message: str, history: list[dict[str, str]] | None = None
+) -> tuple[str, list[dict[str, str]]]:
     """
     Answer `message` about the job. job_data: {"transactions": [...], "currency": "..."}.
-    Returns (reply, rows the model attached for CSV/Excel download; empty if none).
+    history: earlier turns [{"role": "user"|"assistant", "content": "..."}], oldest first.
+    Returns (reply, rows offered for CSV/Excel download; empty if none). Rows are the last
+    attach_transactions call, or else the last query_transactions call that matched
+    AUTO_ATTACH_MIN_ROWS or more rows.
     """
     transactions = [t for t in (job_data.get("transactions") or []) if isinstance(t, dict)]
     if not transactions:
         return "There are no transactions in this statement to answer from.", []
     attached: list[dict[str, str]] = []
+    attach_called = False
+    last_queried: list[dict[str, str]] = []
 
     def query_transactions(
         category: str = "",
@@ -215,7 +244,12 @@ def get_reply(job_data: dict[str, Any], message: str) -> tuple[str, list[dict[st
             by_category (count and totals per category among the matches), and the matching rows
             (up to 200) with their row numbers (#).
         """
-        return query_rows(transactions, category, category_contains, description_contains, date_contains, type)
+        result = query_rows(transactions, category, category_contains, description_contains, date_contains, type)
+        if result["count"] >= AUTO_ATTACH_MIN_ROWS:
+            last_queried[:] = export_rows(
+                transactions, category, category_contains, description_contains, date_contains, type
+            )
+        return result
 
     def attach_transactions(
         category: str = "",
@@ -238,6 +272,8 @@ def get_reply(job_data: dict[str, Any], message: str) -> tuple[str, list[dict[st
         Returns:
             The same result as query_transactions (count, totals, by_category, rows), plus "attached_count".
         """
+        nonlocal attach_called
+        attach_called = True
         attached[:] = export_rows(transactions, category, category_contains, description_contains, date_contains, type)
         result = query_rows(transactions, category, category_contains, description_contains, date_contains, type)
         result["attached_count"] = len(attached)
@@ -251,12 +287,14 @@ def get_reply(job_data: dict[str, Any], message: str) -> tuple[str, list[dict[st
 
     currency = job_data.get("currency") or "unknown"
     totals = official_totals(transactions)
+    history_text = _history_text(history)
     user_content = (
         f"Statement currency: {currency}\n\n"
         f"OFFICIAL TOTALS (exactly what the summary table shows; summary_total is money in for Income and "
         f"for categories that only have credits, money out for every other category):\n{totals}\n\n"
         f"ALL TRANSACTIONS ({len(transactions)} rows, # = position in the results table):\n{csv_text}{truncated_note}\n\n"
-        f"User question: {message}"
+        + (f"RECENT CONVERSATION (oldest first):\n{history_text}\n\n" if history_text else "")
+        + f"User question: {message}"
     )
     # Keep a reference: a temporary client can be closed mid-call while tool calls are running.
     client = _get_client()
@@ -270,4 +308,4 @@ def get_reply(job_data: dict[str, Any], message: str) -> tuple[str, list[dict[st
             automatic_function_calling=AutomaticFunctionCallingConfig(maximum_remote_calls=MAX_TOOL_CALLS),
         ),
     )
-    return (response.text or "").strip(), list(attached)
+    return (response.text or "").strip(), list(attached if attach_called else last_queried)

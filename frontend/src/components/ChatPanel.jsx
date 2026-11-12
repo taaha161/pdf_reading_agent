@@ -9,6 +9,9 @@ const SUGGESTIONS = [
   "Give me all transactions from Amazon",
 ];
 
+// Earlier turns sent with each question so follow-ups ("download those") work.
+const HISTORY_TURNS = 6;
+
 function SparkIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -92,11 +95,12 @@ export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogi
     const text = (preset ?? input).trim();
     if (!text || !jobId || disabled || loading) return;
     setInput("");
+    const history = messages.slice(-HISTORY_TURNS).map(({ role, content }) => ({ role, content }));
     setMessages((m) => [...m, { role: "user", content: text }]);
     setLoading(true);
     setError(null);
     try {
-      const { reply, transactions } = await sendChatMessage(jobId, text);
+      const { reply, transactions } = await sendChatMessage(jobId, text, history);
       setMessages((m) => [...m, { role: "assistant", content: reply, transactions }]);
     } catch (e) {
       setError(e.message || "Failed to get reply");
@@ -152,6 +156,11 @@ export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogi
         )}
       </div>
       {error && <div className="chat-error">{error}</div>}
+      {messages.length > 0 && (
+        <p className="chat-tip">
+          Tip: ask for any transactions, like &ldquo;all payments to John in March&rdquo;, and download them as Excel or CSV.
+        </p>
+      )}
       <form
         className="chat-input-wrap"
         onSubmit={(e) => {

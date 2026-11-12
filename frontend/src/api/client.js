@@ -348,11 +348,14 @@ export async function exportTransactions(transactions, { format = "csv", include
   URL.revokeObjectURL(url);
 }
 
-export async function sendChatMessage(jobId, message) {
+/**
+ * @param {Array<{role: "user"|"assistant", content: string}>} [history] earlier turns, oldest first
+ */
+export async function sendChatMessage(jobId, message, history = []) {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ job_id: jobId, message }),
+    body: JSON.stringify({ job_id: jobId, message, history }),
   });
   if (!res.ok) {
     if (res.status === 429) {
