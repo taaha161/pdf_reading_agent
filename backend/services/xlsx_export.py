@@ -10,7 +10,15 @@ from typing import Any
 import xlsxwriter
 from xlsxwriter.utility import xl_col_to_name
 
-from services.csv_export import TOTAL_LABELS, amount_value, export_fields, export_totals
+from services.csv_export import (
+    ALL_CATEGORIES,
+    NO_CATEGORY,
+    TOTALS_HEADER,
+    amount_value,
+    category_totals,
+    export_fields,
+    export_totals,
+)
 
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -37,32 +45,54 @@ def _new_workbook(sheet_name: str):
     return out, wb, ws, header, money
 
 
-def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str]) -> None:
-    """Totals block under the rows: label in Description, value in Amount.
+def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str], header) -> None:
+    """Totals table under the rows (after one blank row), in columns A-E:
+    Category | Transactions | Money in | Money out | Net, one row per category, then "All categories".
 
-    Live SUMIFS formulas (they follow edits) with cached results, because phone viewers don't
-    calculate formulas and would otherwise show 0 or nothing.
+    Live formulas (they follow edits to the rows) with cached results, because phone viewers don't
+    calculate formulas and would otherwise show 0 or nothing. SUMPRODUCT with "=" is used instead of
+    SUMIFS so category names are matched exactly (no * ? ~ wildcards or ">"/"<" operators) and text
+    amounts count as 0.
     """
-    label_col, amount_col, type_col = (fields.index(f) for f in ("description", "amount", "type"))
     first, last = 2, len(transactions) + 1  # Excel row numbers of the data
-    amounts = f"{xl_col_to_name(amount_col)}{first}:{xl_col_to_name(amount_col)}{last}"
-    types = f"{xl_col_to_name(type_col)}{first}:{xl_col_to_name(type_col)}{last}"
-    bold = wb.add_format({"bold": True})
-    bold_money = wb.add_format({"bold": True, "num_format": _MONEY_FORMAT, "top": 1})
-    bold_count = wb.add_format({"bold": True, "top": 1})
 
+    def rng(field: str) -> str:
+        col = xl_col_to_name(fields.index(field))
+        return f"{col}{first}:{col}{last}"
+
+    amounts, types = rng("amount"), rng("type")
+    has_categories = "category" in fields
+    groups = category_totals(transactions) if has_categories else []
+
+    money = wb.add_format({"num_format": _MONEY_FORMAT})
+    bold = wb.add_format({"bold": True, "top": 1})
+    bold_money = wb.add_format({"bold": True, "top": 1, "num_format": _MONEY_FORMAT})
+
+    top = last + 1  # 0-based row index of the table header (row `last` is the blank spacer)
+    for col, label in enumerate(TOTALS_HEADER):
+        ws.write_string(top, col, label, header)
+
+    for i, (name, count, money_in, money_out) in enumerate(groups):
+        r = top + 1 + i  # 0-based; Excel row is r + 1
+        match = f'--({rng("category")}="")' if name == NO_CATEGORY else f"--({rng('category')}=A{r + 1})"
+        ws.write_string(r, 0, name)
+        ws.write_formula(r, 1, f"=SUMPRODUCT({match})", None, count)
+        ws.write_formula(r, 2, f'=SUMPRODUCT({match},--({types}="credit"),{amounts})', money, money_in)
+        ws.write_formula(r, 3, f'=SUMPRODUCT({match},--({types}="debit"),{amounts})', money, money_out)
+        ws.write_formula(r, 4, f"=C{r + 1}-D{r + 1}", money, round(money_in - money_out, 2))
+
+    r = top + 1 + len(groups)  # the "All categories" row
     count, credit, debit = export_totals(transactions)
-    start = last + 1  # 0-based index of the row after a blank spacer row
-    in_ref, out_ref = f"{xl_col_to_name(amount_col)}{start + 2}", f"{xl_col_to_name(amount_col)}{start + 3}"
-    cells = (
-        (f'=COUNTA({xl_col_to_name(type_col)}{first}:{xl_col_to_name(type_col)}{last})', count, bold_count),
-        (f'=SUMIFS({amounts},{types},"credit")', credit, bold_money),
-        (f'=SUMIFS({amounts},{types},"debit")', debit, bold_money),
-        (f"={in_ref}-{out_ref}", round(credit - debit, 2), bold_money),
-    )
-    for i, (label, (formula, cached, fmt)) in enumerate(zip(TOTAL_LABELS, cells)):
-        ws.write_string(start + i, label_col, label, bold)
-        ws.write_formula(start + i, amount_col, formula, fmt, cached)
+    ws.write_string(r, 0, ALL_CATEGORIES, bold)
+    ws.write_formula(r, 1, f"=COUNTA({types})", bold, count)
+    ws.write_formula(r, 2, f'=SUMPRODUCT(--({types}="credit"),{amounts})', bold_money, credit)
+    ws.write_formula(r, 3, f'=SUMPRODUCT(--({types}="debit"),{amounts})', bold_money, debit)
+    ws.write_formula(r, 4, f"=C{r + 1}-D{r + 1}", bold_money, round(credit - debit, 2))
+
+    # Column A holds dates above and category names here; widen it to fit both (capped).
+    longest = max([len(ALL_CATEGORIES)] + [len(g[0]) for g in groups])
+    ws.set_column(0, 0, max(_WIDTHS["date"], min(longest + 2, 32)))
+    ws.set_column(3, 3, max(_WIDTHS["type"], 14))  # money out lands in the narrow Type column
 
 
 def transactions_to_xlsx(
@@ -70,8 +100,8 @@ def transactions_to_xlsx(
 ) -> bytes:
     """Return .xlsx bytes: bold frozen header, numeric amounts, sized columns, autofilter.
 
-    include_totals adds count / money in / money out / net under the rows (off by default:
-    accounting imports expect rows only).
+    include_totals adds a per-category totals table and an "All categories" row under the rows
+    (off by default: accounting imports expect rows only).
     """
     fields = export_fields(include_categories)
     out, wb, ws, header, money = _new_workbook("Transactions")
@@ -91,7 +121,7 @@ def transactions_to_xlsx(
     ws.freeze_panes(1, 0)
     ws.autofilter(0, 0, max(len(transactions), 1), len(fields) - 1)
     if include_totals and transactions:
-        _write_totals(wb, ws, transactions, fields)
+        _write_totals(wb, ws, transactions, fields, header)
     wb.close()
     return out.getvalue()
 

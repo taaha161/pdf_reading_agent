@@ -114,61 +114,80 @@ TOTALS_ROWS = [
     {"date": "01 Jul", "description": "Salary", "amount": "1,000.50", "type": "credit", "category": "Income"},
     {"date": "02 Jul", "description": "Rent", "amount": "400", "type": "debit", "category": "Housing"},
     {"date": "03 Jul", "description": "Groceries", "amount": "99.25", "type": "debit", "category": "Groceries"},
-    {"date": "04 Jul", "description": "Odd row", "amount": "n/a", "type": "debit", "category": "Other"},
+    {"date": "04 Jul", "description": "Refund", "amount": "10", "type": "credit", "category": "groceries"},
+    {"date": "05 Jul", "description": "Odd row", "amount": "n/a", "type": "debit", "category": ">100*"},
+    {"date": "06 Jul", "description": "No cat", "amount": "5", "type": "debit", "category": ""},
 ]
 
 
-def test_export_totals_math():
-    from services.csv_export import export_totals
+def test_category_totals_group_case_insensitively_biggest_first():
+    from services.csv_export import category_totals, export_totals
 
-    assert export_totals(TOTALS_ROWS) == (4, 1000.5, 499.25)
+    assert export_totals(TOTALS_ROWS) == (6, 1010.5, 504.25)
+    assert category_totals(TOTALS_ROWS) == [
+        ("Income", 1, 1000.5, 0.0),
+        ("Housing", 1, 0.0, 400.0),
+        ("Groceries", 2, 10.0, 99.25),
+        ("(no category)", 1, 0.0, 5.0),
+        (">100*", 1, 0.0, 0.0),
+    ]
 
 
-def test_xlsx_totals_block_has_formulas_and_cached_values():
+def test_xlsx_category_totals_table():
     import io
-    import zipfile
 
     from services.xlsx_export import transactions_to_xlsx
 
     data = transactions_to_xlsx(TOTALS_ROWS, include_totals=True)
     ws = load_workbook(io.BytesIO(data)).active
-    # rows 2-5 data, row 6 blank, rows 7-10 totals (label in Description, value in Amount)
-    assert ws["B6"].value is None and ws["C6"].value is None
-    assert [ws[f"B{r}"].value for r in range(7, 11)] == [
-        "Transactions", "Total money in (credits)", "Total money out (debits)", "Net (in - out)",
+    # rows 2-7 data, row 8 blank, row 9 table header, rows 10-14 categories, row 15 all categories
+    assert all(c.value is None for c in ws[8])
+    assert [c.value for c in ws[9]] == ["Category", "Transactions", "Money in", "Money out", "Net"]
+    assert [ws[f"A{r}"].value for r in range(10, 16)] == [
+        "Income", "Housing", "Groceries", "(no category)", ">100*", "All categories",
     ]
-    assert ws["C8"].value == '=SUMIFS(C2:C5,D2:D5,"credit")'
-    assert ws["C9"].value == '=SUMIFS(C2:C5,D2:D5,"debit")'
-    assert ws["C10"].value == "=C8-C9"
-    # Cached results are stored so phone viewers that don't calculate still show numbers.
+    # Exact match on the category cell (no SUMIFS wildcards/operators), blank category matched as "".
+    assert ws["C12"].value == '=SUMPRODUCT(--(E2:E7=A12),--(D2:D7="credit"),C2:C7)'
+    assert ws["D13"].value == '=SUMPRODUCT(--(E2:E7=""),--(D2:D7="debit"),C2:C7)'
+    assert ws["E12"].value == "=C12-D12"
+    assert ws["B15"].value == "=COUNTA(D2:D7)"
+    # Cached results so phone viewers show numbers without calculating.
     cached = load_workbook(io.BytesIO(data), data_only=True).active
-    assert [cached[f"C{r}"].value for r in range(7, 11)] == [4, 1000.5, 499.25, 501.25]
-    assert ws.auto_filter.ref == "A1:E5"  # filter covers the data only
-    # Uncategorized variant keeps the same columns for description/amount/type.
+    assert [[cached.cell(r, c).value for c in range(2, 6)] for r in range(10, 16)] == [
+        [1, 1000.5, 0, 1000.5],
+        [1, 0, 400, -400],
+        [2, 10, 99.25, -89.25],
+        [1, 0, 5, -5],
+        [1, 0, 0, 0],
+        [6, 1010.5, 504.25, 506.25],
+    ]
+    assert ws.auto_filter.ref == "A1:E7"  # filter covers the data only
+    # Without a category column only the "All categories" row is written.
     ws2 = load_workbook(io.BytesIO(transactions_to_xlsx(TOTALS_ROWS, False, True))).active
-    assert ws2["C8"].value == '=SUMIFS(C2:C5,D2:D5,"credit")'
+    assert ws2["A10"].value == "All categories" and ws2["C10"].value == '=SUMPRODUCT(--(D2:D7="credit"),C2:C7)'
     # Default stays rows-only for accounting imports.
-    plain = load_workbook(io.BytesIO(transactions_to_xlsx(TOTALS_ROWS))).active
-    assert plain.max_row == 5
-    assert "sharedStrings.xml" in " ".join(zipfile.ZipFile(io.BytesIO(data)).namelist())
+    assert load_workbook(io.BytesIO(transactions_to_xlsx(TOTALS_ROWS))).active.max_row == 7
 
 
-def test_csv_totals_rows():
+def test_csv_category_totals_table():
     from services.csv_export import transactions_to_csv
 
     lines = transactions_to_csv(TOTALS_ROWS, include_totals=True).splitlines()
-    assert lines[-5:] == [
-        ",,,,",
-        ",Transactions,4,,",
-        ",Total money in (credits),1000.50,,",
-        ",Total money out (debits),499.25,,",
-        ",Net (in - out),501.25,,",
+    assert lines[-8:] == [
+        "",
+        "Category,Transactions,Money in,Money out,Net",
+        "Income,1,1000.50,0.00,1000.50",
+        "Housing,1,0.00,400.00,-400.00",
+        "Groceries,2,10.00,99.25,-89.25",
+        "(no category),1,0.00,5.00,-5.00",
+        ">100*,1,0.00,0.00,0.00",
+        "All categories,6,1010.50,504.25,506.25",
     ]
-    assert len(transactions_to_csv(TOTALS_ROWS).splitlines()) == 5  # default: header + rows only
+    assert len(transactions_to_csv(TOTALS_ROWS).splitlines()) == 7  # default: header + rows only
 
 
 def test_export_endpoint_include_totals(client):
     r = client.post("/api/export", json={"transactions": TOTALS_ROWS, "format": "csv", "include_totals": True})
-    assert r.status_code == 200 and "Total money in (credits),1000.50" in r.text
+    assert r.status_code == 200 and "All categories,6,1010.50,504.25,506.25" in r.text
     r = client.post("/api/export", json={"transactions": TOTALS_ROWS, "format": "csv"})
-    assert "Total money" not in r.text
+    assert "All categories" not in r.text
