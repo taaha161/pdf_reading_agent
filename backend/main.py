@@ -69,7 +69,13 @@ from services.notifications import (
     notify_signup,
     send_spreadsheet_email,
 )
-from services.pdf_processor import PdfPasswordRequired, decrypt_pdf, extract_text_from_pdf
+from services.pdf_processor import (
+    PdfExtractionTimeout,
+    PdfPasswordRequired,
+    PdfTooManyPages,
+    decrypt_pdf,
+    extract_text_from_pdf,
+)
 from services.scan_jobs import create_scan, fail_scan, finish_scan, get_scan, set_stage as set_scan_stage
 from services.recaptcha import verify_recaptcha
 from services.statement_agent import extract_and_categorize
@@ -660,6 +666,28 @@ def _pdf_error(e: Exception) -> HTTPException:
                 "code": PDF_PASSWORD_REQUIRED_CODE,
             },
         )
+    if isinstance(e, PdfTooManyPages):
+        return HTTPException(
+            422,
+            detail={
+                "detail": (
+                    f"This PDF has {e.pages:,} pages. The maximum is {e.max_pages} pages per scan. "
+                    "Please split it into smaller statements (for example, a few months each) and scan them separately."
+                ),
+                "code": "PDF_TOO_MANY_PAGES",
+            },
+        )
+    if isinstance(e, PdfExtractionTimeout):
+        return HTTPException(
+            422,
+            detail={
+                "detail": (
+                    "This PDF took too long to read. It may be very large or complex. "
+                    "Please split it into smaller statements and scan them separately."
+                ),
+                "code": "PDF_EXTRACTION_TIMEOUT",
+            },
+        )
     msg = str(e).strip()
     if isinstance(e, ValueError) and ("password" in msg.lower() or "decrypt" in msg.lower()):
         return HTTPException(422, detail={"detail": msg, "code": "PDF_PASSWORD_INCORRECT"})
@@ -699,8 +727,8 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
     if not raw_text.strip():
         raise HTTPException(
             422,
-            "Could not extract text from PDF (empty or image-only). "
-            "For scanned PDFs, install poppler and Tesseract (see README)."
+            "We couldn't read any text from this PDF. Make sure it's a bank statement "
+            "and not a blank or corrupted file, then try again."
         )
 
     progress("extracting")

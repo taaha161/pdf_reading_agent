@@ -20,6 +20,10 @@ try:
 except ImportError:
     _CV2_AVAILABLE = False
 
+# Hard cap on pages per scan. Bigger files cost a lot to convert and can't finish
+# within the extraction timeout (a 1,560-page file took Datalab ~7 minutes).
+MAX_PDF_PAGES = 300
+
 # Chars per page below this → treat as scanned and use OCR
 MIN_TEXT_PER_PAGE = 100
 
@@ -31,6 +35,19 @@ TESSERACT_PSM = 3
 
 class PdfPasswordRequired(Exception):
     """Raised when the PDF is encrypted and no password was provided."""
+
+
+class PdfTooManyPages(Exception):
+    """Raised before conversion when the PDF has more pages than MAX_PDF_PAGES."""
+
+    def __init__(self, pages: int, max_pages: int):
+        super().__init__(f"PDF has {pages} pages (max {max_pages})")
+        self.pages = pages
+        self.max_pages = max_pages
+
+
+class PdfExtractionTimeout(Exception):
+    """Raised when text extraction (Datalab) does not finish in time."""
 
 
 def decrypt_pdf(file_content: bytes, password: str | None = None) -> bytes:
@@ -88,12 +105,20 @@ def extract_text_from_pdf(
 
     file_content = decrypt_pdf(file_content, password)
 
+    page_count = count_pdf_pages(file_content)
+    if page_count > MAX_PDF_PAGES:
+        logger.info("extract_text_from_pdf: rejected, pages=%d > max %d", page_count, MAX_PDF_PAGES)
+        raise PdfTooManyPages(page_count, MAX_PDF_PAGES)
+
     if os.environ.get("DATALAB_API_KEY", "").strip():
         try:
             from services.datalab_client import convert_pdf_to_markdown
             text = convert_pdf_to_markdown(file_content, filename or "statement.pdf", mode=conversion_mode or "fast")
             logger.info("extract_text_from_pdf: Datalab done, len=%d (%.2f s)", len(text), time.perf_counter() - t0)
             return text or ""
+        except TimeoutError as e:
+            logger.warning("extract_text_from_pdf: Datalab timed out (%s), pages=%d", e, page_count)
+            raise PdfExtractionTimeout(str(e)) from e
         except Exception as e:
             logger.warning("extract_text_from_pdf: Datalab failed (%s)", e)
             return ""
@@ -118,6 +143,14 @@ def extract_text_from_pdf(
     else:
         logger.info("extract_text_from_pdf: using direct text, total len=%d (%.2f s)", len(text), time.perf_counter() - t0)
     return text or ""
+
+
+def count_pdf_pages(file_content: bytes) -> int:
+    """Page count via pypdf (reads the page tree only, fast even for huge files). 0 if unreadable."""
+    try:
+        return len(PdfReader(io.BytesIO(file_content)).pages)
+    except Exception:
+        return 0
 
 
 def _count_pages(stream: io.BytesIO) -> int:
