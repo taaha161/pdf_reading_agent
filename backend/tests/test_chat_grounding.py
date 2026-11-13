@@ -174,3 +174,52 @@ def test_filter_values_are_capped():
     many = "|".join(f"name{i}" for i in range(100))
     assert len(cs._alts(many)) == cs.MAX_FILTER_ALTERNATIVES
     assert len(cs._alts("x" * 10_000)[0]) == cs.MAX_FILTER_CHARS
+
+
+GROUP_TX = TX + [
+    {"date": "06 Aug 2025", "description": "Transfer to ALICE KHAN", "amount": "50", "type": "debit", "category": "To: ALICE KHAN"},
+]
+
+
+def test_parse_groups_plain_and_labelled():
+    assert cs.parse_groups("John | Alice") == [("John", ["john"]), ("Alice", ["alice"])]
+    assert cs.parse_groups("Shopping=amazon, ebay|Rides=uber||john|JOHN") == [
+        ("Shopping", ["amazon", "ebay"]), ("Rides", ["uber"]), ("john", ["john"]),
+    ]
+    assert cs.parse_groups("") == []
+    assert len(cs.parse_groups("|".join(f"g{i}" for i in range(50)))) == cs.MAX_FILTER_ALTERNATIVES
+
+
+def test_query_reports_totals_per_group():
+    r = cs.query_rows(GROUP_TX, category_contains="wajid ali|alice khan", groups="Wajid|Alice=alice khan")
+    assert r["by_group"] == {
+        "Wajid": {"count": 2, "credit_total": 1000.0, "debit_total": 400.5, "net": 599.5},
+        "Alice": {"count": 1, "credit_total": 0.0, "debit_total": 50.0, "net": -50.0},
+    }
+    assert [row["group"] for row in r["rows"]] == ["Wajid", "Wajid", "Alice"]
+    assert "by_group" not in cs.query_rows(GROUP_TX, description_contains="atm")
+
+
+def test_rows_outside_every_group_are_other():
+    rows = cs.export_rows(GROUP_TX, type="debit", groups="Alice")
+    assert [r["group"] for r in rows] == ["Other", "Other", "Other", "Alice"]
+
+
+def test_attach_with_groups_labels_every_row(monkeypatch):
+    _fake_client(monkeypatch, lambda t: t["attach_transactions"](category_contains="wajid|alice", groups="Wajid|Alice"))
+    _, rows = cs.get_reply({"transactions": GROUP_TX}, "transactions related to Wajid and Alice")
+    assert [(r["category"], r["group"]) for r in rows] == [
+        ("From: WAJID ALI", "Wajid"), ("To: WAJID ALI", "Wajid"), ("To: ALICE KHAN", "Alice"),
+    ]
+
+
+def test_several_names_without_groups_are_grouped_by_name(monkeypatch):
+    _fake_client(monkeypatch, lambda t: t["attach_transactions"](description_contains="wajid ali|alice khan"))
+    _, rows = cs.get_reply({"transactions": GROUP_TX}, "transactions for Wajid Ali and Alice Khan")
+    assert [r["group"] for r in rows] == ["Wajid Ali", "Wajid Ali", "Alice Khan"]
+
+
+def test_single_filter_value_adds_no_group_column(monkeypatch):
+    _fake_client(monkeypatch, lambda t: t["attach_transactions"](category_contains="wajid ali"))
+    _, rows = cs.get_reply({"transactions": GROUP_TX}, "transactions from wajid ali")
+    assert all("group" not in r for r in rows)

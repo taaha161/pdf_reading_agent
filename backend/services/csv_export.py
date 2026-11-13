@@ -5,11 +5,15 @@ import re
 from typing import Any
 
 FIELDS = ["date", "description", "amount", "type", "category"]
+GROUP_FIELD = "group"
 _NUMBER_RE = re.compile(r"^-?\d+(\.\d+)?$")
 
 TOTALS_HEADER = ("Category", "Transactions", "Money in", "Money out", "Net")
+GROUP_TOTALS_HEADER = ("Group", "Transactions", "Money in", "Money out", "Net")
 ALL_CATEGORIES = "All categories"
 NO_CATEGORY = "(no category)"
+NET_TOTAL = "Net total"
+NO_GROUP = "(no group)"
 
 
 def amount_value(raw: Any) -> float | str:
@@ -32,37 +36,58 @@ def export_totals(transactions: list[dict[str, Any]]) -> tuple[int, float, float
     return len(transactions), round(credit, 2), round(debit, 2)
 
 
-def category_totals(transactions: list[dict[str, Any]]) -> list[tuple[str, int, float, float]]:
-    """[(category, count, money in, money out)], biggest (in + out) first.
+def totals_by(
+    transactions: list[dict[str, Any]], field: str = "category", blank: str = NO_CATEGORY
+) -> list[tuple[str, int, float, float]]:
+    """[(value of `field`, count, money in, money out)], biggest (in + out) first.
 
-    Categories are grouped case-insensitively, like Excel's "=" comparison, so the cached
-    values match what the spreadsheet formulas compute. A blank category is NO_CATEGORY.
+    Values are grouped case-insensitively, like Excel's "=" comparison, so the cached
+    values match what the spreadsheet formulas compute. A blank value is `blank`.
     """
     groups: dict[str, list[dict[str, Any]]] = {}
     names: dict[str, str] = {}
     for t in transactions:
-        raw = str(t.get("category") or "")
+        raw = str(t.get(field) or "")
         key = raw.casefold()
-        names.setdefault(key, raw or NO_CATEGORY)
+        names.setdefault(key, raw or blank)
         groups.setdefault(key, []).append(t)
     rows = [(names[k], *export_totals(g)) for k, g in groups.items()]
     return sorted(rows, key=lambda r: (-(r[2] + r[3]), r[0].casefold()))
 
 
-def export_fields(include_categories: bool = True) -> list[str]:
-    """Columns for an export; the uncategorized variant drops the category column."""
-    return FIELDS if include_categories else [f for f in FIELDS if f != "category"]
+def category_totals(transactions: list[dict[str, Any]]) -> list[tuple[str, int, float, float]]:
+    """Per-category totals (see totals_by); a blank category is NO_CATEGORY."""
+    return totals_by(transactions, "category", NO_CATEGORY)
+
+
+def group_totals(transactions: list[dict[str, Any]]) -> list[tuple[str, int, float, float]]:
+    """Per-group totals for grouped chat exports (see totals_by); a blank group is NO_GROUP."""
+    return totals_by(transactions, GROUP_FIELD, NO_GROUP)
+
+
+def has_groups(transactions: list[dict[str, Any]]) -> bool:
+    """True when any row carries a group label (chat exports grouped by person/merchant)."""
+    return any(str(t.get(GROUP_FIELD) or "").strip() for t in transactions)
+
+
+def export_fields(include_categories: bool = True, include_groups: bool = False) -> list[str]:
+    """Columns for an export; the uncategorized variant drops the category column, and grouped
+    chat exports add a group column at the end."""
+    fields = FIELDS if include_categories else [f for f in FIELDS if f != "category"]
+    return fields + [GROUP_FIELD] if include_groups else fields
 
 
 def transactions_to_csv(
     transactions: list[dict[str, Any]], include_categories: bool = True, include_totals: bool = False
 ) -> str:
-    """Return CSV string with columns: date, description, amount, type[, category].
+    """Return CSV string with columns: date, description, amount, type[, category][, group].
 
+    The group column is added when any row has a group (grouped chat downloads).
     include_totals appends a blank line and a totals table: one row per category (count, money in,
-    money out, net) and an "All categories" row. Off by default: accounting imports expect rows only.
+    money out, net) and an "All categories" row; grouped rows also get a per-group table ending in a
+    "Net total" row. Off by default: accounting imports expect rows only.
     """
-    fields = export_fields(include_categories)
+    fields = export_fields(include_categories, has_groups(transactions))
     out = io.StringIO()
     writer = csv.DictWriter(out, fieldnames=fields, extrasaction="ignore")
     writer.writeheader()
@@ -76,6 +101,11 @@ def transactions_to_csv(
         count, credit, debit = export_totals(transactions)
         for name, n, money_in, money_out in groups + [(ALL_CATEGORIES, count, credit, debit)]:
             table.writerow([name, n, f"{money_in:.2f}", f"{money_out:.2f}", f"{money_in - money_out:.2f}"])
+        if GROUP_FIELD in fields:
+            table.writerow([])
+            table.writerow(GROUP_TOTALS_HEADER)
+            for name, n, money_in, money_out in group_totals(transactions) + [(NET_TOTAL, count, credit, debit)]:
+                table.writerow([name, n, f"{money_in:.2f}", f"{money_out:.2f}", f"{money_in - money_out:.2f}"])
     return out.getvalue()
 
 

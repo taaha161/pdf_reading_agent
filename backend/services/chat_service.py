@@ -31,6 +31,9 @@ HISTORY_MAX_CHARS = 1500
 # Tool filter limits (see _alts).
 MAX_FILTER_CHARS = 500
 MAX_FILTER_ALTERNATIVES = 20
+# Rows that match no group in a grouped export.
+OTHER_GROUP = "Other"
+MAX_GROUP_LABEL_CHARS = 60
 # Section tags in the prompt. Data that contains one of these is neutralized so it can't close a
 # section early and pose as instructions or as the user's question.
 _PROMPT_TAG_RE = re.compile(
@@ -82,6 +85,12 @@ Ground rules:
   (e.g. description_contains="john|alice"). Never AND them by putting one in each filter. Also consider that a
   name may appear in the category rather than the description; if a filter returns nothing, try the other field.
   Report the combined total and break it down per name/category (query each one separately for its own figures).
+- Grouping: when the user asks about several people, merchants or other things together ("transactions related
+  to John and Alice", "Uber vs Careem", "group Amazon and eBay as Shopping"), also pass groups so every row is
+  labelled with its group, e.g. groups="John|Alice", or groups="Shopping=amazon,ebay|Rides=uber,careem" when a
+  group has its own name or several search terms. Use the names the user used as group labels. The download then
+  gets a Group column and a totals table per group plus the net total; report each group's figures from
+  "by_group" and the combined net.
 - If the data cannot answer the question, say so plainly instead of guessing.
 - Use the statement currency when showing amounts. Be concise; use a short list or table when listing rows.
 - When the user asks to see, list, give, find, show or export transactions (e.g. "give me transactions from John",
@@ -181,6 +190,42 @@ def _match(
     return matched
 
 
+def parse_groups(groups: Any) -> list[tuple[str, list[str]]]:
+    """[(label, search terms)] from "John|Alice" or "Shopping=amazon,ebay|Rides=uber".
+
+    A plain item is both the label and the search term. Capped like filters (see _alts).
+    """
+    out: list[tuple[str, list[str]]] = []
+    for item in str(groups or "")[:MAX_FILTER_CHARS].split("|")[:MAX_FILTER_ALTERNATIVES]:
+        label, _, terms = item.partition("=")
+        label = re.sub(r"\s+", " ", label).strip()[:MAX_GROUP_LABEL_CHARS]
+        terms_list = [a for a in (_norm(p) for p in (terms or label).split(",")) if a]
+        if label and terms_list and label.casefold() not in {g[0].casefold() for g in out}:
+            out.append((label, terms_list))
+    return out
+
+
+def default_groups(description_contains: str = "", category_contains: str = "") -> str:
+    """Groups implied by a filter naming several values ("john|alice" -> "John|Alice"), else "".
+
+    Used when the model filters several names but forgets to pass groups.
+    """
+    for value in (description_contains, category_contains):
+        alts = _alts(value)
+        if len(alts) >= 2:
+            return "|".join(a.title() for a in alts)
+    return ""
+
+
+def group_of(t: dict, groups: list[tuple[str, list[str]]]) -> str:
+    """Label of the first group with a term in the row's description or category, else OTHER_GROUP."""
+    text = _norm(t.get("description")) + " " + _norm(t.get("category"))
+    for label, terms in groups:
+        if any(term in text for term in terms):
+            return label
+    return OTHER_GROUP
+
+
 def query_rows(
     transactions: list[dict],
     category: str = "",
@@ -188,6 +233,7 @@ def query_rows(
     description_contains: str = "",
     date_contains: str = "",
     type: str = "",
+    groups: str = "",
 ) -> dict[str, Any]:
     """Filter rows (all filters ANDed, case-insensitive) and return exact count and sums."""
     matched = _match(transactions, category, category_contains, description_contains, date_contains, type)
@@ -200,7 +246,19 @@ def query_rows(
         b["debit_total" if _is_debit(t) else "credit_total"] += abs(_parse_amount(t.get("amount")))
     for b in by_category.values():
         b["credit_total"], b["debit_total"] = _money(b["credit_total"]), _money(b["debit_total"])
-    return {
+    group_spec = parse_groups(groups)
+    by_group: dict[str, dict[str, Any]] = {}
+    for label, _ in group_spec:
+        by_group[label] = {"count": 0, "credit_total": 0.0, "debit_total": 0.0}
+    if group_spec:
+        for _, t in matched:
+            b = by_group.setdefault(group_of(t, group_spec), {"count": 0, "credit_total": 0.0, "debit_total": 0.0})
+            b["count"] += 1
+            b["debit_total" if _is_debit(t) else "credit_total"] += abs(_parse_amount(t.get("amount")))
+        for b in by_group.values():
+            b["net"] = _money(b["credit_total"] - b["debit_total"])
+            b["credit_total"], b["debit_total"] = _money(b["credit_total"]), _money(b["debit_total"])
+    result = {
         "count": len(matched),
         "credit_count": sum(1 for _, t in matched if not _is_debit(t)),
         "debit_count": sum(1 for _, t in matched if _is_debit(t)),
@@ -216,11 +274,15 @@ def query_rows(
                 "amount": t.get("amount", ""),
                 "type": t.get("type", ""),
                 "category": t.get("category", ""),
+                **({"group": group_of(t, group_spec)} if group_spec else {}),
             }
             for i, t in matched[:QUERY_MAX_ROWS]
         ],
         "rows_truncated": len(matched) > QUERY_MAX_ROWS,
     }
+    if group_spec:
+        result["by_group"] = by_group
+    return result
 
 
 def export_rows(
@@ -230,10 +292,18 @@ def export_rows(
     description_contains: str = "",
     date_contains: str = "",
     type: str = "",
+    groups: str = "",
 ) -> list[dict[str, str]]:
-    """Every matching row (no cap), with only the columns the CSV/Excel export takes."""
+    """Every matching row (no cap), with only the columns the CSV/Excel export takes.
+
+    With groups, each row also gets a "group" label (see parse_groups / group_of).
+    """
+    group_spec = parse_groups(groups)
     return [
-        {f: "" if t.get(f) is None else str(t.get(f)) for f in EXPORT_FIELDS}
+        {
+            **{f: "" if t.get(f) is None else str(t.get(f)) for f in EXPORT_FIELDS},
+            **({"group": group_of(t, group_spec)} if group_spec else {}),
+        }
         for _, t in _match(transactions, category, category_contains, description_contains, date_contains, type)
     ]
 
@@ -286,6 +356,7 @@ def get_reply(
         description_contains: str = "",
         date_contains: str = "",
         type: str = "",
+        groups: str = "",
     ) -> dict:
         """Find statement rows and get their exact count and totals. All filters are optional and
         case-insensitive; leave a filter empty to ignore it. Different filters are combined with AND.
@@ -298,16 +369,19 @@ def get_reply(
             description_contains: Text that must appear in the description, e.g. a name, merchant or "ATM"; "john|alice" for either.
             date_contains: Text that must appear in the date as written in the statement, e.g. "Jul 2025", or "Jul 2025|Aug 2025".
             type: "credit" (money in) or "debit" (money out).
+            groups: Optional labels for rows, "|"-separated, e.g. "John|Alice" or "Shopping=amazon,ebay|Rides=uber".
+                A row gets the first group whose term appears in its description or category, else "Other".
 
         Returns:
             count, credit_count, debit_count, credit_total, debit_total, net (credit minus debit),
-            by_category (count and totals per category among the matches), and the matching rows
-            (up to 200) with their row numbers (#).
+            by_category (count and totals per category among the matches), by_group (count, totals and
+            net per group; only with groups), and the matching rows (up to 200) with their row numbers (#).
         """
-        result = query_rows(transactions, category, category_contains, description_contains, date_contains, type)
+        groups = groups or default_groups(description_contains, category_contains)
+        result = query_rows(transactions, category, category_contains, description_contains, date_contains, type, groups)
         if result["count"] >= AUTO_ATTACH_MIN_ROWS:
             last_queried[:] = export_rows(
-                transactions, category, category_contains, description_contains, date_contains, type
+                transactions, category, category_contains, description_contains, date_contains, type, groups
             )
         return result
 
@@ -317,6 +391,7 @@ def get_reply(
         description_contains: str = "",
         date_contains: str = "",
         type: str = "",
+        groups: str = "",
     ) -> dict:
         """Attach the matching statement rows to your reply so the user can download them as CSV or Excel.
         Use when the user asks to see, list, give, find or export transactions. Same filters as
@@ -330,14 +405,19 @@ def get_reply(
             description_contains: Text that must appear in the description, e.g. a name, merchant or "ATM"; "john|alice" for several.
             date_contains: Text that must appear in the date as written in the statement, e.g. "Jul 2025"; "Jul 2025|Aug 2025" for several.
             type: "credit" (money in) or "debit" (money out).
+            groups: Optional labels added as a Group column with per-group totals in the download, "|"-separated,
+                e.g. "John|Alice" or "Shopping=amazon,ebay|Rides=uber". Rows matching no group are "Other".
 
         Returns:
-            The same result as query_transactions (count, totals, by_category, rows), plus "attached_count".
+            The same result as query_transactions (count, totals, by_category, by_group, rows), plus "attached_count".
         """
         nonlocal attach_called
         attach_called = True
-        attached[:] = export_rows(transactions, category, category_contains, description_contains, date_contains, type)
-        result = query_rows(transactions, category, category_contains, description_contains, date_contains, type)
+        groups = groups or default_groups(description_contains, category_contains)
+        attached[:] = export_rows(
+            transactions, category, category_contains, description_contains, date_contains, type, groups
+        )
+        result = query_rows(transactions, category, category_contains, description_contains, date_contains, type, groups)
         result["attached_count"] = len(attached)
         return result
 

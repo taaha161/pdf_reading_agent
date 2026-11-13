@@ -54,12 +54,13 @@ function ChatDownload({ transactions }) {
     }
   };
   const count = transactions.length;
+  const groupCount = new Set(transactions.map((t) => t.group).filter(Boolean)).size;
   return (
     <div className="chat-download">
       <span className="chat-download-icon"><TableIcon /></span>
       <span className="chat-download-label">
         <strong>{count} transaction{count === 1 ? "" : "s"}</strong>
-        <span>ready to download</span>
+        <span>{groupCount > 0 ? `in ${groupCount} group${groupCount === 1 ? "" : "s"}, ` : ""}ready to download</span>
       </span>
       <div className="chat-download-actions">
         <button type="button" onClick={() => download("xlsx")} disabled={!!busy}>

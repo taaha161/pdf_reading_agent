@@ -313,8 +313,8 @@ export async function getJob(jobId) {
 
 /** Only the fields the export endpoint accepts (rows may carry UI-only extras). */
 function exportRows(transactions) {
-  return (transactions || []).map(({ date, description, amount, type, category }) => ({
-    date, description, amount, type, category,
+  return (transactions || []).map(({ date, description, amount, type, category, group }) => ({
+    date, description, amount, type, category, ...(group ? { group } : {}),
   }));
 }
 

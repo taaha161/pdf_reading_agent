@@ -12,18 +12,27 @@ from xlsxwriter.utility import xl_col_to_name
 
 from services.csv_export import (
     ALL_CATEGORIES,
+    GROUP_FIELD,
+    GROUP_TOTALS_HEADER,
+    NET_TOTAL,
     NO_CATEGORY,
+    NO_GROUP,
     TOTALS_HEADER,
     amount_value,
     category_totals,
     export_fields,
     export_totals,
+    group_totals,
+    has_groups,
 )
 
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
-_HEADERS = {"date": "Date", "description": "Description", "amount": "Amount", "type": "Type", "category": "Category"}
-_WIDTHS = {"date": 12, "description": 48, "amount": 14, "type": 10, "category": 20}
+_HEADERS = {
+    "date": "Date", "description": "Description", "amount": "Amount", "type": "Type", "category": "Category",
+    GROUP_FIELD: "Group",
+}
+_WIDTHS = {"date": 12, "description": 48, "amount": 14, "type": 10, "category": 20, GROUP_FIELD: 16}
 _MONEY_FORMAT = "#,##0.00"
 
 
@@ -48,6 +57,7 @@ def _new_workbook(sheet_name: str):
 def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str], header) -> None:
     """Totals table under the rows (after one blank row), in columns A-E:
     Category | Transactions | Money in | Money out | Net, one row per category, then "All categories".
+    With a group column, a second table follows (after one blank row): one row per group, then "Net total".
 
     Live formulas (they follow edits to the rows) with cached results, because phone viewers don't
     calculate formulas and would otherwise show 0 or nothing. SUMPRODUCT with "=" is used instead of
@@ -61,36 +71,42 @@ def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str],
         return f"{col}{first}:{col}{last}"
 
     amounts, types = rng("amount"), rng("type")
-    has_categories = "category" in fields
-    groups = category_totals(transactions) if has_categories else []
-
     money = wb.add_format({"num_format": _MONEY_FORMAT})
     bold = wb.add_format({"bold": True, "top": 1})
     bold_money = wb.add_format({"bold": True, "top": 1, "num_format": _MONEY_FORMAT})
-
-    top = last + 1  # 0-based row index of the table header (row `last` is the blank spacer)
-    for col, label in enumerate(TOTALS_HEADER):
-        ws.write_string(top, col, label, header)
-
-    for i, (name, count, money_in, money_out) in enumerate(groups):
-        r = top + 1 + i  # 0-based; Excel row is r + 1
-        match = f'--({rng("category")}="")' if name == NO_CATEGORY else f"--({rng('category')}=A{r + 1})"
-        ws.write_string(r, 0, name)
-        ws.write_formula(r, 1, f"=SUMPRODUCT({match})", None, count)
-        ws.write_formula(r, 2, f'=SUMPRODUCT({match},--({types}="credit"),{amounts})', money, money_in)
-        ws.write_formula(r, 3, f'=SUMPRODUCT({match},--({types}="debit"),{amounts})', money, money_out)
-        ws.write_formula(r, 4, f"=C{r + 1}-D{r + 1}", money, round(money_in - money_out, 2))
-
-    r = top + 1 + len(groups)  # the "All categories" row
     count, credit, debit = export_totals(transactions)
-    ws.write_string(r, 0, ALL_CATEGORIES, bold)
-    ws.write_formula(r, 1, f"=COUNTA({types})", bold, count)
-    ws.write_formula(r, 2, f'=SUMPRODUCT(--({types}="credit"),{amounts})', bold_money, credit)
-    ws.write_formula(r, 3, f'=SUMPRODUCT(--({types}="debit"),{amounts})', bold_money, debit)
-    ws.write_formula(r, 4, f"=C{r + 1}-D{r + 1}", bold_money, round(credit - debit, 2))
 
-    # Column A holds dates above and category names here; widen it to fit both (capped).
-    longest = max([len(ALL_CATEGORIES)] + [len(g[0]) for g in groups])
+    def table(top: int, head: tuple, field: str | None, rows: list, blank: str, total_label: str) -> int:
+        """Write one totals table with its header at 0-based row `top`; return the total row's index."""
+        for col, label in enumerate(head):
+            ws.write_string(top, col, label, header)
+        for i, (name, n, money_in, money_out) in enumerate(rows):
+            r = top + 1 + i  # 0-based; Excel row is r + 1
+            match = f'--({rng(field)}="")' if name == blank else f"--({rng(field)}=A{r + 1})"
+            ws.write_string(r, 0, name)
+            ws.write_formula(r, 1, f"=SUMPRODUCT({match})", None, n)
+            ws.write_formula(r, 2, f'=SUMPRODUCT({match},--({types}="credit"),{amounts})', money, money_in)
+            ws.write_formula(r, 3, f'=SUMPRODUCT({match},--({types}="debit"),{amounts})', money, money_out)
+            ws.write_formula(r, 4, f"=C{r + 1}-D{r + 1}", money, round(money_in - money_out, 2))
+        r = top + 1 + len(rows)  # the overall total row
+        ws.write_string(r, 0, total_label, bold)
+        ws.write_formula(r, 1, f"=COUNTA({types})", bold, count)
+        ws.write_formula(r, 2, f'=SUMPRODUCT(--({types}="credit"),{amounts})', bold_money, credit)
+        ws.write_formula(r, 3, f'=SUMPRODUCT(--({types}="debit"),{amounts})', bold_money, debit)
+        ws.write_formula(r, 4, f"=C{r + 1}-D{r + 1}", bold_money, round(credit - debit, 2))
+        return r
+
+    groups = category_totals(transactions) if "category" in fields else []
+    # Header at row `last + 1` (0-based); row `last` is the blank spacer.
+    end = table(last + 1, TOTALS_HEADER, "category", groups, NO_CATEGORY, ALL_CATEGORIES)
+    labels = [ALL_CATEGORIES] + [g[0] for g in groups]
+    if GROUP_FIELD in fields:
+        by_group = group_totals(transactions)
+        table(end + 2, GROUP_TOTALS_HEADER, GROUP_FIELD, by_group, NO_GROUP, NET_TOTAL)
+        labels += [g[0] for g in by_group]
+
+    # Column A holds dates above and category/group names here; widen it to fit both (capped).
+    longest = max(len(x) for x in labels)
     ws.set_column(0, 0, max(_WIDTHS["date"], min(longest + 2, 32)))
     ws.set_column(3, 3, max(_WIDTHS["type"], 14))  # money out lands in the narrow Type column
 
@@ -103,7 +119,7 @@ def transactions_to_xlsx(
     include_totals adds a per-category totals table and an "All categories" row under the rows
     (off by default: accounting imports expect rows only).
     """
-    fields = export_fields(include_categories)
+    fields = export_fields(include_categories, has_groups(transactions))
     out, wb, ws, header, money = _new_workbook("Transactions")
 
     for col, field in enumerate(fields):
