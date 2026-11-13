@@ -108,3 +108,67 @@ def test_xlsx_text_uses_shared_strings_for_phone_viewers():
     assert ws["C2"].value == 1000.0 and ws["C2"].number_format == "#,##0.00"
     assert ws["C3"].value == "n/a" and ws["B3"].value == "http://example.com"
     assert ws.freeze_panes == "A2" and ws.auto_filter.ref == "A1:E3"
+
+
+TOTALS_ROWS = [
+    {"date": "01 Jul", "description": "Salary", "amount": "1,000.50", "type": "credit", "category": "Income"},
+    {"date": "02 Jul", "description": "Rent", "amount": "400", "type": "debit", "category": "Housing"},
+    {"date": "03 Jul", "description": "Groceries", "amount": "99.25", "type": "debit", "category": "Groceries"},
+    {"date": "04 Jul", "description": "Odd row", "amount": "n/a", "type": "debit", "category": "Other"},
+]
+
+
+def test_export_totals_math():
+    from services.csv_export import export_totals
+
+    assert export_totals(TOTALS_ROWS) == (4, 1000.5, 499.25)
+
+
+def test_xlsx_totals_block_has_formulas_and_cached_values():
+    import io
+    import zipfile
+
+    from services.xlsx_export import transactions_to_xlsx
+
+    data = transactions_to_xlsx(TOTALS_ROWS, include_totals=True)
+    ws = load_workbook(io.BytesIO(data)).active
+    # rows 2-5 data, row 6 blank, rows 7-10 totals (label in Description, value in Amount)
+    assert ws["B6"].value is None and ws["C6"].value is None
+    assert [ws[f"B{r}"].value for r in range(7, 11)] == [
+        "Transactions", "Total money in (credits)", "Total money out (debits)", "Net (in - out)",
+    ]
+    assert ws["C8"].value == '=SUMIFS(C2:C5,D2:D5,"credit")'
+    assert ws["C9"].value == '=SUMIFS(C2:C5,D2:D5,"debit")'
+    assert ws["C10"].value == "=C8-C9"
+    # Cached results are stored so phone viewers that don't calculate still show numbers.
+    cached = load_workbook(io.BytesIO(data), data_only=True).active
+    assert [cached[f"C{r}"].value for r in range(7, 11)] == [4, 1000.5, 499.25, 501.25]
+    assert ws.auto_filter.ref == "A1:E5"  # filter covers the data only
+    # Uncategorized variant keeps the same columns for description/amount/type.
+    ws2 = load_workbook(io.BytesIO(transactions_to_xlsx(TOTALS_ROWS, False, True))).active
+    assert ws2["C8"].value == '=SUMIFS(C2:C5,D2:D5,"credit")'
+    # Default stays rows-only for accounting imports.
+    plain = load_workbook(io.BytesIO(transactions_to_xlsx(TOTALS_ROWS))).active
+    assert plain.max_row == 5
+    assert "sharedStrings.xml" in " ".join(zipfile.ZipFile(io.BytesIO(data)).namelist())
+
+
+def test_csv_totals_rows():
+    from services.csv_export import transactions_to_csv
+
+    lines = transactions_to_csv(TOTALS_ROWS, include_totals=True).splitlines()
+    assert lines[-5:] == [
+        ",,,,",
+        ",Transactions,4,,",
+        ",Total money in (credits),1000.50,,",
+        ",Total money out (debits),499.25,,",
+        ",Net (in - out),501.25,,",
+    ]
+    assert len(transactions_to_csv(TOTALS_ROWS).splitlines()) == 5  # default: header + rows only
+
+
+def test_export_endpoint_include_totals(client):
+    r = client.post("/api/export", json={"transactions": TOTALS_ROWS, "format": "csv", "include_totals": True})
+    assert r.status_code == 200 and "Total money in (credits),1000.50" in r.text
+    r = client.post("/api/export", json={"transactions": TOTALS_ROWS, "format": "csv"})
+    assert "Total money" not in r.text

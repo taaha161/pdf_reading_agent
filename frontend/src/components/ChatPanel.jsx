@@ -46,7 +46,7 @@ function ChatDownload({ transactions }) {
     setBusy(format);
     setError(null);
     try {
-      await exportTransactions(transactions, { format, filenameBase: "chat-transactions" });
+      await exportTransactions(transactions, { format, filenameBase: "chat-transactions", includeTotals: true });
     } catch (e) {
       setError(e.message || "Failed to download file");
     } finally {

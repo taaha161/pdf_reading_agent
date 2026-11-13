@@ -324,12 +324,22 @@ function exportRows(transactions) {
  * @param {"csv"|"xlsx"} format
  * @param {"transactions"|"summary"} kind
  * @param {string} [filenameBase] name for the file without extension (defaults to the server's name)
+ * @param {boolean} [includeTotals] add count / money in / money out / net under the rows
  */
-export async function exportTransactions(transactions, { format = "csv", includeCategories = true, kind = "transactions", filenameBase } = {}) {
+export async function exportTransactions(
+  transactions,
+  { format = "csv", includeCategories = true, kind = "transactions", filenameBase, includeTotals = false } = {},
+) {
   const res = await fetch(`${API_BASE}/api/export`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ transactions: exportRows(transactions), format, include_categories: includeCategories, kind }),
+    body: JSON.stringify({
+      transactions: exportRows(transactions),
+      format,
+      include_categories: includeCategories,
+      kind,
+      include_totals: includeTotals,
+    }),
   });
   if (!res.ok) {
     if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
