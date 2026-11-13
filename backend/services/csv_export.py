@@ -9,11 +9,11 @@ GROUP_FIELD = "group"
 _NUMBER_RE = re.compile(r"^-?\d+(\.\d+)?$")
 
 TOTALS_HEADER = ("Category", "Transactions", "Money in", "Money out", "Net")
-GROUP_TOTALS_HEADER = ("Group", "Transactions", "Money in", "Money out", "Net")
+GROUP_TOTALS_HEADER = ("Sub-category", "Transactions", "Money in", "Money out", "Net")
 ALL_CATEGORIES = "All categories"
 NO_CATEGORY = "(no category)"
 NET_TOTAL = "Net total"
-NO_GROUP = "(no group)"
+NO_GROUP = "(no sub-category)"
 
 
 def amount_value(raw: Any) -> float | str:
@@ -72,7 +72,7 @@ def has_groups(transactions: list[dict[str, Any]]) -> bool:
 
 def export_fields(include_categories: bool = True, include_groups: bool = False) -> list[str]:
     """Columns for an export; the uncategorized variant drops the category column, and grouped
-    chat exports add a group column at the end."""
+    chat exports add a group column (shown as "Sub-category") at the end."""
     fields = FIELDS if include_categories else [f for f in FIELDS if f != "category"]
     return fields + [GROUP_FIELD] if include_groups else fields
 
@@ -82,10 +82,10 @@ def transactions_to_csv(
 ) -> str:
     """Return CSV string with columns: date, description, amount, type[, category][, group].
 
-    The group column is added when any row has a group (grouped chat downloads).
+    The group column ("Sub-category") is added when any row has a group (grouped chat downloads).
     include_totals appends a blank line and a totals table: one row per category (count, money in,
-    money out, net) and an "All categories" row; grouped rows also get a per-group table ending in a
-    "Net total" row. Off by default: accounting imports expect rows only.
+    money out, net) and an "All categories" row. Grouped rows instead get the category rows without
+    "All categories", then a per-sub-category table ending in a "Net total" row. Off by default: accounting imports expect rows only.
     """
     fields = export_fields(include_categories, has_groups(transactions))
     out = io.StringIO()
@@ -99,9 +99,12 @@ def transactions_to_csv(
         table.writerow(TOTALS_HEADER)
         groups = category_totals(transactions) if "category" in fields else []
         count, credit, debit = export_totals(transactions)
-        for name, n, money_in, money_out in groups + [(ALL_CATEGORIES, count, credit, debit)]:
+        grouped = GROUP_FIELD in fields
+        # Grouped files end in "Net total" instead, so the same figure isn't shown twice.
+        all_row = [] if grouped and groups else [(ALL_CATEGORIES, count, credit, debit)]
+        for name, n, money_in, money_out in groups + all_row:
             table.writerow([name, n, f"{money_in:.2f}", f"{money_out:.2f}", f"{money_in - money_out:.2f}"])
-        if GROUP_FIELD in fields:
+        if grouped:
             table.writerow([])
             table.writerow(GROUP_TOTALS_HEADER)
             for name, n, money_in, money_out in group_totals(transactions) + [(NET_TOTAL, count, credit, debit)]:

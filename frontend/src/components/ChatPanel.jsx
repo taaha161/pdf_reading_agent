@@ -60,7 +60,7 @@ function ChatDownload({ transactions }) {
       <span className="chat-download-icon"><TableIcon /></span>
       <span className="chat-download-label">
         <strong>{count} transaction{count === 1 ? "" : "s"}</strong>
-        <span>{groupCount > 0 ? `in ${groupCount} group${groupCount === 1 ? "" : "s"}, ` : ""}ready to download</span>
+        <span>{groupCount > 0 ? `in ${groupCount} sub-categor${groupCount === 1 ? "y" : "ies"}, ` : ""}ready to download</span>
       </span>
       <div className="chat-download-actions">
         <button type="button" onClick={() => download("xlsx")} disabled={!!busy}>

@@ -30,9 +30,9 @@ XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 _HEADERS = {
     "date": "Date", "description": "Description", "amount": "Amount", "type": "Type", "category": "Category",
-    GROUP_FIELD: "Group",
+    GROUP_FIELD: "Sub-category",
 }
-_WIDTHS = {"date": 12, "description": 48, "amount": 14, "type": 10, "category": 20, GROUP_FIELD: 16}
+_WIDTHS = {"date": 12, "description": 48, "amount": 14, "type": 10, "category": 20, GROUP_FIELD: 20}
 _MONEY_FORMAT = "#,##0.00"
 
 
@@ -57,7 +57,8 @@ def _new_workbook(sheet_name: str):
 def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str], header) -> None:
     """Totals table under the rows (after one blank row), in columns A-E:
     Category | Transactions | Money in | Money out | Net, one row per category, then "All categories".
-    With a group column, a second table follows (after one blank row): one row per group, then "Net total".
+    With a group ("Sub-category") column, the category table has no "All categories" row and a second
+    table follows (after one blank row): one row per sub-category, then "Net total".
 
     Live formulas (they follow edits to the rows) with cached results, because phone viewers don't
     calculate formulas and would otherwise show 0 or nothing. SUMPRODUCT with "=" is used instead of
@@ -76,8 +77,9 @@ def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str],
     bold_money = wb.add_format({"bold": True, "top": 1, "num_format": _MONEY_FORMAT})
     count, credit, debit = export_totals(transactions)
 
-    def table(top: int, head: tuple, field: str | None, rows: list, blank: str, total_label: str) -> int:
-        """Write one totals table with its header at 0-based row `top`; return the total row's index."""
+    def table(top: int, head: tuple, field: str, rows: list, blank: str, total_label: str | None) -> int:
+        """Write one totals table with its header at 0-based row `top`; return its last row's index.
+        total_label None leaves out the overall total row."""
         for col, label in enumerate(head):
             ws.write_string(top, col, label, header)
         for i, (name, n, money_in, money_out) in enumerate(rows):
@@ -89,6 +91,8 @@ def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str],
             ws.write_formula(r, 3, f'=SUMPRODUCT({match},--({types}="debit"),{amounts})', money, money_out)
             ws.write_formula(r, 4, f"=C{r + 1}-D{r + 1}", money, round(money_in - money_out, 2))
         r = top + 1 + len(rows)  # the overall total row
+        if total_label is None:
+            return r - 1
         ws.write_string(r, 0, total_label, bold)
         ws.write_formula(r, 1, f"=COUNTA({types})", bold, count)
         ws.write_formula(r, 2, f'=SUMPRODUCT(--({types}="credit"),{amounts})', bold_money, credit)
@@ -98,9 +102,12 @@ def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str],
 
     groups = category_totals(transactions) if "category" in fields else []
     # Header at row `last + 1` (0-based); row `last` is the blank spacer.
-    end = table(last + 1, TOTALS_HEADER, "category", groups, NO_CATEGORY, ALL_CATEGORIES)
+    grouped = GROUP_FIELD in fields
+    # Grouped files end in "Net total" instead, so the same figure isn't shown twice.
+    all_label = None if grouped and groups else ALL_CATEGORIES
+    end = table(last + 1, TOTALS_HEADER, "category", groups, NO_CATEGORY, all_label)
     labels = [ALL_CATEGORIES] + [g[0] for g in groups]
-    if GROUP_FIELD in fields:
+    if grouped:
         by_group = group_totals(transactions)
         table(end + 2, GROUP_TOTALS_HEADER, GROUP_FIELD, by_group, NO_GROUP, NET_TOTAL)
         labels += [g[0] for g in by_group]
