@@ -914,7 +914,7 @@ def _rows_from_trial_csv(csv_content: str) -> list[dict] | None:
 
 
 def _build_export(
-    rows: list[dict], fmt: str, include_categories: bool, kind: str = "transactions"
+    rows: list[dict], fmt: str, include_categories: bool, kind: str = "transactions", include_totals: bool = False
 ) -> tuple[bytes, str, str]:
     """Return (file bytes, filename, media type) for a CSV or Excel export."""
     if kind == "summary":
@@ -924,8 +924,8 @@ def _build_export(
         return summary_to_csv(summary).encode("utf-8"), "statement-summary.csv", "text/csv; charset=utf-8"
     suffix = "" if include_categories else "-uncategorized"
     if fmt == "xlsx":
-        return transactions_to_xlsx(rows, include_categories), f"statement{suffix}.xlsx", XLSX_MIME
-    content = transactions_to_csv(rows, include_categories).encode("utf-8")
+        return transactions_to_xlsx(rows, include_categories, include_totals), f"statement{suffix}.xlsx", XLSX_MIME
+    content = transactions_to_csv(rows, include_categories, include_totals).encode("utf-8")
     return content, f"statement{suffix}.csv", "text/csv; charset=utf-8"
 
 
@@ -938,7 +938,9 @@ def export_transactions(request: Request, body: ExportRequest):
     edits), so it serves both logged-in and anonymous trial users.
     """
     rows = [t.model_dump() for t in body.transactions]
-    content, filename, media_type = _build_export(rows, body.format, body.include_categories, body.kind)
+    content, filename, media_type = _build_export(
+        rows, body.format, body.include_categories, body.kind, body.include_totals
+    )
     return Response(
         content=content,
         media_type=media_type,

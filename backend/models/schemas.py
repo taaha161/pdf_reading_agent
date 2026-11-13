@@ -145,6 +145,9 @@ class ExportRequest(BaseModel):
     format: ExportFormat = "csv"
     include_categories: bool = True
     kind: ExportKind = "transactions"
+    # Append count / money in / money out / net under the rows (chat downloads). Off by default so
+    # files for QuickBooks/Xero imports stay rows-only.
+    include_totals: bool = False
 
 
 class EmailSpreadsheetRequest(BaseModel):
