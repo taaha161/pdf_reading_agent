@@ -204,7 +204,7 @@ def test_csv_group_column_and_group_totals():
     from services.csv_export import transactions_to_csv
 
     lines = transactions_to_csv(GROUPED_ROWS, include_totals=True).splitlines()
-    assert lines[0] == "date,description,amount,type,category,group"
+    assert lines[0] == "date,description,amount,type,category,sub-category"
     assert lines[1] == "01 Jul,From John,100,credit,Income,John"
     assert "All categories" not in "\n".join(lines)
     assert lines[-9:] == [

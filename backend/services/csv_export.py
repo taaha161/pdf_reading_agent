@@ -14,6 +14,8 @@ ALL_CATEGORIES = "All categories"
 NO_CATEGORY = "(no category)"
 NET_TOTAL = "Net total"
 NO_GROUP = "(no sub-category)"
+# CSV header labels that differ from the field name (users know groups as sub-categories).
+_HEADER_LABELS = {GROUP_FIELD: "sub-category"}
 
 
 def amount_value(raw: Any) -> float | str:
@@ -90,7 +92,7 @@ def transactions_to_csv(
     fields = export_fields(include_categories, has_groups(transactions))
     out = io.StringIO()
     writer = csv.DictWriter(out, fieldnames=fields, extrasaction="ignore")
-    writer.writeheader()
+    writer.writerow({f: _HEADER_LABELS.get(f, f) for f in fields})
     for row in transactions:
         writer.writerow({f: row.get(f) or "" for f in fields})
     if include_totals and transactions:
