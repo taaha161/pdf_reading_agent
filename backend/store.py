@@ -203,7 +203,7 @@ def purge_jobs_data(job_ids: list[str], user_id: str) -> int:
         cur.execute(
             """
             DELETE FROM job_payloads
-            WHERE job_id = ANY(%s) AND job_id IN (SELECT id FROM jobs WHERE user_id = %s)
+            WHERE job_id = ANY(%s::uuid[]) AND job_id IN (SELECT id FROM jobs WHERE user_id = %s)
             """,
             (job_ids, user_id),
         )
