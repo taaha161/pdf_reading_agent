@@ -191,3 +191,49 @@ def test_export_endpoint_include_totals(client):
     assert r.status_code == 200 and "All categories,6,1010.50,504.25,506.25" in r.text
     r = client.post("/api/export", json={"transactions": TOTALS_ROWS, "format": "csv"})
     assert "All categories" not in r.text
+
+
+GROUPED_ROWS = [
+    {"date": "01 Jul", "description": "From John", "amount": "100", "type": "credit", "category": "Income", "group": "John"},
+    {"date": "02 Jul", "description": "To John", "amount": "30", "type": "debit", "category": "Transfers", "group": "John"},
+    {"date": "03 Jul", "description": "To Alice", "amount": "50.5", "type": "debit", "category": "Transfers", "group": "Alice"},
+]
+
+
+def test_csv_group_column_and_group_totals():
+    from services.csv_export import transactions_to_csv
+
+    lines = transactions_to_csv(GROUPED_ROWS, include_totals=True).splitlines()
+    assert lines[0] == "date,description,amount,type,category,group"
+    assert lines[1] == "01 Jul,From John,100,credit,Income,John"
+    assert lines[-5:] == [
+        "",
+        "Group,Transactions,Money in,Money out,Net",
+        "John,2,100.00,30.00,70.00",
+        "Alice,1,0.00,50.50,-50.50",
+        "Net total,3,100.00,80.50,19.50",
+    ]
+
+
+def test_xlsx_group_column_and_group_totals():
+    from services.xlsx_export import transactions_to_xlsx
+
+    data = transactions_to_xlsx(GROUPED_ROWS, include_totals=True)
+    ws = load_workbook(io.BytesIO(data)).active
+    assert [c.value for c in ws[1]] == ["Date", "Description", "Amount", "Type", "Category", "Group"]
+    assert ws["F4"].value == "Alice"
+    # rows 2-4 data, 5 blank, 6 category header, 7-8 categories, 9 all categories, 10 blank, 11 group header
+    assert [c.value for c in ws[11]][:5] == ["Group", "Transactions", "Money in", "Money out", "Net"]
+    assert [ws[f"A{r}"].value for r in range(12, 15)] == ["John", "Alice", "Net total"]
+    assert ws["C12"].value == '=SUMPRODUCT(--(F2:F4=A12),--(D2:D4="credit"),C2:C4)'
+    cached = load_workbook(io.BytesIO(data), data_only=True).active
+    assert [[cached.cell(r, c).value for c in range(2, 6)] for r in range(12, 15)] == [
+        [2, 100, 30, 70], [1, 0, 50.5, -50.5], [3, 100, 80.5, 19.5],
+    ]
+
+
+def test_export_endpoint_keeps_group_and_omits_it_when_blank(client):
+    r = client.post("/api/export", json={"transactions": GROUPED_ROWS, "format": "csv", "include_totals": True})
+    assert r.status_code == 200 and "Net total,3,100.00,80.50,19.50" in r.text
+    r = client.post("/api/export", json={"transactions": TOTALS_ROWS, "format": "csv", "include_totals": True})
+    assert r.text.splitlines()[0] == "date,description,amount,type,category" and "Net total" not in r.text

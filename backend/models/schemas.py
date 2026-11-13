@@ -53,7 +53,8 @@ class FetchPdfUrlRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
-    # Rows the assistant attached for download (date, description, amount, type, category); empty if none.
+    # Rows the assistant attached for download (date, description, amount, type, category, and
+    # "group" when the question grouped people/merchants); empty if none.
     transactions: list[dict[str, str]] = Field(default_factory=list)
 
 
@@ -138,6 +139,8 @@ class ExportTransaction(BaseModel):
     amount: Optional[str] = ""
     type: Optional[str] = ""
     category: Optional[str] = ""
+    # Chat downloads grouped by person/merchant ("John", "Alice"); adds a Group column and group totals.
+    group: Optional[str] = Field("", max_length=200)
 
 
 class ExportRequest(BaseModel):
