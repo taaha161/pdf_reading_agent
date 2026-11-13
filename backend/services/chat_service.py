@@ -39,11 +39,18 @@ Ground rules:
   "count", "credit_total", "debit_total" and "net".
 - Amounts are always positive; "type" says the direction: credit = money added to the account,
   debit = money deducted. Say "received"/"sent" (or credit/debit) explicitly.
+- Direction words: "from X", "sent by X", "paid by X", "received from X" = credits (money X gave the user);
+  "to X", "sent to X", "paid to X", "spent at X" = debits. "With X" or just "X" = both directions.
 - Rows are numbered (#) by their position in the results table (1 = first row), so you may cite them, e.g. "row #12".
 - When asked why a row has a category, explain from its description.
 - If query_transactions returns more than one entry in "by_category" (e.g. a person paid by bank transfer
   AND Raast), always state the total AND list each category's count and amount from "by_category", so every
   figure can be matched to the summary table.
+- When a question names several people, merchants, categories or months ("sent by John and Alice",
+  "groceries and dining"), the user wants rows for ANY of them: put them in one filter separated by "|"
+  (e.g. description_contains="john|alice"). Never AND them by putting one in each filter. Also consider that a
+  name may appear in the category rather than the description; if a filter returns nothing, try the other field.
+  Report the combined total and break it down per name/category (query each one separately for its own figures).
 - If the data cannot answer the question, say so plainly instead of guessing.
 - Use the statement currency when showing amounts. Be concise; use a short list or table when listing rows.
 - When the user asks to see, list, give, find, show or export transactions (e.g. "give me transactions from John",
@@ -100,6 +107,11 @@ def official_totals(transactions: list[dict]) -> dict[str, Any]:
     }
 
 
+def _alts(value: Any) -> list[str]:
+    """Normalized alternatives of a filter value: "John | Alice" -> ["john", "alice"]; "" -> []."""
+    return [a for a in (_norm(p) for p in str(value or "").split("|")) if a]
+
+
 def _match(
     transactions: list[dict],
     category: str = "",
@@ -108,19 +120,25 @@ def _match(
     date_contains: str = "",
     type: str = "",
 ) -> list[tuple[int, dict]]:
-    """(row number, row) for rows passing every filter (ANDed, case-insensitive)."""
-    cat_eq, cat_in, desc_in, date_in = _norm(category), _norm(category_contains), _norm(description_contains), _norm(date_contains)
+    """(row number, row) for rows passing every filter, case-insensitive.
+
+    Different filters are ANDed. One filter can hold several alternatives separated by "|"
+    (e.g. description_contains="john|alice"); a row passes it if ANY alternative matches.
+    """
+    cat_eq, cat_in, desc_in, date_in = _alts(category), _alts(category_contains), _alts(description_contains), _alts(date_contains)
     want_type = _norm(type)
     matched = []
     for i, t in enumerate(transactions, start=1):
         cat = _norm(t.get("category")) or "other"
-        if cat_eq and cat != cat_eq:
+        if cat_eq and cat not in cat_eq:
             continue
-        if cat_in and cat_in not in cat:
+        if cat_in and not any(a in cat for a in cat_in):
             continue
-        if desc_in and desc_in not in _norm(t.get("description")):
+        desc = _norm(t.get("description"))
+        if desc_in and not any(a in desc for a in desc_in):
             continue
-        if date_in and date_in not in _norm(t.get("date")):
+        date = _norm(t.get("date"))
+        if date_in and not any(a in date for a in date_in):
             continue
         if want_type in ("credit", "debit") and str(t.get("type", "")).lower() != want_type:
             continue
@@ -229,14 +247,16 @@ def get_reply(
         date_contains: str = "",
         type: str = "",
     ) -> dict:
-        """Find statement rows and get their exact count and totals. All filters are optional,
-        case-insensitive and combined with AND; leave a filter empty to ignore it.
+        """Find statement rows and get their exact count and totals. All filters are optional and
+        case-insensitive; leave a filter empty to ignore it. Different filters are combined with AND.
+        To match several values in ONE filter (OR), separate them with "|", e.g.
+        description_contains="john|alice" finds rows for John or Alice.
 
         Args:
-            category: Exact category name as shown in the summary table, e.g. "Raast P2P - Sent".
-            category_contains: Part of a category name, e.g. "wajid ali" matches "To: WAJID ALI" and "From: WAJID ALI".
-            description_contains: Text that must appear in the description, e.g. a name, merchant or "ATM".
-            date_contains: Text that must appear in the date as written in the statement, e.g. "Jul 2025" or "2025-07".
+            category: Exact category name(s) as shown in the summary table, e.g. "Raast P2P - Sent" or "Groceries|Dining".
+            category_contains: Part of a category name, e.g. "wajid ali" matches "To: WAJID ALI" and "From: WAJID ALI"; "john|alice" matches either.
+            description_contains: Text that must appear in the description, e.g. a name, merchant or "ATM"; "john|alice" for either.
+            date_contains: Text that must appear in the date as written in the statement, e.g. "Jul 2025", or "Jul 2025|Aug 2025".
             type: "credit" (money in) or "debit" (money out).
 
         Returns:
@@ -260,13 +280,15 @@ def get_reply(
     ) -> dict:
         """Attach the matching statement rows to your reply so the user can download them as CSV or Excel.
         Use when the user asks to see, list, give, find or export transactions. Same filters as
-        query_transactions (optional, case-insensitive, ANDed). Each call replaces the previous attachment.
+        query_transactions (optional, case-insensitive, different filters ANDed, "|" = OR inside one
+        filter, e.g. description_contains="john|alice"). Each call replaces the previous attachment, so
+        put every person/merchant/category the user asked for into ONE call.
 
         Args:
-            category: Exact category name as shown in the summary table.
-            category_contains: Part of a category name, e.g. a person's name.
-            description_contains: Text that must appear in the description, e.g. a name, merchant or "ATM".
-            date_contains: Text that must appear in the date as written in the statement, e.g. "Jul 2025".
+            category: Exact category name(s) as shown in the summary table; "A|B" for several.
+            category_contains: Part of a category name, e.g. a person's name; "john|alice" for several.
+            description_contains: Text that must appear in the description, e.g. a name, merchant or "ATM"; "john|alice" for several.
+            date_contains: Text that must appear in the date as written in the statement, e.g. "Jul 2025"; "Jul 2025|Aug 2025" for several.
             type: "credit" (money in) or "debit" (money out).
 
         Returns:

@@ -121,3 +121,24 @@ def test_recent_conversation_reaches_the_model(monkeypatch):
     assert "old question 4" not in c and "old question 5" in c  # only the last 6 turns
     assert "x" * 1600 not in c  # long turns are cut short
     assert c.rstrip().endswith("User question: download those")
+
+
+MULTI = TX + [
+    {"date": "06 Aug 2025", "description": "Transfer to ALICE KHAN", "amount": "50", "type": "debit", "category": "To: ALICE KHAN"},
+    {"date": "07 Aug 2025", "description": "Grocery store", "amount": "20", "type": "debit", "category": "Groceries"},
+]
+
+
+def test_pipe_separated_values_match_any():
+    r = cs.query_rows(MULTI, description_contains="wajid ali | alice", type="debit")
+    assert [row["#"] for row in r["rows"]] == [2, 5]
+    assert r["debit_total"] == 450.5
+    assert cs.query_rows(MULTI, category="groceries|cash withdrawals")["count"] == 2
+    assert cs.query_rows(MULTI, date_contains="jul 2025|aug 2025")["count"] == 6
+    assert cs.query_rows(MULTI, category_contains="|")["count"] == 6  # empty alternatives = no filter
+
+
+def test_attach_exports_rows_for_every_name(monkeypatch):
+    _fake_client(monkeypatch, lambda t: t["attach_transactions"](category_contains="wajid ali|alice khan", type="debit"))
+    _, rows = cs.get_reply({"transactions": MULTI}, "transactions sent to wajid and alice")
+    assert [r["category"] for r in rows] == ["To: WAJID ALI", "To: ALICE KHAN"]
