@@ -206,9 +206,14 @@ def test_csv_group_column_and_group_totals():
     lines = transactions_to_csv(GROUPED_ROWS, include_totals=True).splitlines()
     assert lines[0] == "date,description,amount,type,category,group"
     assert lines[1] == "01 Jul,From John,100,credit,Income,John"
-    assert lines[-5:] == [
+    assert "All categories" not in "\n".join(lines)
+    assert lines[-9:] == [
         "",
-        "Group,Transactions,Money in,Money out,Net",
+        "Category,Transactions,Money in,Money out,Net",
+        "Income,1,100.00,0.00,100.00",
+        "Transfers,2,0.00,80.50,-80.50",
+        "",
+        "Sub-category,Transactions,Money in,Money out,Net",
         "John,2,100.00,30.00,70.00",
         "Alice,1,0.00,50.50,-50.50",
         "Net total,3,100.00,80.50,19.50",
@@ -220,14 +225,15 @@ def test_xlsx_group_column_and_group_totals():
 
     data = transactions_to_xlsx(GROUPED_ROWS, include_totals=True)
     ws = load_workbook(io.BytesIO(data)).active
-    assert [c.value for c in ws[1]] == ["Date", "Description", "Amount", "Type", "Category", "Group"]
+    assert [c.value for c in ws[1]] == ["Date", "Description", "Amount", "Type", "Category", "Sub-category"]
     assert ws["F4"].value == "Alice"
-    # rows 2-4 data, 5 blank, 6 category header, 7-8 categories, 9 all categories, 10 blank, 11 group header
-    assert [c.value for c in ws[11]][:5] == ["Group", "Transactions", "Money in", "Money out", "Net"]
-    assert [ws[f"A{r}"].value for r in range(12, 15)] == ["John", "Alice", "Net total"]
-    assert ws["C12"].value == '=SUMPRODUCT(--(F2:F4=A12),--(D2:D4="credit"),C2:C4)'
+    # rows 2-4 data, 5 blank, 6 category header, 7-8 categories (no "All categories"), 9 blank, 10 sub-category header
+    assert [ws[f"A{r}"].value for r in range(6, 10)] == ["Category", "Income", "Transfers", None]
+    assert [c.value for c in ws[10]][:5] == ["Sub-category", "Transactions", "Money in", "Money out", "Net"]
+    assert [ws[f"A{r}"].value for r in range(11, 14)] == ["John", "Alice", "Net total"]
+    assert ws["C11"].value == '=SUMPRODUCT(--(F2:F4=A11),--(D2:D4="credit"),C2:C4)'
     cached = load_workbook(io.BytesIO(data), data_only=True).active
-    assert [[cached.cell(r, c).value for c in range(2, 6)] for r in range(12, 15)] == [
+    assert [[cached.cell(r, c).value for c in range(2, 6)] for r in range(11, 14)] == [
         [2, 100, 30, 70], [1, 0, 50.5, -50.5], [3, 100, 80.5, 19.5],
     ]
 

@@ -89,8 +89,8 @@ Ground rules:
   to John and Alice", "Uber vs Careem", "group Amazon and eBay as Shopping"), also pass groups so every row is
   labelled with its group, e.g. groups="John|Alice", or groups="Shopping=amazon,ebay|Rides=uber,careem" when a
   group has its own name or several search terms. Use the names the user used as group labels. The download then
-  gets a Group column and a totals table per group plus the net total; report each group's figures from
-  "by_group" and the combined net.
+  gets a Sub-category column and a totals table per sub-category plus the net total. Call the groups
+  "sub-categories" when talking to the user; report each one's figures from "by_group" and the combined net.
 - If the data cannot answer the question, say so plainly instead of guessing.
 - Use the statement currency when showing amounts. Be concise; use a short list or table when listing rows.
 - When the user asks to see, list, give, find, show or export transactions (e.g. "give me transactions from John",
@@ -405,7 +405,7 @@ def get_reply(
             description_contains: Text that must appear in the description, e.g. a name, merchant or "ATM"; "john|alice" for several.
             date_contains: Text that must appear in the date as written in the statement, e.g. "Jul 2025"; "Jul 2025|Aug 2025" for several.
             type: "credit" (money in) or "debit" (money out).
-            groups: Optional labels added as a Group column with per-group totals in the download, "|"-separated,
+            groups: Optional labels added as a Sub-category column with per-sub-category totals in the download, "|"-separated,
                 e.g. "John|Alice" or "Shopping=amazon,ebay|Rides=uber". Rows matching no group are "Other".
 
         Returns:
