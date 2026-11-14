@@ -1,5 +1,6 @@
 import { getRecaptchaToken } from "../lib/recaptcha";
 import { getGaIds } from "../lib/analytics";
+import { captureMessage } from "../lib/monitoring";
 
 let API_BASE = "http://localhost:8000";
 
@@ -34,6 +35,11 @@ function getErrorMessage(err) {
 
 /** Build the Error the UI expects from an API error status + FastAPI `detail`. */
 function scanError(status, detail, fallback) {
+  // 5xx: report from the client too, so proxy/gateway failures the backend never saw show up.
+  if (status >= 500) {
+    const text = typeof detail === "string" ? detail : detail?.detail || fallback;
+    captureMessage(`API error ${status}: ${text}`, { tags: { area: "api", status_code: String(status) } });
+  }
   if (status === 429) return new Error("Too many requests. Please try again in a minute.");
   const obj = detail && typeof detail === "object" && !Array.isArray(detail) ? detail : null;
   if (status === 402) {
