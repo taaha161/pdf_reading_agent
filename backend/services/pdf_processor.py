@@ -120,7 +120,7 @@ def extract_text_from_pdf(
             logger.warning("extract_text_from_pdf: Datalab timed out (%s), pages=%d", e, page_count)
             raise PdfExtractionTimeout(str(e)) from e
         except Exception as e:
-            logger.warning("extract_text_from_pdf: Datalab failed (%s)", e)
+            logger.error("extract_text_from_pdf: Datalab failed (%s)", e, exc_info=True)
             return ""
 
     stream = io.BytesIO(file_content)

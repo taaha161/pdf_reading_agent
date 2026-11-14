@@ -12,6 +12,7 @@ from typing import Annotated
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from services.monitoring import set_user as set_monitoring_user
 
 logger = logging.getLogger("pdf_processor_app.auth")
 
@@ -116,6 +117,7 @@ def get_current_user(
         logger.info("JWT verify: payload missing sub -> 401")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
     logger.debug("JWT verify: ok sub=%s", sub)
+    set_monitoring_user(str(sub))
     return str(sub)
 
 
@@ -131,6 +133,7 @@ def get_current_user_optional(
         sub = payload.get("sub")
         if not sub:
             return None
+        set_monitoring_user(str(sub))
         return str(sub)
     except HTTPException:
         return None

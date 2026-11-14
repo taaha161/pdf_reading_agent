@@ -13,6 +13,7 @@ numpy==2.3.0
 opencv-python-headless==4.13.0.92
 python-dotenv==1.0.0
 httpx==0.28.1
+sentry-sdk[fastapi]==2.75.0
 openpyxl==3.1.5  # tests read exported workbooks
 XlsxWriter==3.2.9
 pyjwt[crypto]==2.11.0
