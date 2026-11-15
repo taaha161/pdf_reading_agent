@@ -5,7 +5,7 @@ import settingsGear from "../assets/settings-gear.svg";
 import { useAuth } from "../contexts/AuthContext";
 import { useUsage } from "../contexts/UsageContext";
 import { OFFERS, getOffer } from "../lib/offer";
-import { FREE_ANON_PAGES, PLAN_PAGES, formatExpiry } from "../lib/pricing";
+import { FREE_ANON_PAGES, FREE_SIGNUP_PAGES, PLAN_PAGES, PLAN_PRICE, formatExpiry } from "../lib/pricing";
 import "./AppLayout.css";
 
 export default function AppLayout({ children }) {
@@ -20,16 +20,6 @@ export default function AppLayout({ children }) {
 
   // Real page numbers come from the server (anonymous free pages are counted
   // per client IP; signed-in balances live in billing).
-  const trialUsed = usage?.trial_used ?? 0;
-  const trialLimit = usage?.trial_limit || FREE_ANON_PAGES;
-  const pagesRemaining = usage?.pages_remaining ?? 0;
-  const freePages = usage?.free_pages ?? 0;
-  const planPages = usage?.plan_pages ?? 0;
-  const packPages = usage?.pack_pages ?? 0;
-  const freeExpiry = formatExpiry(usage?.free_expires_at);
-  const pagesProgress = isLoggedIn
-    ? Math.min(pagesRemaining / PLAN_PAGES, 1)
-    : Math.min(trialUsed / trialLimit, 1);
 
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
@@ -111,35 +101,7 @@ export default function AppLayout({ children }) {
             </button>
             )}
           </nav>
-          {usage && (
-            <div className="app-layout-summary-card">
-              {isLoggedIn ? (
-                <>
-                  <p className="app-layout-summary-label">Pages left</p>
-                  <div className="app-layout-summary-bar-wrap">
-                    <div className="app-layout-summary-bar" style={{ width: `${pagesProgress * 100}%` }} />
-                  </div>
-                  <p className="app-layout-summary-value"><strong>{pagesRemaining.toLocaleString()}</strong> pages</p>
-                  {freePages > 0 && (
-                    <p className="app-layout-summary-value">{freePages} free{freeExpiry ? ` until ${freeExpiry}` : ""}</p>
-                  )}
-                  {planPages > 0 && <p className="app-layout-summary-value">{planPages} on your plan</p>}
-                  {packPages > 0 && <p className="app-layout-summary-value">{packPages} from page packs</p>}
-                  <button type="button" className="app-layout-summary-cta" onClick={() => navigate("/settings#billing")}>
-                    Get more pages
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p className="app-layout-summary-label">Free pages</p>
-                  <div className="app-layout-summary-bar-wrap">
-                    <div className="app-layout-summary-bar" style={{ width: `${pagesProgress * 100}%` }} />
-                  </div>
-                  <p className="app-layout-summary-value">{trialUsed} / {trialLimit} free pages used</p>
-                </>
-              )}
-            </div>
-          )}
+          {usage && <PagesCard usage={usage} isLoggedIn={isLoggedIn} onGetMore={() => navigate("/settings#billing")} />}
         </aside>
         )}
         {isMobileNavOpen && !isGuest && (
@@ -238,5 +200,80 @@ function LogOutIcon() {
       <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
       <path d="M16 17l5-5-5-5M21 12H9" />
     </svg>
+  );
+}
+
+/** One balance bucket: name + "left / limit", a bar that drains as pages are used, and a hint. */
+function PagesBucket({ name, left, limit, hint }) {
+  const pct = limit ? Math.max(0, Math.min(left / limit, 1)) * 100 : null;
+  return (
+    <li className="pages-bucket">
+      <div className="pages-bucket-row">
+        <span className="pages-bucket-name">{name}</span>
+        <span className="pages-bucket-count">
+          {left.toLocaleString()}
+          {limit ? <span className="pages-bucket-limit"> / {limit}</span> : null}
+        </span>
+      </div>
+      {pct != null && (
+        <div className="pages-bucket-bar" aria-hidden>
+          <div className="pages-bucket-fill" style={{ width: `${pct}%` }} />
+        </div>
+      )}
+      {hint && <p className="pages-bucket-hint">{hint}</p>}
+    </li>
+  );
+}
+
+/** Sidebar balance: total pages left, then where they come from (used top to bottom). */
+function PagesCard({ usage, isLoggedIn, onGetMore }) {
+  if (!isLoggedIn) {
+    const limit = usage.trial_limit || FREE_ANON_PAGES;
+    const left = Math.max(0, usage.trial_remaining ?? limit);
+    return (
+      <div className="app-layout-summary-card">
+        <p className="pages-card-eyebrow">Free pages</p>
+        <ul className="pages-buckets">
+          <PagesBucket name="Without an account" left={left} limit={limit} hint={`Sign up for ${FREE_SIGNUP_PAGES} free pages`} />
+        </ul>
+      </div>
+    );
+  }
+
+  const total = usage.pages_remaining ?? 0;
+  const free = usage.free_pages ?? 0;
+  const plan = usage.plan_pages ?? 0;
+  const pack = usage.pack_pages ?? 0;
+  const subscribed = !!usage.subscription_active;
+  const expiry = formatExpiry(usage.free_expires_at);
+
+  return (
+    <div className={"app-layout-summary-card" + (total === 0 ? " pages-card--empty" : "")}>
+      <p className="pages-card-eyebrow">Pages left</p>
+      <p className="pages-card-total">
+        {total.toLocaleString()} <span>{total === 1 ? "page" : "pages"}</span>
+      </p>
+      {total === 0 ? (
+        <p className="pages-card-note">
+          {subscribed
+            ? "Your plan refills next billing cycle. Need pages sooner? Add a page pack."
+            : `Your free month has ended. Subscribe for $${PLAN_PRICE}/month or add a page pack.`}
+        </p>
+      ) : (
+        <ul className="pages-buckets">
+          {free > 0 && (
+            <PagesBucket name="Free month" left={free} limit={FREE_SIGNUP_PAGES} hint={expiry ? `Ends ${expiry}` : null} />
+          )}
+          {subscribed && <PagesBucket name="Monthly plan" left={plan} limit={PLAN_PAGES} hint="Refills each month" />}
+          {pack > 0 && <PagesBucket name="Page packs" left={pack} hint="Never expire" />}
+        </ul>
+      )}
+      {total > 0 && !subscribed && free > 0 && (
+        <p className="pages-card-note">After that: ${PLAN_PRICE}/month for {PLAN_PAGES} pages.</p>
+      )}
+      <button type="button" className="app-layout-summary-cta" onClick={onGetMore}>
+        {total === 0 ? "Get more pages" : subscribed ? "Add a page pack" : "Get more pages"}
+      </button>
+    </div>
   );
 }
