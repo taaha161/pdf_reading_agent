@@ -272,6 +272,99 @@
   color: var(--color-text);
 }
 
+.pages-card-eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.pages-card-total {
+  margin: 2px 0 14px;
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--color-text);
+}
+
+.pages-card-total span {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.pages-card--empty .pages-card-total {
+  color: var(--color-error);
+}
+
+.pages-card-note {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.pages-buckets {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pages-buckets + .pages-card-note {
+  margin-top: -2px;
+}
+
+.pages-bucket-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.pages-bucket-name {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.pages-bucket-count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.pages-bucket-limit {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.pages-bucket-bar {
+  height: 6px;
+  margin-top: 5px;
+  background: var(--color-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.pages-bucket-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+.pages-bucket-hint {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
 .app-layout-summary-cta {
   display: block;
   width: 100%;
