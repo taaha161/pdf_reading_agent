@@ -3,6 +3,7 @@ import json
 import os
 import uuid
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from typing import Any
 
 import psycopg2
@@ -225,7 +226,7 @@ def delete_user_data(user_id: str) -> None:
         cur.execute("DELETE FROM scan_feedback WHERE user_id = %s", (user_id,))
 
 
-def record_trial_run(job_id: str, client_ip_hash: str | None = None) -> None:
+def record_trial_run(job_id: str, client_ip_hash: str | None = None, pages: int | None = None) -> None:
     """Insert a row into trial_runs for analytics + durable trial counting.
 
     ``client_ip_hash`` is a salted one-way hash of the client IP (never the raw
@@ -235,10 +236,10 @@ def record_trial_run(job_id: str, client_ip_hash: str | None = None) -> None:
     with _cursor() as cur:
         cur.execute(
             """
-            INSERT INTO trial_runs (job_id, client_ip_hash, created_at)
-            VALUES (%s, %s, NOW())
+            INSERT INTO trial_runs (job_id, client_ip_hash, pages, created_at)
+            VALUES (%s, %s, %s, NOW())
             """,
-            (job_id, client_ip_hash),
+            (job_id, client_ip_hash, pages),
         )
 
 
@@ -249,6 +250,19 @@ def count_trial_runs_by_ip(client_ip_hash: str) -> int:
     with _cursor() as cur:
         cur.execute(
             "SELECT COUNT(*) AS n FROM trial_runs WHERE client_ip_hash = %s",
+            (client_ip_hash,),
+        )
+        row = cur.fetchone()
+    return int(row["n"]) if row else 0
+
+
+def sum_trial_pages_by_ip(client_ip_hash: str) -> int:
+    """Free pages this client IP hash has used without an account (runs before page pricing count 0)."""
+    if not client_ip_hash:
+        return 0
+    with _cursor() as cur:
+        cur.execute(
+            "SELECT COALESCE(SUM(pages), 0) AS n FROM trial_runs WHERE client_ip_hash = %s",
             (client_ip_hash,),
         )
         row = cur.fetchone()
@@ -330,14 +344,20 @@ def update_job_transactions(job_id: str, user_id: str, transactions: list[dict[s
 
 
 # --- Billing ---
+# Pages are the billing unit. A user has three buckets, spent in this order:
+#   free_pages (signup grant, expires at free_expires_at) -> plan_pages (monthly
+#   subscription allowance, reset each cycle) -> pack_pages (purchased, never expire).
+
+_BILLING_COLS = (
+    "user_id, balance_cents, free_pages, free_expires_at, plan_pages, pack_pages, "
+    "stripe_customer_id, stripe_subscription_id, created_at, updated_at"
+)
+
 
 def get_billing(user_id: str) -> dict | None:
     """Return user_billing row or None."""
     with _cursor() as cur:
-        cur.execute(
-            "SELECT user_id, balance_cents, stripe_customer_id, stripe_subscription_id, created_at, updated_at FROM user_billing WHERE user_id = %s",
-            (user_id,),
-        )
+        cur.execute(f"SELECT {_BILLING_COLS} FROM user_billing WHERE user_id = %s", (user_id,))
         row = cur.fetchone()
     if not row:
         return None
@@ -352,50 +372,99 @@ def get_user_id_by_stripe_customer_id(stripe_customer_id: str) -> str | None:
     return row["user_id"] if row else None
 
 
-def set_balance(user_id: str, balance_cents: int) -> None:
-    """Set balance and updated_at."""
+def ensure_free_grant(user_id: str, pages: int, days: int) -> dict:
+    """Grant the one-time free pages (valid `days`) if this user never got them. Returns the row."""
     with _cursor() as cur:
         cur.execute(
-            """
-            INSERT INTO user_billing (user_id, balance_cents, updated_at)
-            VALUES (%s, %s, NOW())
-            ON CONFLICT (user_id) DO UPDATE SET balance_cents = EXCLUDED.balance_cents, updated_at = NOW()
-            """,
-            (user_id, balance_cents),
-        )
-
-
-def add_balance(user_id: str, delta_cents: int) -> None:
-    """Add delta to balance (e.g. top-up). Creates row if missing with balance = delta."""
-    with _cursor() as cur:
-        cur.execute(
-            """
-            INSERT INTO user_billing (user_id, balance_cents, updated_at)
-            VALUES (%s, GREATEST(0, %s), NOW())
+            f"""
+            INSERT INTO user_billing (user_id, free_pages, free_expires_at, updated_at)
+            VALUES (%s, %s, NOW() + make_interval(days => %s), NOW())
             ON CONFLICT (user_id) DO UPDATE SET
-              balance_cents = GREATEST(0, user_billing.balance_cents + %s),
+              free_pages = EXCLUDED.free_pages,
+              free_expires_at = EXCLUDED.free_expires_at,
               updated_at = NOW()
+            WHERE user_billing.free_expires_at IS NULL
+            RETURNING {_BILLING_COLS}
             """,
-            (user_id, delta_cents, delta_cents),
-        )
-
-
-def deduct_balance(user_id: str, amount_cents: float) -> int | None:
-    """Deduct amount from balance. Returns new balance_cents or None if insufficient. Uses single UPDATE to avoid races."""
-    with _cursor() as cur:
-        cur.execute(
-            """
-            UPDATE user_billing
-            SET balance_cents = balance_cents - %s, updated_at = NOW()
-            WHERE user_id = %s AND balance_cents >= %s
-            RETURNING balance_cents
-            """,
-            (amount_cents, user_id, amount_cents),
+            (user_id, pages, days),
         )
         row = cur.fetchone()
-    if row is None:
-        return None
-    return int(row["balance_cents"])
+        if row is None:
+            cur.execute(f"SELECT {_BILLING_COLS} FROM user_billing WHERE user_id = %s", (user_id,))
+            row = cur.fetchone()
+    return dict(row)
+
+
+def free_pages_available(row: dict | None, now: datetime | None = None) -> int:
+    """Unexpired free pages on a billing row."""
+    if not row or not row.get("free_expires_at"):
+        return 0
+    now = now or datetime.now(timezone.utc)
+    return max(0, int(row.get("free_pages") or 0)) if row["free_expires_at"] > now else 0
+
+
+def pages_available(row: dict | None) -> int:
+    """Total pages this user can spend right now."""
+    if not row:
+        return 0
+    return free_pages_available(row) + max(0, int(row.get("plan_pages") or 0)) + max(0, int(row.get("pack_pages") or 0))
+
+
+def set_plan_pages(user_id: str, pages: int) -> None:
+    """Set the monthly plan allowance (subscription start / renewal / cancel)."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO user_billing (user_id, plan_pages, updated_at)
+            VALUES (%s, %s, NOW())
+            ON CONFLICT (user_id) DO UPDATE SET plan_pages = EXCLUDED.plan_pages, updated_at = NOW()
+            """,
+            (user_id, pages),
+        )
+
+
+def add_pack_pages(user_id: str, pages: int) -> None:
+    """Add purchased pages (never expire)."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO user_billing (user_id, pack_pages, updated_at)
+            VALUES (%s, GREATEST(0, %s), NOW())
+            ON CONFLICT (user_id) DO UPDATE SET
+              pack_pages = GREATEST(0, user_billing.pack_pages + %s),
+              updated_at = NOW()
+            """,
+            (user_id, pages, pages),
+        )
+
+
+def deduct_pages(user_id: str, pages: int) -> dict | None:
+    """Spend `pages` (free -> plan -> pack), atomically. Returns the updated row, or None if not enough."""
+    with _cursor() as cur:
+        cur.execute(f"SELECT {_BILLING_COLS} FROM user_billing WHERE user_id = %s FOR UPDATE", (user_id,))
+        row = cur.fetchone()
+        if row is None or pages_available(row) < pages:
+            return None
+        row = dict(row)
+        left = pages
+        take_free = min(left, free_pages_available(row))
+        left -= take_free
+        take_plan = min(left, max(0, row["plan_pages"]))
+        left -= take_plan
+        take_pack = left
+        cur.execute(
+            f"""
+            UPDATE user_billing SET
+              free_pages = free_pages - %s,
+              plan_pages = plan_pages - %s,
+              pack_pages = pack_pages - %s,
+              updated_at = NOW()
+            WHERE user_id = %s
+            RETURNING {_BILLING_COLS}
+            """,
+            (take_free, take_plan, take_pack, user_id),
+        )
+        return dict(cur.fetchone())
 
 
 def set_stripe_ids(user_id: str, stripe_customer_id: str, stripe_subscription_id: str | None = None) -> None:
@@ -414,13 +483,13 @@ def set_stripe_ids(user_id: str, stripe_customer_id: str, stripe_subscription_id
         )
 
 
-def insert_usage_log(user_id: str, job_id: str, amount_cents: float, balance_after_cents: int, conversion_mode: str) -> None:
-    """Append a row to billing_usage_log."""
+def insert_usage_log(user_id: str, job_id: str, pages: int, pages_after: int, conversion_mode: str) -> None:
+    """Append a row to billing_usage_log (pages charged; balance_after_cents holds pages left)."""
     with _cursor() as cur:
         cur.execute(
             """
-            INSERT INTO billing_usage_log (user_id, job_id, amount_cents, balance_after_cents, conversion_mode)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO billing_usage_log (user_id, job_id, amount_cents, balance_after_cents, conversion_mode, pages)
+            VALUES (%s, %s, 0, %s, %s, %s)
             """,
-            (user_id, job_id, int(amount_cents), balance_after_cents, conversion_mode),
+            (user_id, job_id, pages_after, conversion_mode, pages),
         )

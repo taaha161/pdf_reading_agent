@@ -49,7 +49,7 @@ def _invoice_event(billing_reason):
 
 def _handle(billing_reason):
     with patch.object(billing, "_user_id_from_customer", return_value="user-1"), patch.object(
-        billing, "set_balance"
+        billing, "set_plan_pages"
     ), patch.object(billing, "set_stripe_ids"), patch.object(billing, "track_subscription_purchase") as track:
         ok, _ = billing._handle_invoice_paid(_invoice_event(billing_reason))
     assert ok
@@ -69,7 +69,7 @@ def test_gpc_opt_out_skips_linkedin_purchase():
     event = _invoice_event("subscription_create")
     event["data"]["object"]["subscription_details"] = {"metadata": {"user_id": "user-1", "ad_opt_out": "1"}}
     with patch.object(billing, "_user_id_from_customer", return_value="user-1"), patch.object(
-        billing, "set_balance"
+        billing, "set_plan_pages"
     ), patch.object(billing, "set_stripe_ids"), patch.object(billing, "track_subscription_purchase") as track:
         ok, _ = billing._handle_invoice_paid(event)
     assert ok

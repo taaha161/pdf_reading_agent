@@ -12,7 +12,7 @@ import AskStatement from '../../components/AskStatement.astro';
 import SampleExport from '../../components/SampleExport.astro';
 import StickyCta from '../../components/StickyCta.astro';
 import BankLogoMarquee from '../../components/BankLogoMarquee.astro';
-import { SITE_NAME, FREE_STATEMENTS_LABEL, canonical } from '../../consts';
+import { SITE_NAME, FREE_LABEL, canonical } from '../../consts';
 import { PERSONAS, type Persona } from '../../personas';
 
 export function getStaticPaths() {
@@ -57,7 +57,7 @@ const jsonLd = [
           <a class="btn btn-primary" href="/scanner" data-cta="persona_hero">Convert a statement free</a>
           <a class="btn btn-ghost" href="#sample" data-open-sample="persona_hero" data-cta="persona_sample">View sample export</a>
         </div>
-        <p class="meta">{FREE_STATEMENTS_LABEL} · No credit card · No annual contract</p>
+        <p class="meta">{FREE_LABEL} · No credit card · No annual contract</p>
       </div>
       <div>
         <HeroDropzone cta="persona" />
@@ -114,7 +114,7 @@ const jsonLd = [
   <section class="final">
     <div class="container">
       <h2>Your next statement could be a spreadsheet in a minute.</h2>
-      <p>{FREE_STATEMENTS_LABEL}. No credit card. Incognito mode if you don't want anything saved.</p>
+      <p>{FREE_LABEL}. No credit card. Incognito mode if you don't want anything saved.</p>
       <a class="btn btn-invert" href="/scanner" data-cta="persona_final">Convert a statement free</a>
     </div>
   </section>

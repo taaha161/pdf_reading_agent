@@ -14,9 +14,30 @@ export function canonical(path: string): string {
   return `${SITE_URL}/${path.replace(/^\/+|\/+$/g, '')}`;
 }
 
-/** Free statements per person (1 without an account, 3 total once signed up). Matches AUTH_TRIAL_LIMIT in backend/main.py. */
-export const FREE_STATEMENTS = 3;
-export const FREE_STATEMENTS_LABEL = `${FREE_STATEMENTS} statements free`;
+/**
+ * Page-based pricing. Matches backend/services/billing.py and frontend/src/lib/pricing.js.
+ * A "page" is one PDF page; High accuracy mode uses ACCURATE_MULTIPLIER pages per PDF page.
+ */
+export const FREE_ANON_PAGES = 10; // without an account
+export const FREE_SIGNUP_PAGES = 100; // free for the first month after signup, no card
+export const FREE_SIGNUP_DAYS = 30;
+export const PLAN_PRICE = 10; // USD per month
+export const PLAN_PAGES = 100; // pages per month on the plan
+export const ACCURATE_MULTIPLIER = 2;
+export const PAGE_PACKS = [
+  { pages: 10, price: 2 },
+  { pages: 30, price: 5 },
+  { pages: 100, price: 10 },
+] as const;
+export const PACKS_TEXT = PAGE_PACKS.map((p) => `${p.pages} pages for $${p.price}`).join(', ');
+
+/** Short free-offer label for CTAs and badges. */
+export const FREE_LABEL = `${FREE_SIGNUP_PAGES} pages free your first month`;
+/** One-paragraph pricing answer, reused by FAQs across the site. */
+export const PRICING_SUMMARY =
+  `You pay per PDF page. Try ${FREE_ANON_PAGES} pages free without an account. Sign up and your first month includes ` +
+  `${FREE_SIGNUP_PAGES} pages free, no credit card required. After that, the plan is $${PLAN_PRICE} a month for ` +
+  `${PLAN_PAGES} pages, and page packs top you up anytime: ${PACKS_TEXT}. Pack pages never expire. Cancel anytime.`;
 
 /**
  * Public review profile (Trustpilot/G2). Empty = review links stay hidden.

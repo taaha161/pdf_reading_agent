@@ -1,4 +1,4 @@
-// Plan picked on the signup form: "subscription" (default) or "trial" (free scans only).
+// Plan picked on the signup form: "subscription" (default) or "trial" (free month only).
 //
 // Email signups store it in Supabase user_metadata, so it survives the user
 // confirming their email in another browser. OAuth signups can't attach

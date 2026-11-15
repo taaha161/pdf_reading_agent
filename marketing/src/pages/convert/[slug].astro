@@ -6,7 +6,7 @@ import SecurityStrip from '../../components/SecurityStrip.astro';
 import AskStatement from '../../components/AskStatement.astro';
 import SampleExport from '../../components/SampleExport.astro';
 import StickyCta from '../../components/StickyCta.astro';
-import { SITE_NAME, FREE_STATEMENTS_LABEL, canonical } from '../../consts';
+import { SITE_NAME, FREE_LABEL, canonical } from '../../consts';
 
 export async function getStaticPaths() {
   const banks = await getCollection('banks');
@@ -96,7 +96,7 @@ const jsonLd = [
       <p class="bank-intro">{b.intro}</p>
       <div class="bank-cta-row">
         <a class="bank-btn" href="/scanner" data-cta="bank_hero">Convert a {b.shortName} statement free</a>
-        <span class="bank-cta-note">{FREE_STATEMENTS_LABEL} · No credit card · <a href="#sample" data-open-sample="bank_hero" data-cta="bank_sample">See a sample export</a></span>
+        <span class="bank-cta-note">{FREE_LABEL} · No credit card · <a href="#sample" data-open-sample="bank_hero" data-cta="bank_sample">See a sample export</a></span>
       </div>
       <dl class="bank-facts">
         <div><dt>Statements</dt><dd>{b.statementTypes.join(' · ')}</dd></div>

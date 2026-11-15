@@ -538,6 +538,10 @@ password-protected) into CSV or Excel with columns date, description, amount,
 credit/debit type, and an AI category. It has an incognito mode that stores no
 transaction data. It does NOT export QBO/OFX/Xero files, does NOT reconcile
 balances automatically, and does NOT batch-upload multiple files.
+Pricing (only if relevant, state exactly): priced per PDF page. 10 pages free
+without an account; 100 pages free for the first month after signup, no credit
+card; then $10/month for 100 pages; extra page packs of 10 for $2, 30 for $5, or
+100 for $10 that never expire. Accurate mode uses 2 pages per PDF page.
 
 SEO rules:
 - Use the primary keyword in the first paragraph and in at least two H2 headings;

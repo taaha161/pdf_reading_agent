@@ -18,7 +18,7 @@ const PENDING_TTL_MS = 7 * 24 * 60 * 60 * 1000; // unclaimed offer lasts 7 days
 const NEW_ACCOUNT_MS = 10 * 60 * 1000;
 
 export const OFFERS = {
-  linkedin1m: { label: "LinkedIn offer: your first month is free", cta: "Start free month" },
+  linkedin1m: { label: "LinkedIn offer: your first month of the $10 plan is free", cta: "Claim free plan month" },
 };
 
 function readJson(storage, key) {

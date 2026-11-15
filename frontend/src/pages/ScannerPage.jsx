@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { ACCURATE_MULTIPLIER, FREE_ANON_PAGES, FREE_SIGNUP_PAGES } from "../lib/pricing";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import FileUpload from "../components/FileUpload";
@@ -74,7 +75,7 @@ function transactionsToCsvBrowser(transactions) {
 /** Placeholder job id for the built-in sample statement (never sent to the API). */
 const SAMPLE_JOB_ID = "sample";
 
-const TRIAL_LIMIT_NOTICE = "You've used your free scan. Create a free account to get more free scans.";
+const TRIAL_LIMIT_NOTICE = `You've used your ${FREE_ANON_PAGES} free pages. Create a free account to get ${FREE_SIGNUP_PAGES} free pages for your first month.`;
 const FILE_SIZE_NOTICE = `Free accounts can upload PDFs up to ${formatMB(MAX_FILE_BYTES_SIGNED_IN)}.`;
 
 const FEEDBACK_SCAN_COUNT_KEY = "bss_scan_count";
@@ -177,13 +178,17 @@ export default function ScannerPage() {
 
   const closeFeedback = useCallback(() => setFeedbackOpen(false), []);
 
-  // Out of anonymous free scans: send to signup when they click to upload (not on page load).
+  // Out of anonymous free pages: send to signup when they click to upload (not on page load).
   // The server's 401 trial-limit response in handleUpload covers stale usage.
   const trialExhausted = !isLoggedIn && usage?.authenticated === false && usage?.trial_remaining === 0;
   const goToSignup = useCallback(
-    () =>
+    (notice = TRIAL_LIMIT_NOTICE) =>
       navigate("/signup", {
-        state: { from: { pathname: "/scanner" }, notice: TRIAL_LIMIT_NOTICE, reason: "trial-exhausted" },
+        state: {
+          from: { pathname: "/scanner" },
+          notice: typeof notice === "string" ? notice : TRIAL_LIMIT_NOTICE,
+          reason: "trial-exhausted",
+        },
       }),
     [navigate]
   );
@@ -311,12 +316,12 @@ export default function ScannerPage() {
         return;
       }
       if (e.isTrialLimit && !isLoggedIn) {
-        goToSignup();
+        goToSignup(e.freePagesExceeded ? e.message : TRIAL_LIMIT_NOTICE);
         return;
       }
       if (e.insufficientCredits) {
         setOutOfCredits(true);
-        setError("Out of credits. Add more to continue scanning.");
+        setError(e.message || "You're out of pages. Subscribe or buy a page pack to keep scanning.");
       } else {
         setError(e.message || "Upload failed");
       }
@@ -480,11 +485,11 @@ export default function ScannerPage() {
         <div className="scanner-upload-card">
           {isGuest && trialExhausted && (
             <p className="scanner-trial-note" role="status">
-              The free scan for your network has been used.{" "}
+              The {FREE_ANON_PAGES} free pages for your network have been used.{" "}
               <button type="button" className="scanner-alert-link" onClick={goToSignup}>
                 Create a free account
               </button>{" "}
-              to keep scanning, or view the sample below.
+              to get {FREE_SIGNUP_PAGES} free pages this month, or view the sample below.
             </p>
           )}
           {isGuest && (
@@ -519,7 +524,7 @@ export default function ScannerPage() {
             >
               <option value="fast">Fast — lowest latency, simple documents</option>
               <option value="balanced">Balanced — speed and accuracy (recommended)</option>
-              <option value="accurate">Accurate — best for complex layouts and tables</option>
+              <option value="accurate">Accurate — best for complex layouts ({ACCURATE_MULTIPLIER} pages per PDF page)</option>
             </select>
            
           </div>
@@ -594,8 +599,8 @@ export default function ScannerPage() {
                 {outOfCredits && (
                   <>
                     {" "}
-                    <button type="button" className="scanner-alert-link" onClick={() => navigate("/settings")}>
-                      Add credits
+                    <button type="button" className="scanner-alert-link" onClick={() => navigate("/settings#billing")}>
+                      Get more pages
                     </button>
                   </>
                 )}

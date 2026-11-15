@@ -1,6 +1,6 @@
 ---
 /**
- * LinkedIn paid-ad landing page: first month free.
+ * LinkedIn paid-ad landing page: first month free (100 pages, no card — the same free month every account gets).
  *
  * Conversion rules this page follows:
  *  1. One big idea, repeated in every headline: "Never type a bank statement into Excel again."
@@ -8,8 +8,8 @@
  *     The only way forward is the CTA (legal links in the footer are required by LinkedIn ad policy).
  *  3. Scannable: the headlines alone tell the whole story.
  *
- * The CTA carries ?offer=linkedin1m into signup; the SPA stores it and the backend
- * turns it into a 30-day Stripe trial (first-time subscribers only, see billing.OFFERS).
+ * The CTA carries ?offer=linkedin1m into signup for attribution. If that user later
+ * subscribes, the backend also adds a 30-day Stripe trial (first-time subscribers only, see billing.OFFERS).
  */
 import Base from '../../layouts/Base.astro';
 import BankLogoMarquee from '../../components/BankLogoMarquee.astro';
@@ -18,12 +18,12 @@ import ProductVideo from '../../components/ProductVideo.astro';
 import SampleExport from '../../components/SampleExport.astro';
 import AskStatement from '../../components/AskStatement.astro';
 import logo from '../../assets/pdf_to_excel_logo.png';
-import { SITE_NAME } from '../../consts';
+import { SITE_NAME, FREE_ANON_PAGES, FREE_SIGNUP_PAGES, PLAN_PAGES, PLAN_PRICE, PACKS_TEXT } from '../../consts';
 
 const OFFER = 'linkedin1m';
 const CTA_HREF = `/login?mode=signup&offer=${OFFER}`;
 const CTA_LABEL = 'Claim my free month';
-// Primary path: try a real statement before signing up (1 free scan, no account).
+// Primary path: try a real statement before signing up (10 free pages, no account).
 // The offer rides along in the URL; the app keeps it for 7 days so a later signup
 // (e.g. from the "your spreadsheet" email) still gets the free month.
 const SCAN_HREF = `/scanner?offer=${OFFER}`;
@@ -31,7 +31,7 @@ const SCAN_LABEL = 'Convert a statement free';
 const ALT_LABEL = 'or claim your free month now';
 
 // Risk reversal right under every CTA: answers "what will this cost me?" at the moment of the click.
-const REASSURE = ['No signup to try', 'First month free when you join', 'No card needed'];
+const REASSURE = ['No signup to try', `${FREE_SIGNUP_PAGES} pages free your first month`, 'No card needed'];
 
 // Message match: each LinkedIn ad links with ?v=<key> so the eyebrow and subhead
 // echo the ad the visitor just clicked. The H1 (the big idea) never changes.
@@ -69,7 +69,7 @@ const steps = [
   },
   {
     title: 'AI does the typing',
-    tag: '$10 of scans, free',
+    tag: `${FREE_SIGNUP_PAGES} pages, free`,
     body: 'We pull out every date, payee and amount, then sort each row into a category.',
     icon: svg('<path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>'),
   },
@@ -92,11 +92,11 @@ const faqs = [
   },
   {
     q: 'What does the free month include?',
-    a: 'Your first month of the $10/month plan, free. That puts $10 of scan credit in your account, enough for about 10 statements on Normal mode or 2,000 pages on Fast mode. After 30 days it renews at $10/month unless you cancel.',
+    a: `${FREE_SIGNUP_PAGES} statement pages, free for your first 30 days. That covers about 16 six-page statements. After that, keep going for $${PLAN_PRICE} a month for ${PLAN_PAGES} pages, or buy a page pack (${PACKS_TEXT}). Nothing renews unless you choose a plan.`,
   },
   {
     q: 'Do I need a credit card?',
-    a: 'Not to sign up. You get 3 free scans as soon as you create your account. To start the free month, you add a card at checkout. You are not charged for 30 days, and you can cancel any time before that.',
+    a: `No. You can convert ${FREE_ANON_PAGES} pages without an account, and your ${FREE_SIGNUP_PAGES} free pages start the moment you sign up. You only add a card if you choose the $${PLAN_PRICE}/month plan or a page pack.`,
   },
   {
     q: 'Is my financial data safe?',
@@ -107,7 +107,7 @@ const faqs = [
 
 <Base
   title="Never Type a Bank Statement Into Excel Again"
-  description="Upload a bank statement PDF and get a clean, categorized Excel spreadsheet in seconds. LinkedIn members get the first month free."
+  description="Upload a bank statement PDF and get a clean, categorized Excel spreadsheet in seconds. Your first month includes 100 pages free, no card needed."
   path="/lp/linkedin"
   noindex
   bare
@@ -125,7 +125,7 @@ const faqs = [
           <img src={logo.src} alt="" width="28" height="28" />
           {SITE_NAME}
         </span>
-        <span class="topbar-offer">LinkedIn members: first month free</span>
+        <span class="topbar-offer">First month free: {FREE_SIGNUP_PAGES} pages, no card</span>
       </div>
     </div>
 
@@ -221,7 +221,7 @@ const faqs = [
           ))}
           <div class="vs-row vs-cost" role="row">
             <div class="vs-cell vs-old" role="cell"><span class="vs-mark vs-mark--old" aria-hidden="true">✕</span>Costs you hours, every single month</div>
-            <div class="vs-cell vs-new" role="cell"><span class="vs-gift" aria-hidden="true">🎁</span><span><strong>$0 for your first month</strong> with the LinkedIn offer</span></div>
+            <div class="vs-cell vs-new" role="cell"><span class="vs-gift" aria-hidden="true">🎁</span><span><strong>$0 for your first month</strong>, {FREE_SIGNUP_PAGES} pages included</span></div>
           </div>
         </div>
       </div>
@@ -272,16 +272,16 @@ const faqs = [
     <section class="section" id="offer">
       <div class="container">
         <div class="offer">
-          <p class="offer-tag">LinkedIn members only</p>
+          <p class="offer-tag">Free for your first month</p>
           <h2>Your first month is free. Stop typing statements today.</h2>
           <p class="offer-price"><s>$10</s> <strong>$0</strong> <span>for your first month</span></p>
           <ul class="offer-list">
-            <li>$10 in scan credit, about 10 statements on Normal mode</li>
+            <li>{FREE_SIGNUP_PAGES} pages free, about 16 six-page statements</li>
             <li>Excel and CSV exports, every bank, scanned PDFs included</li>
-            <li>3 free scans the moment you sign up, no card needed</li>
+            <li>No card needed. After that, ${PLAN_PRICE}/month for {PLAN_PAGES} pages</li>
           </ul>
           <a class="btn btn-invert btn-lg js-cta" href={CTA_HREF} data-cta="offer">{CTA_LABEL} →</a>
-          <p class="offer-guarantee">Not for you? Cancel before day 30 and you pay nothing.</p>
+          <p class="offer-guarantee">Not for you? Just stop. There is nothing to cancel.</p>
           <div class="trust trust--light">
             <span class="avatars" aria-hidden="true">
               <img src="/avatars/avatar-1.jpg" alt="" width="32" height="32" loading="lazy" />

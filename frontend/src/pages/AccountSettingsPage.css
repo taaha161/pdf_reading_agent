@@ -91,3 +91,72 @@
   font-weight: 600;
   font-size: 14px;
 }
+
+.account-settings-billing-balance {
+  margin: 1rem 0 0.25rem;
+  font-size: 1.05rem;
+  color: var(--color-text);
+}
+
+.account-settings-billing-breakdown {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.account-settings-subtitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 1.75rem 0 0.35rem;
+}
+
+.account-settings-packs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.account-settings-pack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.9rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.account-settings-pack:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.account-settings-pack:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.account-settings-pack-pages {
+  font-weight: 600;
+}
+
+.account-settings-pack-price {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+@media (max-width: 420px) {
+  .account-settings-packs {
+    grid-template-columns: 1fr;
+  }
+}

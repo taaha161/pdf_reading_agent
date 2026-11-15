@@ -39,9 +39,9 @@ export interface Competitor {
 
 // Our side of the table, kept in one place so every page says the same thing.
 const US = {
-  price: '$10/month, added to your account as $10 of credit',
-  perStatement: 'Per statement: fast mode under 1¢, balanced $1, accurate $1.50',
-  free: '3 statements free, no card',
+  price: '$10/month for 100 pages; extra page packs from $2',
+  perStatement: 'Per page: 100 pages on the $10 plan, then packs of 10 for $2, 30 for $5, or 100 for $10 that never expire (accurate mode uses 2 pages per page)',
+  free: '100 pages free your first month, plus 10 without an account; no card',
   exports: 'CSV, Excel (XLSX)',
   scanned: 'Yes, with an accurate mode for poor scans',
   balance: 'Not automatic yet. Compare totals with the statement yourself',
@@ -55,7 +55,7 @@ const QB_FAQ = {
 };
 const TRIAL_FAQ = {
   q: 'Can I try Bank Statement Scanner before paying?',
-  a: 'Yes. Your first 3 statements are free, and you don’t need a credit card.',
+  a: 'Yes. Try 10 pages without an account, then sign up and get 100 pages free for your first month. You don’t need a credit card.',
 };
 
 const CHECKED = '2026-11-08';
@@ -65,15 +65,15 @@ export const competitors: Competitor[] = [
   {
     slug: 'bankconvert-alternative',
     category: 'Statement converters',
-    card: 'No free plan and a $49 monthly entry price, vs $10 of credit and 3 free statements.',
+    card: 'No free plan and a $49 monthly entry price, vs a free first month and $10 for 100 pages.',
     seoTitle: 'BankConvert Alternative: Bank Statement Scanner vs BankConvert',
-    description: 'Comparing Bank Statement Scanner and BankConvert on pricing, free use, exports, and data handling. Start with 3 free statements, then $10 a month.',
+    description: 'Comparing Bank Statement Scanner and BankConvert on pricing, free use, exports, and data handling. Start with 100 free pages, then $10 a month.',
     crumb: 'BankConvert alternative',
     eyebrow: 'BankConvert alternative',
     h1: 'Bank Statement Scanner vs BankConvert',
     intro: [
       'BankConvert is a full-featured converter with many export formats and plans that scale to thousands of statements a month. It has no free plan, and its entry plan is $49 a month on monthly billing.',
-      'Bank Statement Scanner starts with 3 free statements and then costs $10 a month in credit, used per statement. Here’s how the two compare, including where BankConvert is the better pick.',
+      'Bank Statement Scanner gives you 100 pages free for your first month, then costs $10 a month for 100 pages. Here’s how the two compare, including where BankConvert is the better pick.',
     ],
     themName: 'BankConvert',
     rows: [
@@ -90,7 +90,7 @@ export const competitors: Competitor[] = [
       {
         heading: 'The cost of a few statements',
         paras: [
-          'If you convert five statements this month, BankConvert’s cheapest monthly option is $49. On Bank Statement Scanner, five statements in balanced mode use $5 of your $10 credit, and fast mode costs less than a cent each.',
+          'If you convert five statements this month, BankConvert’s cheapest monthly option is $49. On Bank Statement Scanner, five six-page statements use 30 of the 100 pages in the $10 plan, and your first month is free.',
           'At high volume the picture changes. BankConvert’s Pro plan covers 300 statements a month, and if you convert that many every month, a page plan can work out cheaper.',
         ],
       },
@@ -100,7 +100,7 @@ export const competitors: Competitor[] = [
       them: ['You need QBO, OFX, QFX, or QIF files', 'You convert hundreds of statements every month', 'Your team needs shared seats or an API', 'You want month-to-month plans with high limits'],
     },
     faqs: [
-      { q: 'Does BankConvert have a free plan?', a: 'Its pricing page says there is no free plan. Bank Statement Scanner gives you 3 statements free with no card.' },
+      { q: 'Does BankConvert have a free plan?', a: 'Its pricing page says there is no free plan. Bank Statement Scanner gives you 100 pages free in your first month, with no card.' },
       { q: 'Which is cheaper?', a: 'For a handful of statements a month, Bank Statement Scanner. For hundreds a month every month, BankConvert’s larger plans may cost less per statement.' },
       QB_FAQ,
     ],
@@ -110,15 +110,15 @@ export const competitors: Competitor[] = [
   {
     slug: 'bankstatemently-alternative',
     category: 'Statement converters',
-    card: 'Page-based plans with QBO and Xero export, vs per-statement credit with no page counting.',
+    card: 'Page-based plans with QBO and Xero export, vs $10 for 100 pages with categories included.',
     seoTitle: 'Bankstatemently Alternative: Bank Statement Scanner vs Bankstatemently',
-    description: 'Bank Statement Scanner vs Bankstatemently: page limits, free use, exports, and checks compared. Convert per statement with 3 free to start.',
+    description: 'Bank Statement Scanner vs Bankstatemently: page pricing, free use, exports, and checks compared. 100 pages free your first month.',
     crumb: 'Bankstatemently alternative',
     eyebrow: 'Bankstatemently alternative',
     h1: 'Bank Statement Scanner vs Bankstatemently',
     intro: [
       'Bankstatemently sells plans by the page, with a free tier of 10 pages a month, QBO and Xero exports, and a balance-to-balance check across statements. It’s a strong tool, especially for bookkeepers who import into accounting software.',
-      'Bank Statement Scanner charges per statement instead of per page, so a long statement costs the same as a short one. Here’s the comparison.',
+      'Bank Statement Scanner also charges by the page, with a simpler setup: $10 a month for 100 pages, page packs that never expire, and every row categorized. Here’s the comparison.',
     ],
     themName: 'Bankstatemently',
     rows: [
@@ -134,18 +134,18 @@ export const competitors: Competitor[] = [
       {
         heading: 'Pages vs statements',
         paras: [
-          'A busy business account can run 10 to 20 pages a month. On a page plan, a year of statements for one account can use a few hundred pages. On Bank Statement Scanner, that same year is 12 statements, whatever their length.',
+          'A busy business account can run 10 to 20 pages a month. On a page plan, a year of statements for one account can use a few hundred pages. On Bank Statement Scanner, $10 covers 100 pages a month, and a pack from $2 tops up a busy month without changing plans.',
           'If your statements are short and you need QBO or Xero files, Bankstatemently’s page plans may suit you better.',
         ],
       },
     ],
     fit: {
-      us: ['Your statements are long', 'You only need CSV or Excel', 'You want to pay for what you use, not a page allowance', 'You want an incognito mode that saves nothing'],
-      them: ['You need QBO or Xero import files', 'You want an automatic balance check across months', 'You want an API or MCP integration', 'Your statements are only a few pages each'],
+      us: ['You want a low monthly price', 'You only need CSV or Excel', 'You want extra pages that never expire', 'You want an incognito mode that saves nothing'],
+      them: ['You need QBO or Xero import files', 'You want an automatic balance check across months', 'You want an API or MCP integration', 'You convert hundreds of pages every month'],
     },
     faqs: [
-      { q: 'Is Bankstatemently free?', a: 'It has a free tier of 10 pages a month, up to 5 a day. Bank Statement Scanner gives you 3 full statements free.' },
-      { q: 'Does Bank Statement Scanner count pages?', a: 'No. You pay per statement, from under 1¢ in fast mode to $1.50 in accurate mode.' },
+      { q: 'Is Bankstatemently free?', a: 'It has a free tier of 10 pages a month, up to 5 a day. Bank Statement Scanner gives you 100 pages free in your first month, plus 10 without an account.' },
+      { q: 'Does Bank Statement Scanner count pages?', a: 'Yes. Each PDF page uses one page (accurate mode uses two). The $10 plan includes 100 pages a month, and packs add 10 pages for $2, 30 for $5, or 100 for $10.' },
       QB_FAQ,
     ],
     sources: [
@@ -159,13 +159,13 @@ export const competitors: Competitor[] = [
     category: 'Statement converters',
     card: 'SOC 2 desktop and server converters from $599.95/yr, vs a $10/month browser tool.',
     seoTitle: 'MoneyThumb Alternative: Bank Statement Scanner vs MoneyThumb',
-    description: 'Comparing Bank Statement Scanner and MoneyThumb on price, reconciliation, exports, and setup. Convert in your browser from $10 a month, 3 statements free.',
+    description: 'Comparing Bank Statement Scanner and MoneyThumb on price, reconciliation, exports, and setup. Convert in your browser from $10 a month, 100 pages free your first month.',
     crumb: 'MoneyThumb alternative',
     eyebrow: 'MoneyThumb alternative',
     h1: 'Bank Statement Scanner vs MoneyThumb',
     intro: [
       'MoneyThumb has been converting statements for years. It offers desktop converters (2qfx Convert) and online platform plans with reconciliation against the statement summary, SOC 2 Type II, and QuickBooks formats like QBO and QFX.',
-      'That depth comes at a price: platform plans start at $599.95 a year and trials go through MoneyThumb’s team. Bank Statement Scanner runs in your browser and starts at $10 a month after 3 free statements.',
+      'That depth comes at a price: platform plans start at $599.95 a year and trials go through MoneyThumb’s team. Bank Statement Scanner runs in your browser and starts at $10 a month for 100 pages after a free first month.',
     ],
     themName: 'MoneyThumb',
     rows: [
@@ -195,7 +195,7 @@ export const competitors: Competitor[] = [
     },
     faqs: [
       { q: 'How much does MoneyThumb cost?', a: 'Its platform plans start at $599.95 a year. Desktop license prices aren’t listed on the same page.' },
-      { q: 'Is there a MoneyThumb free trial?', a: 'Yes, but you contact MoneyThumb to set it up. Bank Statement Scanner’s 3 free statements need no card or call.' },
+      { q: 'Is there a MoneyThumb free trial?', a: 'Yes, but you contact MoneyThumb to set it up. Bank Statement Scanner’s free first month (100 pages) needs no card or call.' },
       QB_FAQ,
     ],
     sources: [{ label: 'MoneyThumb pricing', url: 'https://www.moneythumb.com/pricing' }],
@@ -204,15 +204,15 @@ export const competitors: Competitor[] = [
   {
     slug: 'rocket-statements-alternative',
     category: 'Statement converters',
-    card: 'Yearly page allowances with team portals, vs pay-per-statement with no plan to pick.',
+    card: 'Yearly page allowances with team portals, vs $10 a month for 100 pages, billed monthly.',
     seoTitle: 'Rocket Statements Alternative: Bank Statement Scanner vs Rocket Statements',
-    description: 'Bank Statement Scanner vs Rocket Statements: pricing, page limits, exports, and team features compared. 3 statements free, then $10 a month.',
+    description: 'Bank Statement Scanner vs Rocket Statements: pricing, page limits, exports, and team features compared. 100 pages free your first month, then $10 a month.',
     crumb: 'Rocket Statements alternative',
     eyebrow: 'Rocket Statements alternative',
     h1: 'Bank Statement Scanner vs Rocket Statements',
     intro: [
       'Rocket Statements sells page allowances from $8 a month on yearly billing, with Google Sheets and Excel add-ins, bank sync, and client portals on higher plans. It’s built for firms and teams.',
-      'Bank Statement Scanner is simpler: one $10 monthly credit, used per statement, with no page allowance to track. Here’s how they compare.',
+      'Bank Statement Scanner is simpler: $10 a month for 100 pages, billed monthly, with page packs that never expire for busy months. Here’s how they compare.',
     ],
     themName: 'Rocket Statements',
     rows: [
@@ -230,16 +230,16 @@ export const competitors: Competitor[] = [
         heading: 'Which costs less',
         paras: [
           'If you pay yearly and use most of your pages, Rocket Statements’ Basic plan is good value. If your volume is uneven, a page allowance can go unused, and the monthly price is $15.',
-          'Bank Statement Scanner only uses credit when you convert, and every statement is categorized at no extra cost.',
+          'Bank Statement Scanner bills monthly, extra pages come in packs that never expire, and every statement is categorized at no extra cost.',
         ],
       },
     ],
     fit: {
-      us: ['You want categorization without upgrading', 'Your volume is uneven month to month', 'You want to try 3 statements before paying', 'You want an incognito mode that saves nothing'],
+      us: ['You want categorization without upgrading', 'Your volume is uneven month to month', 'You want a free first month before paying', 'You want an incognito mode that saves nothing'],
       them: ['You run a firm and want client portals', 'You want Sheets or Excel add-ins', 'You need several seats', 'You convert steadily and can pay yearly'],
     },
     faqs: [
-      { q: 'Does Rocket Statements have a free trial?', a: 'Yes, 7 days with 20 pages and no card. Bank Statement Scanner gives you 3 statements free with no card.' },
+      { q: 'Does Rocket Statements have a free trial?', a: 'Yes, 7 days with 20 pages and no card. Bank Statement Scanner gives you 100 pages free for your first month, with no card.' },
       { q: 'Does Bank Statement Scanner categorize transactions?', a: 'Yes, on every statement, on every plan.' },
       QB_FAQ,
     ],
@@ -340,7 +340,7 @@ export const competitors: Competitor[] = [
   {
     slug: 'pdftables-alternative',
     category: 'Desktop & PDF tools',
-    card: 'Prepaid page credits for any PDF table, vs per-statement pricing built for bank statements.',
+    card: 'Prepaid page credits for any PDF table, vs $10 for 100 pages built for bank statements.',
     seoTitle: 'PDFTables Alternative for Bank Statements',
     description: 'PDFTables vs Bank Statement Scanner for converting bank statements: pricing, output, and scanned PDF support compared.',
     crumb: 'PDFTables alternative',
@@ -353,7 +353,7 @@ export const competitors: Competitor[] = [
     themName: 'PDFTables',
     rows: [
       { label: 'Price', us: US.price, them: '$50 for 1,000 page credits; $150 for 5,000; $250 for 10,000' },
-      { label: 'Credits expire', us: 'Monthly credit with your subscription', them: 'After one year' },
+      { label: 'Credits expire', us: 'Plan pages reset monthly; page packs never expire', them: 'After one year' },
       { label: 'Output', us: 'One row per transaction with credit/debit and category', them: 'The PDF’s tables' },
       { label: 'Export formats', us: US.exports, them: 'XLSX, CSV, XML, HTML' },
       { label: 'Scanned statements', us: US.scanned, them: 'Not stated on its pricing page' },
@@ -504,12 +504,12 @@ export const competitors: Competitor[] = [
       {
         heading: 'Credits and long statements',
         paras: [
-          'A Docparser credit covers a document up to 5 pages. A 12-page statement uses more than one credit. Bank Statement Scanner charges per statement, whatever its length.',
+          'A Docparser credit covers a document up to 5 pages. A 12-page statement uses more than one credit. On Bank Statement Scanner, it uses 12 of the 100 pages in the $10 plan.',
         ],
       },
     ],
     fit: {
-      us: ['Your statements come from many banks', 'You don’t want to build parsers', 'Your statements are long', 'You want categories added'],
+      us: ['Your statements come from many banks', 'You don’t want to build parsers', 'You want a low monthly price', 'You want categories added'],
       them: ['You process the same layouts every month', 'You need Zapier-style integrations', 'You parse invoices and forms too', 'You want results pushed to Google Sheets'],
     },
     faqs: [
@@ -547,12 +547,12 @@ export const competitors: Competitor[] = [
       {
         heading: 'Pages add up',
         paras: [
-          'On Parsio’s free plan, 30 credits cover about 10 pages with the AI engine. A single long statement can use that up. Bank Statement Scanner gives you 3 full statements free.',
+          'On Parsio’s free plan, 30 credits cover about 10 pages with the AI engine. A single long statement can use that up. Bank Statement Scanner gives you 100 pages free in your first month.',
         ],
       },
     ],
     fit: {
-      us: ['You want statements in a spreadsheet, nothing more', 'Your statements are long', 'You want categories added', 'You want nothing stored'],
+      us: ['You want statements in a spreadsheet, nothing more', 'You want a free first month of 100 pages', 'You want categories added', 'You want nothing stored'],
       them: ['You’re building automations in Zapier or Make', 'You parse emails and other documents', 'You want a permanent free tier', 'You need webhooks or an API'],
     },
     faqs: [
@@ -614,7 +614,7 @@ export const competitors: Competitor[] = [
   {
     slug: 'autoentry-alternative',
     category: 'Accounting data capture',
-    card: 'Credit plans where a statement page costs 3 credits, vs one price per statement.',
+    card: 'Credit plans where a statement page costs 3 credits, vs 100 pages for $10.',
     seoTitle: 'AutoEntry Alternative for Bank Statements',
     description: 'AutoEntry vs Bank Statement Scanner for bank statement conversion: credit costs, integrations, and fit compared.',
     crumb: 'AutoEntry alternative',
@@ -622,14 +622,14 @@ export const competitors: Competitor[] = [
     h1: 'AutoEntry vs Bank Statement Scanner for bank statements',
     intro: [
       'AutoEntry automates data entry for invoices, receipts, and bank statements, and publishes into Sage, Xero, QuickBooks, and more. You buy monthly credits, from 50 credits for $13.',
-      'Each bank statement page costs 3 credits, so long statements use credits quickly. Bank Statement Scanner charges per statement, not per page.',
+      'Each bank statement page costs 3 credits, so long statements use credits quickly. Bank Statement Scanner counts one page per page: $10 a month covers 100 pages.',
     ],
     themName: 'AutoEntry',
     rows: [
       { label: 'Price', us: US.price, them: 'Bronze $13/month for 50 credits, up to Sapphire $469 for 2,500' },
       { label: 'Bank statements', us: US.perStatement, them: '3 credits per page (about $0.60–0.78 per page)' },
       { label: 'Free use', us: US.free, them: '25 free credits, no card' },
-      { label: 'Unused credit', us: 'Added each billing cycle', them: 'Rolls over for 90 days' },
+      { label: 'Unused credit', us: 'Plan pages reset monthly; page packs never expire', them: 'Rolls over for 90 days' },
       { label: 'Integrations', us: 'CSV or Excel export', them: 'Sage, Xero, QuickBooks, FreeAgent, and more' },
       { label: 'Captures', us: 'Bank and card statements', them: 'Invoices, receipts, and bank statements' },
     ],
@@ -638,7 +638,7 @@ export const competitors: Competitor[] = [
       {
         heading: 'A 10-page statement',
         paras: [
-          'On AutoEntry, a 10-page statement uses 30 credits, which is most of the 50-credit Bronze plan. On Bank Statement Scanner, it costs $1 in balanced mode or $1.50 in accurate mode.',
+          'On AutoEntry, a 10-page statement uses 30 credits, which is most of the 50-credit Bronze plan. On Bank Statement Scanner, it uses 10 of the 100 pages in the $10 plan (20 in accurate mode).',
         ],
       },
     ],

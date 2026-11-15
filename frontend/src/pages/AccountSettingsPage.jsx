@@ -5,6 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 import { createCheckoutSession, deleteAccount, getBillingBalance } from "../api/client";
 import { OFFERS, getOffer } from "../lib/offer";
+import { ACCURATE_MULTIPLIER, FREE_SIGNUP_PAGES, PAGE_PACKS, PLAN_PAGES, PLAN_PRICE, formatExpiry } from "../lib/pricing";
 import "./AccountSettingsPage.css";
 import "./AuthPage.css";
 import PasswordInput from "../components/PasswordInput";
@@ -39,7 +40,7 @@ export default function AccountSettingsPage() {
         const data = await getBillingBalance();
         if (!cancelled) setBillingBalance(data);
       } catch {
-        if (!cancelled) setBillingBalance({ balance_cents: 0, subscription_active: false });
+        if (!cancelled) setBillingBalance({ pages_remaining: 0, free_pages: 0, plan_pages: 0, pack_pages: 0, subscription_active: false });
       }
     })();
     return () => { cancelled = true; };
@@ -58,6 +59,12 @@ export default function AccountSettingsPage() {
   const [deleteMessage, setDeleteMessage] = useState({ type: "", text: "" });
 
   const [billingBalance, setBillingBalance] = useState(null);
+  // "Get more pages" links here as /settings#billing: scroll once the section renders.
+  useEffect(() => {
+    if (billingBalance && window.location.hash === "#billing") {
+      document.getElementById("billing")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [billingBalance]);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingMessage, setBillingMessage] = useState({ type: "", text: "" });
 
@@ -125,11 +132,11 @@ export default function AccountSettingsPage() {
     }
   };
 
-  const handleAddCredits = async () => {
+  const handleBuyPack = async (packId) => {
     setBillingLoading(true);
     setBillingMessage({ type: "", text: "" });
     try {
-      const url = await createCheckoutSession("topup", user?.email ?? undefined);
+      const url = await createCheckoutSession("topup", user?.email ?? undefined, null, undefined, packId);
       if (url) window.location.href = url;
     } catch (err) {
       setError(setBillingMessage, err.message || "Failed to start checkout");
@@ -228,39 +235,56 @@ export default function AccountSettingsPage() {
           )}
         </section>
 
-        <section className="account-settings-section">
+        <section className="account-settings-section" id="billing">
           <h2 className="account-settings-section-title">Billing</h2>
           <p className="account-settings-description">
-            Credits are used for scans. Light (fast) = $0.005, Normal (balanced) = $1, High accuracy = $1.50. $10/month gives you $10 in credits; add more when you run out.
+            You pay per PDF page. Your first month includes {FREE_SIGNUP_PAGES} free pages. The plan is ${PLAN_PRICE}/month for {PLAN_PAGES} pages, and page packs top you up whenever you need more. High accuracy mode uses {ACCURATE_MULTIPLIER} pages per PDF page.
           </p>
           {billingBalance !== null && (
             <>
               <p className="account-settings-billing-balance">
-                <strong>{(billingBalance.balance_cents / 100).toFixed(2)}</strong> credits remaining
+                <strong>{(billingBalance.pages_remaining ?? 0).toLocaleString()}</strong> pages left
               </p>
+              <ul className="account-settings-billing-breakdown">
+                {billingBalance.free_pages > 0 && (
+                  <li>
+                    {billingBalance.free_pages} free pages
+                    {formatExpiry(billingBalance.free_expires_at) ? `, valid until ${formatExpiry(billingBalance.free_expires_at)}` : ""}
+                  </li>
+                )}
+                {billingBalance.subscription_active && <li>{billingBalance.plan_pages ?? 0} of {PLAN_PAGES} plan pages left this month</li>}
+                {billingBalance.pack_pages > 0 && <li>{billingBalance.pack_pages} page-pack pages (never expire)</li>}
+              </ul>
               <div className="account-settings-billing-actions">
                 {!billingBalance.subscription_active && offer && (
-                  <p className="account-settings-offer">{OFFERS[offer].label}. $10 in credits, then $10/month. Cancel anytime.</p>
+                  <p className="account-settings-offer">{OFFERS[offer].label}. {PLAN_PAGES} pages a month, then ${PLAN_PRICE}/month. Cancel anytime.</p>
                 )}
-                {!billingBalance.subscription_active ? (
+                {!billingBalance.subscription_active && (
                   <button
                     type="button"
                     className="auth-btn auth-btn-primary"
                     onClick={handleSubscribe}
                     disabled={billingLoading}
                   >
-                    {billingLoading ? "Redirecting…" : offer ? `${OFFERS[offer].cta} — then $10/month` : "Subscribe — $10/month"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="auth-btn auth-btn-primary"
-                    onClick={handleAddCredits}
-                    disabled={billingLoading}
-                  >
-                    {billingLoading ? "Redirecting…" : "Add credits"}
+                    {billingLoading ? "Redirecting…" : offer ? `${OFFERS[offer].cta} — then $${PLAN_PRICE}/month` : `Subscribe — $${PLAN_PRICE}/month for ${PLAN_PAGES} pages`}
                   </button>
                 )}
+              </div>
+              <h3 className="account-settings-subtitle">Page packs</h3>
+              <p className="account-settings-description">One-time purchase. Pack pages never expire and are used after your free and plan pages.</p>
+              <div className="account-settings-packs">
+                {PAGE_PACKS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="account-settings-pack"
+                    onClick={() => handleBuyPack(p.id)}
+                    disabled={billingLoading}
+                  >
+                    <span className="account-settings-pack-pages">{p.pages} pages</span>
+                    <span className="account-settings-pack-price">${p.price}</span>
+                  </button>
+                ))}
               </div>
             </>
           )}

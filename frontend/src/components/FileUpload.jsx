@@ -5,7 +5,7 @@ import { formatMB, MAX_FILE_BYTES_ANON } from "../lib/fileSize";
 import "./FileUpload.css";
 
 /**
- * `blocked` + `onBlocked`: when the user can't scan (e.g. out of free scans), any attempt to
+ * `blocked` + `onBlocked`: when the user can't scan (e.g. out of free pages), any attempt to
  * start an upload (click, drop, Drive, URL) calls onBlocked instead of opening a picker.
  * `maxBytes`: the user's upload limit. onUpload checks size for every file; Drive/URL
  * imports that are over the limit before download call `onTooLarge(sizeBytes)` instead.

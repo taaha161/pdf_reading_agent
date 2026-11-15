@@ -24,7 +24,7 @@ export const comparePages: ComparePageLink[] = [
   {
     href: '/compare/docuclipper-alternative',
     title: 'Bank Statement Scanner vs DocuClipper',
-    body: 'Pay per statement with no annual contract, and when DocuClipper is the better fit.',
+    body: 'A free first month and $10 for 100 pages with no annual contract, and when DocuClipper is the better fit.',
     category: 'Statement converters',
     featured: true,
   },

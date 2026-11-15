@@ -46,7 +46,7 @@ def _invoice(billing_reason, amount=1000, meta=None):
 
 def _paid(event):
     with patch.object(billing, "_user_id_from_customer", return_value="user-1"), \
-         patch.object(billing, "set_balance"), patch.object(billing, "set_stripe_ids"), \
+         patch.object(billing, "set_plan_pages"), patch.object(billing, "set_stripe_ids"), \
          patch.object(billing, "track_subscription_purchase"), patch.object(billing, "track_event") as track:
         ok, _ = billing._handle_invoice_paid(event)
     assert ok
@@ -84,7 +84,7 @@ def test_subscription_checkout_sends_subscribe():
 def test_topup_checkout_sends_purchase():
     session = {"id": "cs_2", "mode": "payment", "amount_total": 1000, "currency": "usd",
                "metadata": {"user_id": "user-1", "topup": "1"}}
-    with patch.object(billing, "add_balance"), patch.object(billing, "track_event") as track:
+    with patch.object(billing, "add_pack_pages"), patch.object(billing, "track_event") as track:
         ok, _ = billing._handle_checkout_completed({"data": {"object": session}})
     assert ok
     assert track.call_args.args[2]["payment_type"] == "topup"

@@ -59,7 +59,14 @@ from models.schemas import (
     Transaction,
     UpdateJobTransactionsRequest,
 )
-from services.billing import SCAN_COST_CENTS, create_checkout_session, handle_webhook
+from services.billing import (
+    FREE_ANON_PAGES,
+    FREE_SIGNUP_DAYS,
+    FREE_SIGNUP_PAGES,
+    create_checkout_session,
+    handle_webhook,
+    scan_cost_pages,
+)
 from services.chat_service import get_reply
 from services.summary import _parse_amount, _summary_by_category  # noqa: F401
 from services.remote_pdf import RemotePdfError, RemotePdfTooLarge, fetch_pdf
@@ -76,7 +83,9 @@ from services.notifications import (
 from services.pdf_processor import (
     PdfExtractionTimeout,
     PdfPasswordRequired,
+    MAX_PDF_PAGES,
     PdfTooManyPages,
+    count_pdf_pages,
     decrypt_pdf,
     extract_text_from_pdf,
 )
@@ -85,16 +94,19 @@ from services.recaptcha import verify_recaptcha
 from services.statement_agent import extract_and_categorize
 from store import (
     create_job_id,
-    deduct_balance,
+    deduct_pages,
     delete_user_data,
+    ensure_free_grant,
+    free_pages_available,
     get_billing,
+    pages_available,
     get_job,
     insert_usage_log,
     list_jobs,
     purge_job_data,
     purge_jobs_data,
     record_trial_run,
-    count_trial_runs_by_ip,
+    sum_trial_pages_by_ip,
     count_email_captures_for_job,
     record_email_capture,
     record_feedback,
@@ -451,9 +463,11 @@ _RATE_LIMIT_FETCH_URL = os.environ.get("RATE_LIMIT_FETCH_URL", "10/minute")
 _RATE_LIMIT_SCAN_STATUS = os.environ.get("RATE_LIMIT_SCAN_STATUS", "120/minute")
 
 
-ANON_TRIAL_LIMIT = 1  # Free statements before sign-up
-AUTH_TRIAL_LIMIT = 3  # Total free statements once signed in (includes the anonymous one)
-TRIAL_LIMIT_MESSAGE = "Trial limit reached. Please log in to process more PDFs."
+TRIAL_LIMIT_MESSAGE = (
+    f"Trial limit reached. You've used your {FREE_ANON_PAGES} free pages. "
+    f"Create a free account to get {FREE_SIGNUP_PAGES} free pages for your first month."
+)
+FREE_PAGES_EXCEEDED_CODE = "FREE_PAGES_EXCEEDED"
 INSUFFICIENT_CREDITS_CODE = "INSUFFICIENT_CREDITS"
 
 
@@ -504,25 +518,56 @@ RECAPTCHA_FAILED_CODE = "RECAPTCHA_FAILED"
 PDF_PASSWORD_REQUIRED_CODE = "PDF_PASSWORD_REQUIRED"
 
 
-def _trial_limit(user_id: str | None) -> int:
-    return AUTH_TRIAL_LIMIT if user_id is not None else ANON_TRIAL_LIMIT
+def _anon_pages_used(request: Request) -> int:
+    """Free pages this client has used without an account, counted server-side per IP
+    (no cookies, so clearing cookies / incognito can't reset the limit).
 
-
-def _trial_used(request: Request, limit: int) -> int:
-    """Free scans used by this client, counted server-side per IP (no cookies,
-    so clearing cookies / incognito can't reset the limit).
-
-    Fails closed: if the count can't be read, treat the trial as used up.
+    Fails closed: if the count can't be read, treat the free pages as used up.
     """
     ip_hash = _client_ip_hash(request)
     if not ip_hash:
-        logger.warning("trial: no client IP; treating trial as exhausted")
-        return limit
+        logger.warning("trial: no client IP; treating free pages as used up")
+        return FREE_ANON_PAGES
     try:
-        return min(count_trial_runs_by_ip(ip_hash), limit)
+        return min(sum_trial_pages_by_ip(ip_hash), FREE_ANON_PAGES)
     except Exception as e:
-        logger.error("trial IP count failed; treating trial as exhausted: %s", e)
-        return limit
+        logger.error("trial IP page count failed; treating free pages as used up: %s", e)
+        return FREE_ANON_PAGES
+
+
+def _load_billing(user_id: str) -> dict:
+    """Billing row for a signed-in user, granting the one-time free month on first sight."""
+    return ensure_free_grant(user_id, FREE_SIGNUP_PAGES, FREE_SIGNUP_DAYS)
+
+
+def _billing_fields(billing: dict | None) -> dict:
+    """Page balance fields shared by /api/usage, /api/billing/balance and scan responses."""
+    if not billing:
+        return {"pages_remaining": 0, "free_pages": 0, "free_expires_at": None, "plan_pages": 0, "pack_pages": 0}
+    free = free_pages_available(billing)
+    return {
+        "pages_remaining": pages_available(billing),
+        "free_pages": free,
+        "free_expires_at": billing.get("free_expires_at") if free else None,
+        "plan_pages": max(0, int(billing.get("plan_pages") or 0)),
+        "pack_pages": max(0, int(billing.get("pack_pages") or 0)),
+    }
+
+
+def _insufficient_pages(required: int, remaining: int) -> HTTPException:
+    return HTTPException(
+        status_code=402,
+        detail={
+            "detail": (
+                f"This scan needs {required:,} page{'s' if required != 1 else ''} and you have "
+                f"{remaining:,} left. Subscribe or add a page pack to continue."
+            ),
+            "code": INSUFFICIENT_CREDITS_CODE,
+            "pages_required": required,
+            "pages_remaining": remaining,
+        },
+    )
+
 
 @app.options("/api/fetch-pdf-url")
 async def preflight_fetch_pdf_url(request: Request):
@@ -560,9 +605,9 @@ class _ScanRequest:
     content: bytes
     filename: str
     user_id: str | None
-    trial_used: int
-    trial_limit: int
-    use_free_trial: bool
+    page_count: int
+    cost_pages: int
+    anon_pages_used: int  # anonymous only: free pages used before this scan
     scanned_method: str
     conversion_mode: str
     incognito: bool
@@ -595,15 +640,12 @@ async def _prepare_scan(
             detail={"detail": "reCAPTCHA verification failed. Please refresh and try again.", "code": RECAPTCHA_FAILED_CODE},
         )
 
-    # Free-scan usage is counted server-side per client IP.
-    trial_limit = _trial_limit(user_id)
-    trial_used = _trial_used(request, trial_limit)
-
-    if user_id is None and trial_used >= trial_limit:
-        raise HTTPException(status_code=401, detail=TRIAL_LIMIT_MESSAGE)
-
-    # Authenticated users share the same per-IP free scans before drawing down credits
-    use_free_trial = user_id is not None and trial_used < trial_limit
+    # Anonymous free pages are counted server-side per client IP.
+    anon_used = 0
+    if user_id is None:
+        anon_used = _anon_pages_used(request)
+        if anon_used >= FREE_ANON_PAGES:
+            raise HTTPException(status_code=401, detail=TRIAL_LIMIT_MESSAGE)
 
     # Normalize: only "ocr" or "vision" (for scanned PDFs)
     scanned_method_val = "ocr" if scanned_method and scanned_method.strip().lower() == "ocr" else "vision"
@@ -613,22 +655,10 @@ async def _prepare_scan(
         conversion_mode_val = "fast"
     logger.info("scan: request started, scanned_method=%s, conversion_mode=%s", scanned_method_val, conversion_mode_val)
 
-    billing = get_billing(user_id) if user_id is not None else None
-
-    # Authenticated: check credits before running pipeline (skip if still within trial)
-    if user_id is not None and not use_free_trial:
-        cost_cents = SCAN_COST_CENTS.get(conversion_mode_val, SCAN_COST_CENTS["fast"])
-        balance_cents = billing["balance_cents"] if billing else None
-        if balance_cents is None or balance_cents < cost_cents:
-            raise HTTPException(
-                status_code=402,
-                detail={
-                    "detail": "Insufficient credits",
-                    "code": INSUFFICIENT_CREDITS_CODE,
-                    "balance_cents": balance_cents if balance_cents is not None else 0,
-                    "required_cents": cost_cents,
-                },
-            )
+    billing = _load_billing(user_id) if user_id is not None else None
+    # Out of pages entirely: fail before reading the upload.
+    if billing is not None and pages_available(billing) <= 0:
+        raise _insufficient_pages(scan_cost_pages(1, conversion_mode_val), 0)
 
     if file.content_type and file.content_type != ALLOWED_CONTENT_TYPE:
         raise HTTPException(400, "File must be a PDF")
@@ -646,13 +676,40 @@ async def _prepare_scan(
     except Exception as e:
         raise _pdf_error(e)
 
+    # Count pages before any processing: this is what the scan costs.
+    page_count = await run_in_threadpool(count_pdf_pages, content)
+    if page_count <= 0:
+        raise HTTPException(422, "We couldn't read this PDF. Make sure it's a valid bank statement and try again.")
+    if page_count > MAX_PDF_PAGES:
+        raise _pdf_error(PdfTooManyPages(page_count, MAX_PDF_PAGES))
+    cost = scan_cost_pages(page_count, conversion_mode_val)
+    logger.info("scan: pages=%d, cost_pages=%d", page_count, cost)
+
+    if user_id is None:
+        remaining = FREE_ANON_PAGES - anon_used
+        if cost > remaining:
+            raise HTTPException(
+                status_code=401,
+                detail={
+                    "detail": (
+                        f"This scan needs {cost:,} pages. Without an account you can scan {FREE_ANON_PAGES} pages free "
+                        f"({remaining} left). Create a free account to get {FREE_SIGNUP_PAGES} free pages for your first month."
+                    ),
+                    "code": FREE_PAGES_EXCEEDED_CODE,
+                    "pages_required": cost,
+                    "pages_remaining": remaining,
+                },
+            )
+    elif cost > pages_available(billing):
+        raise _insufficient_pages(cost, pages_available(billing))
+
     return _ScanRequest(
         content=content,
         filename=file.filename or "statement.pdf",
         user_id=user_id,
-        trial_used=trial_used,
-        trial_limit=trial_limit,
-        use_free_trial=use_free_trial,
+        page_count=page_count,
+        cost_pages=cost,
+        anon_pages_used=anon_used,
         scanned_method=scanned_method_val,
         conversion_mode=conversion_mode_val,
         incognito=incognito_mode.strip().lower() in ("true", "1", "yes"),
@@ -753,7 +810,6 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
     job_id = create_job_id()
     summary = _summary_by_category(transactions)
     is_trial = user_id is None
-    trial_used, trial_limit = req.trial_used, req.trial_limit
 
     # Owner notification (best-effort, non-blocking): a PDF was scanned.
     try:
@@ -768,17 +824,15 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
     except Exception as e:  # noqa: BLE001
         logger.warning("scan notification failed (continuing): %s", e)
 
-    if is_trial or req.use_free_trial:
-        # Record free run for analytics + durable per-IP trial counting
+    if is_trial:
+        # Record free pages for durable per-IP counting
         # (no PDF/transaction data; only a salted IP hash is stored).
         try:
-            record_trial_run(job_id, req.ip_hash)
+            record_trial_run(job_id, req.ip_hash, pages=req.cost_pages)
         except Exception as e:
             logger.warning("trial_runs insert failed (continuing): %s", e)
-
-    if is_trial:
+        used = min(req.anon_pages_used + req.cost_pages, FREE_ANON_PAGES)
         # Return inline csv_content and raw_text
-        new_count = min(trial_used + 1, trial_limit)
         payload = ProcessPdfResponse(
             job_id=job_id,
             transactions=[Transaction(**t) for t in transactions],
@@ -788,51 +842,35 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
             currency=currency,
             csv_content=csv_content,
             raw_text=raw_text,
-            trial_used=new_count,
-            trial_limit=trial_limit,
-            trial_remaining=max(0, trial_limit - new_count),
+            trial_used=used,
+            trial_limit=FREE_ANON_PAGES,
+            trial_remaining=max(0, FREE_ANON_PAGES - used),
+            pages_charged=req.cost_pages,
         )
         logger.info("scan: [3/3] trial finished successfully, job_id=%s (total %.2f s)", job_id, time.perf_counter() - t0)
         return payload
 
-    logger.info("scan: [3/3] finished successfully, job_id=%s (total %.2f s)", job_id, time.perf_counter() - t0)
-    payload = ProcessPdfResponse(
+    billing = deduct_pages(user_id, req.cost_pages)
+    if billing is None:
+        current = get_billing(user_id)
+        raise _insufficient_pages(req.cost_pages, pages_available(current))
+    left = pages_available(billing)
+    try:
+        insert_usage_log(user_id, job_id, req.cost_pages, left, req.conversion_mode)
+    except Exception as e:
+        logger.warning("insert_usage_log failed (continuing): %s", e)
+    set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=req.incognito, conversion_mode=req.conversion_mode)
+    logger.info("scan: [3/3] finished successfully, job_id=%s, pages=%d, left=%d (total %.2f s)", job_id, req.cost_pages, left, time.perf_counter() - t0)
+    return ProcessPdfResponse(
         job_id=job_id,
         transactions=[Transaction(**t) for t in transactions],
         summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
         csv_url=f"/api/jobs/{job_id}/csv",
         markdown_url=f"/api/jobs/{job_id}/markdown",
         currency=currency,
+        pages_charged=req.cost_pages,
+        **_billing_fields(billing),
     )
-    if req.use_free_trial:
-        set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=req.incognito, conversion_mode=req.conversion_mode)
-        new_count = min(trial_used + 1, trial_limit)
-        payload.trial_used = new_count
-        payload.trial_limit = trial_limit
-        payload.trial_remaining = max(0, trial_limit - new_count)
-        return payload
-    cost_cents = SCAN_COST_CENTS.get(req.conversion_mode, SCAN_COST_CENTS["fast"])
-    new_balance = deduct_balance(user_id, cost_cents)
-    if new_balance is None:
-        raise HTTPException(
-            status_code=402,
-            detail={
-                "detail": "Insufficient credits",
-                "code": INSUFFICIENT_CREDITS_CODE,
-                "balance_cents": 0,
-                "required_cents": cost_cents,
-            },
-        )
-    try:
-        insert_usage_log(user_id, job_id, cost_cents, new_balance, req.conversion_mode)
-    except Exception as e:
-        logger.warning("insert_usage_log failed (continuing): %s", e)
-    set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=req.incognito, conversion_mode=req.conversion_mode)
-    payload.trial_used = min(trial_used, trial_limit)
-    payload.trial_limit = trial_limit
-    payload.trial_remaining = max(0, trial_limit - trial_used)
-    payload.balance_cents = new_balance
-    return payload
 
 
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
@@ -1146,11 +1184,9 @@ def chat(request: Request, body: ChatRequest, user_id: str = Depends(get_current
 
 @app.get("/api/billing/balance", response_model=BillingBalanceResponse)
 def get_billing_balance(user_id: str = Depends(get_current_user)):
-    """Return current credit balance and subscription status."""
-    billing = get_billing(user_id)
-    balance_cents = billing["balance_cents"] if billing else 0
-    subscription_active = _subscription_active(billing)
-    return BillingBalanceResponse(balance_cents=balance_cents, subscription_active=subscription_active)
+    """Return current page balance and subscription status."""
+    billing = _load_billing(user_id)
+    return BillingBalanceResponse(subscription_active=_subscription_active(billing), **_billing_fields(billing))
 
 
 @app.get("/api/usage", response_model=UsageResponse)
@@ -1158,29 +1194,29 @@ def get_usage(
     request: Request,
     user_id: str | None = Depends(get_current_user_optional),
 ):
-    """Scan-limit state for the sidebar counter.
+    """Page-limit state for the sidebar counter.
 
-    Free-scan usage is counted server-side per client IP, so the frontend can
-    only get the real count from the server. Authenticated
-    users also consume the free trial runs first, then draw down credits.
+    Anonymous: free pages used (counted server-side per client IP).
+    Signed in: free-month, plan and pack page balances.
     """
-    trial_limit = _trial_limit(user_id)
-    trial_used = _trial_used(request, trial_limit)
-
-    balance_cents = None
-    billing = None
-    if user_id is not None:
-        billing = get_billing(user_id)
-        balance_cents = billing["balance_cents"] if billing else 0
-
+    if user_id is None:
+        used = _anon_pages_used(request)
+        return UsageResponse(
+            authenticated=False,
+            trial_used=used,
+            trial_limit=FREE_ANON_PAGES,
+            trial_remaining=max(0, FREE_ANON_PAGES - used),
+            max_file_bytes=_max_file_size(None),
+        )
+    billing = _load_billing(user_id)
     return UsageResponse(
-        authenticated=user_id is not None,
-        trial_used=trial_used,
-        trial_limit=trial_limit,
-        trial_remaining=max(0, trial_limit - trial_used),
-        balance_cents=balance_cents,
+        authenticated=True,
+        trial_used=0,
+        trial_limit=0,
+        trial_remaining=0,
         subscription_active=_subscription_active(billing),
         max_file_bytes=_max_file_size(user_id, billing),
+        **_billing_fields(billing),
     )
 
 
@@ -1197,6 +1233,7 @@ def create_billing_checkout_session(body: CheckoutSessionRequest, user_id: str =
         ga_client_id=body.ga_client_id,
         ga_session_id=body.ga_session_id,
         ad_opt_out=body.ad_opt_out,
+        pack=body.pack,
     )
     if not result or not result.get("url"):
         raise HTTPException(502, "Could not create checkout session. Please try again.")
