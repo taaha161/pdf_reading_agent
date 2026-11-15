@@ -17,6 +17,7 @@ sentry-sdk[fastapi]==2.75.0
 openpyxl==3.1.5  # tests read exported workbooks
 XlsxWriter==3.2.9
 pyjwt[crypto]==2.11.0
+cryptography==46.0.5  # field_crypto (statement text at rest)
 psycopg2-binary==2.9.11
 slowapi==0.1.9
 redis==7.3.0

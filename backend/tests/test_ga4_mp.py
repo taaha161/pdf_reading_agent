@@ -93,3 +93,9 @@ def test_topup_checkout_sends_purchase():
 def test_ga4_failure_never_fails_webhook():
     with patch.object(billing, "track_event", side_effect=RuntimeError("boom")):
         billing._track_ga4("user-1", "purchase", {}, {})
+
+
+def test_build_payload_denies_ad_consent_on_opt_out():
+    assert "consent" not in build_payload("user-1", "purchase", {})
+    p = build_payload("user-1", "purchase", {}, ad_opt_out=True)
+    assert p["consent"] == {"ad_user_data": "DENIED", "ad_personalization": "DENIED"}

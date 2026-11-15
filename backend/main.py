@@ -611,7 +611,7 @@ async def _prepare_scan(
     conversion_mode_val = (conversion_mode or "fast").strip().lower()
     if conversion_mode_val not in ("fast", "balanced", "accurate"):
         conversion_mode_val = "fast"
-    logger.info("scan: request started, filename=%s, scanned_method=%s, conversion_mode=%s", file.filename or "statement.pdf", scanned_method_val, conversion_mode_val)
+    logger.info("scan: request started, scanned_method=%s, conversion_mode=%s", scanned_method_val, conversion_mode_val)
 
     billing = get_billing(user_id) if user_id is not None else None
 
@@ -1196,6 +1196,7 @@ def create_billing_checkout_session(body: CheckoutSessionRequest, user_id: str =
         offer=body.offer,
         ga_client_id=body.ga_client_id,
         ga_session_id=body.ga_session_id,
+        ad_opt_out=body.ad_opt_out,
     )
     if not result or not result.get("url"):
         raise HTTPException(502, "Could not create checkout session. Please try again.")

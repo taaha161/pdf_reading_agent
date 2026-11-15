@@ -101,7 +101,7 @@ def extract_text_from_pdf(
     Returns raw text string.
     """
     t0 = time.perf_counter()
-    logger.info("extract_text_from_pdf: start, filename=%s, size=%d bytes, scanned_method=%s, conversion_mode=%s", filename, len(file_content), scanned_method or "auto", conversion_mode or "fast")
+    logger.info("extract_text_from_pdf: start, size=%d bytes, scanned_method=%s, conversion_mode=%s", len(file_content), scanned_method or "auto", conversion_mode or "fast")
 
     file_content = decrypt_pdf(file_content, password)
 

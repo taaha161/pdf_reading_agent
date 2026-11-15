@@ -13,6 +13,9 @@
       @keyframes boot-spin{to{transform:rotate(360deg)}}
       @media (prefers-reduced-motion:reduce){.boot-spinner::after{animation-duration:2s}}
     </style>
+    <!-- Global Privacy Control: a browser opt-out of sale/sharing (CCPA/CPRA). Deny Google ad
+         storage/personalization before GTM loads; the LinkedIn Insight Tag is skipped below. -->
+    <script>window.dataLayer=window.dataLayer||[];if(navigator.globalPrivacyControl===true){var g=function(){window.dataLayer.push(arguments);};g('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied'});g('set','allow_ad_personalization_signals',false);}</script>
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -108,6 +111,7 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     </script>
     <script type="text/javascript">
       (function(l) {
+      if (navigator.globalPrivacyControl === true) return; // opted out of ad sharing
       if (!l){window.lintrk = function(a,b){window.lintrk.q.push([a,b])};
       window.lintrk.q=[]}
       var s = document.getElementsByTagName("script")[0];
@@ -116,8 +120,5 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
       b.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js";
       s.parentNode.insertBefore(b, s);})(window.lintrk);
     </script>
-    <noscript>
-      <img height="1" width="1" style="display:none;" alt="" src="https://px.ads.linkedin.com/collect/?pid=10325908&fmt=gif" />
-    </noscript>
   </body>
 </html>

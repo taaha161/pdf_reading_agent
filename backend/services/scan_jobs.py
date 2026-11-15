@@ -81,11 +81,25 @@ def set_stage(scan_id: str, stage: str, chunk: int | None = None, chunks: int | 
             s.stage, s.chunk, s.chunks = stage, chunk, chunks
 
 
+def _drop(scan_id: str) -> None:
+    with _lock:
+        _scans.pop(scan_id, None)
+
+
+def _schedule_drop(scan_id: str) -> None:
+    """Discard a finished scan after the TTL even if no further requests arrive
+    (results can hold an anonymous user's transactions; we promise not to keep them)."""
+    t = threading.Timer(RESULT_TTL_SECONDS, _drop, args=(scan_id,))
+    t.daemon = True
+    t.start()
+
+
 def finish_scan(scan_id: str, result: dict[str, Any]) -> None:
     with _lock:
         s = _scans.get(scan_id)
         if s:
             s.status, s.result, s.finished_at = "done", result, time.monotonic()
+    _schedule_drop(scan_id)
 
 
 def fail_scan(scan_id: str, status_code: int, detail: Any) -> None:
@@ -94,6 +108,7 @@ def fail_scan(scan_id: str, status_code: int, detail: Any) -> None:
         if s:
             s.status, s.finished_at = "error", time.monotonic()
             s.error = {"status_code": status_code, "detail": detail}
+    _schedule_drop(scan_id)
 
 
 def clear_all() -> None:

@@ -225,6 +225,8 @@ export async function getUsage() {
 
 export async function createCheckoutSession(mode, email = null, offer = null, token = undefined) {
   const body = { mode, ...getGaIds() };
+  // Global Privacy Control: don't report this purchase to ad platforms.
+  if (typeof navigator !== "undefined" && navigator.globalPrivacyControl === true) body.ad_opt_out = true;
   if (email) body.email = email;
   if (offer) body.offer = offer;
   const res = await fetch(`${API_BASE}/api/billing/checkout-session`, {

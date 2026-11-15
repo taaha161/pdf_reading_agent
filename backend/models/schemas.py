@@ -115,6 +115,7 @@ class CheckoutSessionRequest(BaseModel):
     offer: Optional[str] = None  # ad-campaign offer code (see billing.OFFERS); validated server-side
     ga_client_id: Optional[str] = Field(default=None, max_length=64)  # GA4 ids for server-side subscribe/purchase events
     ga_session_id: Optional[str] = Field(default=None, max_length=64)
+    ad_opt_out: bool = False  # browser sent Global Privacy Control: no ad-platform conversions
 
 
 class CheckoutSessionResponse(BaseModel):
