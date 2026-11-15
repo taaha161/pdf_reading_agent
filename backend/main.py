@@ -22,6 +22,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("pdf_processor_app")
 
+from services.monitoring import UNCAUGHT_LOGGER, capture_message as capture_monitoring_message, init_monitoring
+
+init_monitoring()  # before FastAPI is imported/created so its integration hooks in
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
@@ -156,7 +160,9 @@ def _handle_uncaught_exception(request: Request, exc: Exception):
     if isinstance(exc, HTTPEx):
         detail = GENERIC_500_MESSAGE if exc.status_code == 500 else exc.detail
         return JSONResponse(status_code=exc.status_code, content={"detail": detail})
-    logger.exception("Uncaught exception: %s", exc)
+    # Own logger: Sentry's FastAPI integration already reports this exception, so
+    # monitoring ignores this logger (UNCAUGHT_LOGGER) to avoid a duplicate event.
+    logging.getLogger(UNCAUGHT_LOGGER).error("Uncaught exception: %s", exc, exc_info=exc)
     return JSONResponse(status_code=500, content={"detail": GENERIC_500_MESSAGE})
 
 
@@ -605,7 +611,7 @@ async def _prepare_scan(
     conversion_mode_val = (conversion_mode or "fast").strip().lower()
     if conversion_mode_val not in ("fast", "balanced", "accurate"):
         conversion_mode_val = "fast"
-    logger.info("scan: request started, filename=%s, scanned_method=%s, conversion_mode=%s", file.filename or "statement.pdf", scanned_method_val, conversion_mode_val)
+    logger.info("scan: request started, scanned_method=%s, conversion_mode=%s", scanned_method_val, conversion_mode_val)
 
     billing = get_billing(user_id) if user_id is not None else None
 
@@ -847,6 +853,30 @@ async def process_pdf(
     return await run_in_threadpool(_run_scan, req)
 
 
+# Scan failures the user caused or is told how to fix: not worth an alert.
+_EXPECTED_SCAN_FAILURE_CODES = {"PDF_PASSWORD_REQUIRED", "PDF_PASSWORD_INCORRECT"}
+
+
+def _report_scan_failure(scan_id: str, user_id: str | None, e: HTTPException) -> None:
+    """Send failed scans to monitoring (5xx are already captured via logger.exception)."""
+    if e.status_code != 422:
+        return
+    detail = e.detail if isinstance(e.detail, dict) else {"detail": e.detail}
+    code = detail.get("code")
+    if code in _EXPECTED_SCAN_FAILURE_CODES:
+        return
+    message = str(detail.get("detail") or "")[:120]
+    logger.warning("scan %s failed (422 %s): %s", scan_id, code or "-", message)
+    capture_monitoring_message(
+        f"Scan failed: {code or message}",
+        level="warning",
+        scan_id=scan_id,
+        user_id=user_id,
+        status_code=str(e.status_code),
+        error_code=code,
+    )
+
+
 def _run_scan_job(scan_id: str, req: _ScanRequest) -> None:
     def progress(stage: str, chunk: int | None = None, chunks: int | None = None) -> None:
         set_scan_stage(scan_id, stage, chunk, chunks)
@@ -855,6 +885,7 @@ def _run_scan_job(scan_id: str, req: _ScanRequest) -> None:
         payload = _run_scan(req, progress)
         finish_scan(scan_id, jsonable_encoder(payload))
     except HTTPException as e:
+        _report_scan_failure(scan_id, req.user_id, e)
         fail_scan(scan_id, e.status_code, e.detail)
     except Exception as e:  # _run_scan already maps errors; this is a last resort
         logger.exception("scan %s crashed: %s", scan_id, e)
@@ -1165,6 +1196,7 @@ def create_billing_checkout_session(body: CheckoutSessionRequest, user_id: str =
         offer=body.offer,
         ga_client_id=body.ga_client_id,
         ga_session_id=body.ga_session_id,
+        ad_opt_out=body.ad_opt_out,
     )
     if not result or not result.get("url"):
         raise HTTPException(502, "Could not create checkout session. Please try again.")

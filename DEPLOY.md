@@ -123,6 +123,9 @@ If you prefer one URL and one deployment:
 | `VITE_SUPABASE_URL` | Frontend | Supabase project URL (same as backend). |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Frontend | Supabase Publishable key (`sb_publishable_...`). |
 | `RESEND_API_KEY`  | Backend   | Resend API key for owner notifications (signup/login/scan). Blank disables all notifications. |
+| `SENTRY_DSN`      | Backend   | Sentry DSN for backend error monitoring. Blank disables it. |
+| `VITE_SENTRY_DSN` | Frontend (build) | Sentry DSN for frontend error monitoring. Read at build time; blank disables it. |
+| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | Frontend (build) | Optional: upload source maps to Sentry during the Vercel build (deleted from `dist` afterwards). |
 | `NOTIFY_EMAIL_TO` | Backend   | Notification recipient. Default `team@bankstatementscanner.com`. |
 | `NOTIFY_EMAIL_FROM` | Backend | Verified Resend sender. Default `BankStatementScanner <notifications@bankstatementscanner.com>`. |
 | `NOTIFY_WEBHOOK_SECRET` | Backend | Shared secret for the Supabase signup webhook (`X-Webhook-Secret` header). Blank disables signup emails. |

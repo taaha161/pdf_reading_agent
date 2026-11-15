@@ -96,6 +96,7 @@ def create_checkout_session(
     offer: str | None = None,
     ga_client_id: str | None = None,
     ga_session_id: str | None = None,
+    ad_opt_out: bool = False,
 ) -> dict | None:
     """Create Stripe Checkout Session. Returns { 'url': str } or None on error.
 
@@ -114,6 +115,8 @@ def create_checkout_session(
     if not customer_id:
         return None
     ga_meta = {k: str(v)[:64] for k, v in (("ga_client_id", ga_client_id), ("ga_session_id", ga_session_id)) if v}
+    if ad_opt_out:
+        ga_meta["ad_opt_out"] = "1"  # read back by the webhook; see _ad_opt_out
     try:
         if mode == "subscription":
             subscription_data: dict = {"metadata": {"user_id": user_id, **ga_meta}}
@@ -196,7 +199,7 @@ def _handle_invoice_paid(event) -> tuple[bool, str]:
             logger.exception("set_balance failed: %s", e)
             return False, str(e)
         # First paid month only (not renewals): report the checkout to LinkedIn
-        if billing_reason == "subscription_create":
+        if billing_reason == "subscription_create" and not _ad_opt_out(_invoice_subscription_metadata(invoice)):
             try:
                 track_subscription_purchase(
                     email=invoice.get("customer_email"),
@@ -334,10 +337,15 @@ def _invoice_subscription_metadata(invoice) -> dict:
     return details.get("metadata") or {}
 
 
+def _ad_opt_out(metadata: dict | None) -> bool:
+    """The buyer's browser sent Global Privacy Control at checkout (opt-out of sale/sharing)."""
+    return str((metadata or {}).get("ad_opt_out", "")) == "1"
+
+
 def _track_ga4(user_id: str, event_name: str, params: dict, metadata: dict | None) -> None:
     try:
         client_id, session_id = ga_ids_from_metadata(metadata)
-        track_event(user_id, event_name, params, client_id, session_id)
+        track_event(user_id, event_name, params, client_id, session_id, ad_opt_out=_ad_opt_out(metadata))
     except Exception as e:  # noqa: BLE001 - analytics must never fail a webhook
         logger.warning("GA4 %s event failed (continuing): %s", event_name, e)
 

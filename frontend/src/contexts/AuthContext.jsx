@@ -4,6 +4,7 @@ import { notifyLogin, setApiAuthToken } from "../api/client";
 import { trackOAuthSignupIfNew } from "../lib/trackSignup";
 import { claimOfferForUser } from "../lib/offer";
 import { getAttribution } from "../lib/attribution";
+import { setMonitoringUser } from "../lib/monitoring";
 
 // OAuth signups skip AuthPage's signUp() (where email signups attach
 // attribution), so save it on the first sign-in of a just-created account.
@@ -32,6 +33,10 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setMonitoringUser(user?.id ?? null);
+  }, [user?.id]);
 
   const loadSession = useCallback(async () => {
     const { data: { session: s } } = await supabase.auth.getSession();

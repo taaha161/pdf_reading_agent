@@ -52,6 +52,7 @@ def build_payload(
     params: dict,
     ga_client_id: str | None = None,
     ga_session_id: str | None = None,
+    ad_opt_out: bool = False,
 ) -> dict:
     client_id = _clean(ga_client_id) or _fallback_client_id(user_id)
     event_params = {k: v for k, v in params.items() if v is not None}
@@ -59,11 +60,15 @@ def build_payload(
     if session_id.isdigit():
         event_params["session_id"] = int(session_id)
         event_params["engagement_time_msec"] = 1
-    return {
+    payload = {
         "client_id": client_id,
         "user_id": user_id,
         "events": [{"name": event_name, "params": event_params}],
     }
+    if ad_opt_out:
+        # Keep the analytics event, but Google must not use it for ads.
+        payload["consent"] = {"ad_user_data": "DENIED", "ad_personalization": "DENIED"}
+    return payload
 
 
 def _send(payload: dict) -> None:
@@ -86,12 +91,13 @@ def track_event(
     params: dict,
     ga_client_id: str | None = None,
     ga_session_id: str | None = None,
+    ad_opt_out: bool = False,
 ) -> None:
     """Fire-and-forget GA4 event. No-op without API secret or user id."""
     if not (_api_secret() and user_id):
         logger.info("GA4 MP disabled or no user; skip %s", event_name)
         return
-    payload = build_payload(user_id, event_name, params, ga_client_id, ga_session_id)
+    payload = build_payload(user_id, event_name, params, ga_client_id, ga_session_id, ad_opt_out)
     threading.Thread(target=_send, args=(payload,), daemon=True).start()
 
 

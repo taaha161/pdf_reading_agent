@@ -1,4 +1,5 @@
 import { Component } from "react";
+import { captureError } from "../lib/monitoring";
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -12,6 +13,10 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("ErrorBoundary caught:", error, errorInfo);
+    captureError(error, {
+      contexts: { react: { componentStack: errorInfo?.componentStack } },
+      tags: { area: "error_boundary" },
+    });
   }
 
   render() {

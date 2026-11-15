@@ -12,6 +12,10 @@ import { initSupabase } from './lib/supabase'
 import { setApiBase } from './api/client'
 import { captureOfferFromUrl } from './lib/offer'
 import { captureAttributionFromUrl } from './lib/attribution'
+import { initMonitoring, captureMessage } from './lib/monitoring'
+
+// First, so errors during config/bootstrap are reported too.
+initMonitoring()
 
 // Before routing/auth redirects can drop the query string.
 captureOfferFromUrl()
@@ -34,7 +38,14 @@ function BootstrappedApp() {
         setApiBase(c.apiUrl);
         setReady(true);
       })
-      .catch((e) => setError(e?.message || "Config failed"));
+      .catch((e) => {
+        const message = e?.message || "Config failed";
+        captureMessage(`Bootstrap failed: ${message}`, {
+          level: message === CONFIG_NETWORK_ERROR ? "warning" : "error",
+          tags: { area: "bootstrap" },
+        });
+        setError(message);
+      });
   }, []);
 
   if (error) {

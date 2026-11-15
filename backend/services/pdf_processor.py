@@ -101,7 +101,7 @@ def extract_text_from_pdf(
     Returns raw text string.
     """
     t0 = time.perf_counter()
-    logger.info("extract_text_from_pdf: start, filename=%s, size=%d bytes, scanned_method=%s, conversion_mode=%s", filename, len(file_content), scanned_method or "auto", conversion_mode or "fast")
+    logger.info("extract_text_from_pdf: start, size=%d bytes, scanned_method=%s, conversion_mode=%s", len(file_content), scanned_method or "auto", conversion_mode or "fast")
 
     file_content = decrypt_pdf(file_content, password)
 
@@ -120,7 +120,7 @@ def extract_text_from_pdf(
             logger.warning("extract_text_from_pdf: Datalab timed out (%s), pages=%d", e, page_count)
             raise PdfExtractionTimeout(str(e)) from e
         except Exception as e:
-            logger.warning("extract_text_from_pdf: Datalab failed (%s)", e)
+            logger.error("extract_text_from_pdf: Datalab failed (%s)", e, exc_info=True)
             return ""
 
     stream = io.BytesIO(file_content)

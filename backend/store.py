@@ -9,6 +9,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 from services.csv_export import transactions_to_csv
+from services.field_crypto import decrypt_text, encrypt_text
 
 
 def _parse_amount(amount_str: str) -> float:
@@ -89,7 +90,7 @@ def set_job(
                 INSERT INTO job_payloads (job_id, transactions, raw_text, currency)
                 VALUES (%s, %s, %s, %s)
                 """,
-                (job_id, json.dumps(transactions), raw_text, currency),
+                (job_id, json.dumps(transactions), encrypt_text(raw_text), currency),
             )
 
 
@@ -167,7 +168,7 @@ def get_job(job_id: str, user_id: str) -> dict | None:
             "id": job_row["id"],
             "transactions": transactions,
             "csv_content": csv_content,
-            "raw_text": payload_row["raw_text"] or "",
+            "raw_text": decrypt_text(payload_row["raw_text"]) or "",
             "currency": payload_row["currency"],
             "conversion_mode": job_row.get("conversion_mode"),
         }
@@ -211,9 +212,17 @@ def purge_jobs_data(job_ids: list[str], user_id: str) -> int:
 
 
 def delete_user_data(user_id: str) -> None:
-    """Delete all jobs (and their payloads via CASCADE) for the given user."""
+    """Delete everything we store under this user id, in one transaction.
+
+    Jobs (payloads cascade), billing balance and usage log, and feedback.
+    profiles/subscription cascade when the Supabase auth user is deleted.
+    Payment records stay with Stripe.
+    """
     with _cursor() as cur:
         cur.execute("DELETE FROM jobs WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM billing_usage_log WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM user_billing WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM scan_feedback WHERE user_id = %s", (user_id,))
 
 
 def record_trial_run(job_id: str, client_ip_hash: str | None = None) -> None:

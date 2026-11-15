@@ -63,3 +63,14 @@ def test_first_subscription_invoice_tracks_purchase():
 
 def test_renewal_invoice_does_not_track():
     _handle("subscription_cycle").assert_not_called()
+
+
+def test_gpc_opt_out_skips_linkedin_purchase():
+    event = _invoice_event("subscription_create")
+    event["data"]["object"]["subscription_details"] = {"metadata": {"user_id": "user-1", "ad_opt_out": "1"}}
+    with patch.object(billing, "_user_id_from_customer", return_value="user-1"), patch.object(
+        billing, "set_balance"
+    ), patch.object(billing, "set_stripe_ids"), patch.object(billing, "track_subscription_purchase") as track:
+        ok, _ = billing._handle_invoice_paid(event)
+    assert ok
+    track.assert_not_called()
