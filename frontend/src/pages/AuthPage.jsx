@@ -10,11 +10,9 @@ import PasswordInput from "../components/PasswordInput";
 import { claimOfferForUser } from "../lib/offer";
 import { PLAN_SUBSCRIPTION, PLAN_TRIAL, rememberSignupPlan } from "../lib/signupPlan";
 import { getAttribution } from "../lib/attribution";
+import { FREE_ANON_PAGES, FREE_SIGNUP_DAYS, FREE_SIGNUP_PAGES, PLAN_PAGES, PLAN_PRICE } from "../lib/pricing";
 
 const PASSWORD_MIN_LENGTH = 8;
-// Mirrors backend AUTH_TRIAL_LIMIT - ANON_TRIAL_LIMIT (3 free scans signed in, 1 anonymous).
-const FREE_SCANS_ON_SIGNUP = 2;
-const TOTAL_FREE_SCANS = 3;
 
 /** Google G logo SVG (official brand colors) */
 function GoogleLogo({ className }) {
@@ -60,7 +58,7 @@ function BoltIcon() {
   );
 }
 
-/** Gift icon for the "unlock more free scans" banner */
+/** Gift icon for the "unlock free pages" banner */
 function GiftIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden focusable="false">
@@ -120,7 +118,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const [searchParams] = useSearchParams();
   const from = location.state?.from?.pathname || "/dashboard";
   const notice = location.state?.notice;
-  // Redirected from the scanner after the anonymous free scan ran out.
+  // Redirected from the scanner after the anonymous free pages ran out.
   const trialExhausted = location.state?.reason === "trial-exhausted";
   const modeFromQuery = searchParams.get("mode"); // e.g. /login?mode=signup
   const mode = modeFromQuery === "signup" || modeFromQuery === "login" || modeFromQuery === "forgot" ? modeFromQuery : initialMode;
@@ -134,15 +132,14 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const [message, setMessage] = useState({ type: "", text: "" });
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [plan, setPlan] = useState(PLAN_SUBSCRIPTION);
+  // Free month is the default: every new account gets it, no card needed.
+  const [plan, setPlan] = useState(PLAN_TRIAL);
   const isSubscription = plan === PLAN_SUBSCRIPTION;
-  const trialScansLabel = trialExhausted
-    ? `${FREE_SCANS_ON_SIGNUP} more free scans`
-    : `${TOTAL_FREE_SCANS} free scans`;
+  const trialScansLabel = `${FREE_SIGNUP_PAGES} free pages for your first month`;
 
   useEffect(() => {
     setView(mode);
-    // e.g. redirected here from the scanner after using the free scan
+    // e.g. redirected here from the scanner after using the free pages
     // (the trial-exhausted signup view has its own banner instead)
     setMessage(notice && !trialExhausted ? { type: "success", text: notice } : { type: "", text: "" });
     setSignupSuccess(false);
@@ -319,32 +316,30 @@ export default function AuthPage({ mode: initialMode = "login" }) {
           <section className="auth-panel auth-panel-left">
             {trialExhausted ? (
               <>
-                <span className="auth-trial-eyebrow">Your free scan is used up</span>
+                <span className="auth-trial-eyebrow">You&apos;ve reached the {FREE_ANON_PAGES}-page guest limit</span>
                 <h1 className="auth-hero-title">
-                  Get {FREE_SCANS_ON_SIGNUP} more scans <span>free.</span>
+                  Get {FREE_SIGNUP_PAGES} pages <span>free.</span>
                 </h1>
                 <p className="auth-hero-body">
-                  Create a free account and your next {FREE_SCANS_ON_SIGNUP} bank statements are on us. No credit
-                  card needed.
+                  Create a free account and your first {FREE_SIGNUP_PAGES} pages are on us for {FREE_SIGNUP_DAYS} days.
+                  No credit card needed.
                 </p>
-                <ol className="auth-scan-meter" aria-label="Your free scans">
+                <ol className="auth-scan-meter" aria-label="Your free pages">
                   <li className="auth-scan-slot auth-scan-slot--used">
                     <span className="auth-scan-slot-icon"><CheckIcon /></span>
-                    <span className="auth-scan-slot-title">Scan 1</span>
-                    <span className="auth-scan-slot-status">Used</span>
+                    <span className="auth-scan-slot-title">{FREE_ANON_PAGES} pages</span>
+                    <span className="auth-scan-slot-status">Guest limit</span>
                   </li>
-                  {Array.from({ length: FREE_SCANS_ON_SIGNUP }, (_, i) => (
-                    <li key={i} className="auth-scan-slot auth-scan-slot--free">
-                      <span className="auth-scan-slot-icon">+</span>
-                      <span className="auth-scan-slot-title">Scan {i + 2}</span>
-                      <span className="auth-scan-slot-status">Free on sign-up</span>
-                    </li>
-                  ))}
+                  <li className="auth-scan-slot auth-scan-slot--free">
+                    <span className="auth-scan-slot-icon">+</span>
+                    <span className="auth-scan-slot-title">{FREE_SIGNUP_PAGES} pages</span>
+                    <span className="auth-scan-slot-status">Free on sign-up</span>
+                  </li>
                 </ol>
                 <ol className="auth-trial-steps">
                   <li>Create your account below, it takes 30 seconds</li>
                   <li>Confirm your email</li>
-                  <li>Convert {FREE_SCANS_ON_SIGNUP} more statements to Excel, free</li>
+                  <li>Convert up to {FREE_SIGNUP_PAGES} statement pages to Excel, free</li>
                 </ol>
               </>
             ) : (
@@ -395,10 +390,10 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                   <span className="auth-trial-banner-icon" aria-hidden><GiftIcon /></span>
                   <div>
                     <p className="auth-trial-banner-title">
-                      Unlock {FREE_SCANS_ON_SIGNUP} more free scans
+                      Unlock {FREE_SIGNUP_PAGES} free pages
                     </p>
                     <p className="auth-trial-banner-body">
-                      You&apos;ve used your free scan. Create a free account to keep converting statements.
+                      You&apos;ve used your {FREE_ANON_PAGES} free pages. Create a free account to keep converting statements.
                     </p>
                   </div>
                 </div>
@@ -406,8 +401,8 @@ export default function AuthPage({ mode: initialMode = "login" }) {
               <h2 className="auth-title">Create your account</h2>
               <p className="auth-description">
                 {isSubscription
-                  ? "Subscribe for $10/month and get $10 in scan credits every month."
-                  : `Try it free with ${trialScansLabel}. No credit card needed.`}
+                  ? `Subscribe for $${PLAN_PRICE}/month and get ${PLAN_PAGES} pages every month, on top of your free month.`
+                  : `Start free with ${trialScansLabel}. No credit card needed.`}
               </p>
 
               {signupSuccess ? (
@@ -485,9 +480,9 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                         />
                         <span className="auth-plan-text">
                           <span className="auth-plan-title">
-                            Monthly plan <span className="auth-plan-price">$10/month</span>
+                            Monthly plan <span className="auth-plan-price">${PLAN_PRICE}/month</span>
                           </span>
-                          <span className="auth-plan-desc">$10 in scan credits every month. Cancel anytime.</span>
+                          <span className="auth-plan-desc">{PLAN_PAGES} pages every month, plus your free month. Cancel anytime.</span>
                         </span>
                       </label>
                       <label className={`auth-plan-option${!isSubscription ? " is-selected" : ""}`}>
@@ -500,7 +495,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                         />
                         <span className="auth-plan-text">
                           <span className="auth-plan-title">
-                            Free trial <span className="auth-plan-price">$0</span>
+                            Free month <span className="auth-plan-price">$0</span>
                           </span>
                           <span className="auth-plan-desc">
                             {trialScansLabel}. No credit card needed.

@@ -15,7 +15,7 @@ LIMITS = {"MAX_FILE_SIZE": 20, "MAX_FILE_SIZE_SIGNED_IN": 30, "MAX_FILE_SIZE_PAI
 def client():
     main.limiter.reset()
     with patch.multiple(main, **LIMITS), patch("main.verify_recaptcha", AsyncMock(return_value=True)), patch(
-        "main.count_trial_runs_by_ip", return_value=0
+        "main.sum_trial_pages_by_ip", return_value=0
     ), patch("main.limiter.enabled", False):
         with TestClient(app) as c:
             yield c
@@ -47,7 +47,7 @@ def test_anonymous_over_limit_is_told_to_sign_up(client, caplog):
 
 def test_signed_in_gets_higher_limit_then_told_to_subscribe(client):
     _as("user-1")
-    with patch("main.get_billing", return_value={"balance_cents": 0}):
+    with patch("main.ensure_free_grant", return_value={"plan_pages": 5}):
         r = _scan(client, PDF_30 + b"0")  # 31 > 30
     assert r.status_code == 413
     assert r.json()["detail"]["upgrade"] == "subscribe"
@@ -56,7 +56,7 @@ def test_signed_in_gets_higher_limit_then_told_to_subscribe(client):
 
 def test_subscriber_limit_has_no_upgrade(client):
     _as("user-1")
-    with patch("main.get_billing", return_value={"balance_cents": 1000, "stripe_subscription_id": "sub_1"}):
+    with patch("main.ensure_free_grant", return_value={"plan_pages": 100, "stripe_subscription_id": "sub_1"}):
         r = _scan(client, PDF_30 + b"0" * 21)  # 51 > 50
     assert r.status_code == 413
     assert r.json()["detail"]["upgrade"] is None
@@ -65,9 +65,9 @@ def test_subscriber_limit_has_no_upgrade(client):
 
 @pytest.mark.parametrize(
     "user_id,billing,expected",
-    [(None, None, 20), ("u", None, 30), ("u", {"balance_cents": 0, "stripe_subscription_id": "sub_1"}, 50)],
+    [(None, None, 20), ("u", {}, 30), ("u", {"plan_pages": 0, "stripe_subscription_id": "sub_1"}, 50)],
 )
 def test_usage_reports_max_file_bytes(client, user_id, billing, expected):
     _as(user_id)
-    with patch("main.get_billing", return_value=billing):
+    with patch("main.ensure_free_grant", return_value=billing):
         assert client.get("/api/usage").json()["max_file_bytes"] == expected

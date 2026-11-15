@@ -43,11 +43,11 @@ function scanError(status, detail, fallback) {
   if (status === 429) return new Error("Too many requests. Please try again in a minute.");
   const obj = detail && typeof detail === "object" && !Array.isArray(detail) ? detail : null;
   if (status === 402) {
-    const e = new Error(obj?.detail || "Insufficient credits");
+    const e = new Error(obj?.detail || "Not enough pages left");
     e.insufficientCredits = {
       code: obj?.code || "INSUFFICIENT_CREDITS",
-      balance_cents: obj?.balance_cents ?? 0,
-      required_cents: obj?.required_cents ?? 0,
+      pages_required: obj?.pages_required ?? 0,
+      pages_remaining: obj?.pages_remaining ?? 0,
     };
     return e;
   }
@@ -55,6 +55,11 @@ function scanError(status, detail, fallback) {
   const e = new Error(msg);
   if (status === 403 && obj?.code === "RECAPTCHA_FAILED") e.isRecaptchaFailed = true;
   if (status === 401 && typeof msg === "string" && msg.toLowerCase().includes("trial limit")) e.isTrialLimit = true;
+  // Anonymous PDF bigger than the free pages left: sign up to scan it.
+  if (status === 401 && obj?.code === "FREE_PAGES_EXCEEDED") {
+    e.isTrialLimit = true;
+    e.freePagesExceeded = { pages_required: obj.pages_required ?? 0, pages_remaining: obj.pages_remaining ?? 0 };
+  }
   if (status === 422 && obj?.code === "PDF_PASSWORD_REQUIRED") e.isPdfPasswordRequired = true;
   if (status === 422 && obj?.code === "PDF_PASSWORD_INCORRECT") e.isPdfPasswordIncorrect = true;
   if (status === 413 && obj?.code === "FILE_TOO_LARGE") {
@@ -223,8 +228,10 @@ export async function getUsage() {
   return res.json();
 }
 
-export async function createCheckoutSession(mode, email = null, offer = null, token = undefined) {
+/** `pack` (topup only): a PAGE_PACKS id from lib/pricing ("10" | "30" | "100"). */
+export async function createCheckoutSession(mode, email = null, offer = null, token = undefined, pack = null) {
   const body = { mode, ...getGaIds() };
+  if (pack) body.pack = pack;
   // Global Privacy Control: don't report this purchase to ad platforms.
   if (typeof navigator !== "undefined" && navigator.globalPrivacyControl === true) body.ad_opt_out = true;
   if (email) body.email = email;

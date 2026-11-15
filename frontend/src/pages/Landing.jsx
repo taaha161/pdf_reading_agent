@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ACCURATE_MULTIPLIER, FREE_ANON_PAGES, FREE_SIGNUP_DAYS, FREE_SIGNUP_PAGES, PAGE_PACKS, PLAN_PAGES, PLAN_PRICE } from "../lib/pricing";
 import { useNavigate, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import logo from "../assets/pdf_to_excel_logo.png";
@@ -82,7 +83,7 @@ export default function Landing() {
           name: "How much does Bank Statement Scanner cost?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Bank Statement Scanner offers a $10/month subscription that adds $10 in credits each billing cycle. Credits are used per scan, from less than 1¢ to $1.50 depending on mode. You can also add one-time credit top-ups. No credit card required to try.",
+            text: "You pay per PDF page. Try 10 pages free without an account, and get 100 free pages for your first month when you sign up, no credit card required. After that the plan is $10/month for 100 pages, and extra page packs cost $2 for 10 pages, $5 for 30 pages, or $10 for 100 pages. Pack pages never expire.",
           },
         },
         {
@@ -260,7 +261,7 @@ export default function Landing() {
             <div className="landing-hero-meta">
               <span>No credit card required</span>
               <span className="landing-hero-dot" aria-hidden />
-              <span>Upload up to 3 statements free</span>
+              <span>100 pages free your first month</span>
             </div>
             <div className="landing-hero-stats" id="results">
               <div>
@@ -492,54 +493,80 @@ export default function Landing() {
 
         <section className="landing-pricing" id="pricing" aria-label="Pricing">
           <header className="landing-pricing-head">
-            <h2>Simple, pay-as-you-go pricing</h2>
-            <p>Subscribe monthly and $10 is added to your credit each month. Optionally top up anytime for extra credits. No long-term commitment.</p>
+            <h2>Simple pricing, by the page</h2>
+            <p>Try {FREE_ANON_PAGES} pages free without an account. Sign up and your first month includes {FREE_SIGNUP_PAGES} pages free. No credit card needed.</p>
           </header>
-          <div className="landing-pricing-grid">
+          <div className="landing-pricing-grid landing-pricing-grid--three">
+            <article className="landing-price-card">
+              <div className="landing-price-label">Free</div>
+              <div className="landing-price-value">
+                $0<span>/first month</span>
+              </div>
+              <p className="landing-price-tagline">{FREE_SIGNUP_PAGES} pages free for your first {FREE_SIGNUP_DAYS} days. No credit card required.</p>
+              <ul className="landing-price-list">
+                <li>{FREE_SIGNUP_PAGES} statement pages in your first month</li>
+                <li>{FREE_ANON_PAGES} pages free even without an account</li>
+                <li>CSV &amp; Excel export, AI categorization</li>
+                <li>Ask questions about your statements</li>
+              </ul>
+              <button
+                type="button"
+                className="landing-price-btn landing-price-btn--outline"
+                onClick={() => {
+                  if (!isLoggedIn) trackGetStartedClick("pricing_free");
+                  navigate(isLoggedIn ? "/scanner" : "/signup");
+                }}
+              >
+                {isLoggedIn ? "Start scanning" : "Start free"}
+              </button>
+            </article>
+
             <article className="landing-price-card landing-price-card--highlight">
               <div className="landing-price-pill">Most popular</div>
-              <div className="landing-price-label">Monthly subscription</div>
+              <div className="landing-price-label">Monthly</div>
               <div className="landing-price-value">
-                $10<span>/mo</span>
+                ${PLAN_PRICE}<span>/mo</span>
               </div>
-              <p className="landing-price-tagline">$10 in credit added to your account every month. Use credits per scan—pay only for what you use.</p>
+              <p className="landing-price-tagline">{PLAN_PAGES} pages every month. Cancel anytime.</p>
               <ul className="landing-price-list">
-                <li>$10 credit added each billing cycle</li>
-                <li>Credits used per scan (from &lt;1¢ to $1.50 depending on mode)</li>
-                <li>Optionally top up anytime for extra credits</li>
-                <li>CSV &amp; Excel export, AI categorization—cancel anytime</li>
+                <li>{PLAN_PAGES} pages each billing cycle</li>
+                <li>Add page packs whenever you need more</li>
+                <li>Larger uploads (up to 50 MB)</li>
+                <li>CSV &amp; Excel export, AI categorization</li>
               </ul>
               <button
                 type="button"
                 className="landing-price-btn"
                 onClick={() => {
                   if (!isLoggedIn) trackGetStartedClick("pricing_monthly");
-                  navigate(isLoggedIn ? "/settings" : "/login");
+                  navigate(isLoggedIn ? "/settings#billing" : "/signup");
                 }}
               >
-                {isLoggedIn ? "Manage subscription" : "Get started"}
+                {isLoggedIn ? "Manage plan" : "Get started"}
               </button>
             </article>
 
             <article className="landing-price-card">
-              <div className="landing-price-label">Optional top-up</div>
-              <div className="landing-price-value landing-price-value--custom">Add credits</div>
-              <p className="landing-price-tagline">Need more credits? Add a one-time top-up anytime—with or without a subscription.</p>
+              <div className="landing-price-label">Page packs</div>
+              <div className="landing-price-value">
+                from ${PAGE_PACKS[0].price}
+              </div>
+              <p className="landing-price-tagline">One-time extra pages. They never expire.</p>
               <ul className="landing-price-list">
-                <li>One-time credit purchases</li>
-                <li>Fast mode from &lt;1¢, balanced $1, accurate $1.50 per scan</li>
-                <li>Same export &amp; categorization features</li>
-                <li>Works alongside your monthly plan</li>
+                {PAGE_PACKS.map((p) => (
+                  <li key={p.id}>{p.pages} pages for ${p.price}</li>
+                ))}
+                <li>High accuracy mode uses {ACCURATE_MULTIPLIER} pages per PDF page</li>
               </ul>
               <button
                 type="button"
                 className="landing-price-btn landing-price-btn--outline"
                 onClick={() => {
                   if (!isLoggedIn) trackGetStartedClick("pricing_topup");
-                  navigate(isLoggedIn ? "/settings" : "/login");
+                  navigate(isLoggedIn ? "/settings#billing" : "/signup");
                 }}
               >
-                {isLoggedIn ? "Add credits" : "Get started"}
+                {isLoggedIn ? "Buy pages" : "Get started"}
               </button>
             </article>
           </div>

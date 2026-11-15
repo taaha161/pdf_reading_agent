@@ -12,7 +12,6 @@ from services import billing
 def stripe_configured(monkeypatch):
     monkeypatch.setattr(billing, "_STRIPE_KEY", "sk_test")
     monkeypatch.setattr(billing, "_PRICE_ID_MONTHLY", "price_m")
-    monkeypatch.setattr(billing, "_PRICE_ID_TOPUP", "price_t")
     monkeypatch.setattr(billing, "get_or_create_stripe_customer", lambda uid, email: "cus_1")
 
 

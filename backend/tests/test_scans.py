@@ -43,7 +43,7 @@ def client():
     with patch("main.verify_recaptcha", AsyncMock(return_value=True)), patch(
         "main.extract_text_from_pdf", return_value="1/1/24,Coffee,4.50"
     ), patch("main.extract_and_categorize", side_effect=_fake_extract), patch("main.notify_scan"), patch(
-        "main.count_trial_runs_by_ip", return_value=0
+        "main.sum_trial_pages_by_ip", return_value=0
     ), patch("main.record_trial_run"), patch("main.set_scan_stage", side_effect=record_stage), patch(
         "main.limiter.enabled", False
     ):

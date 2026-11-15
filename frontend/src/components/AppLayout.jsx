@@ -4,8 +4,8 @@ import logo from "../assets/pdf_to_excel_logo.png";
 import settingsGear from "../assets/settings-gear.svg";
 import { useAuth } from "../contexts/AuthContext";
 import { useUsage } from "../contexts/UsageContext";
-import { createCheckoutSession } from "../api/client";
 import { OFFERS, getOffer } from "../lib/offer";
+import { FREE_ANON_PAGES, PLAN_PAGES, formatExpiry } from "../lib/pricing";
 import "./AppLayout.css";
 
 export default function AppLayout({ children }) {
@@ -18,34 +18,20 @@ export default function AppLayout({ children }) {
   // shell: no app sidebar or account menu, just the logo and log in / sign up.
   const isGuest = !authLoading && !isLoggedIn;
 
-  // Real scan-limit numbers come from the server (trial count is per client
-  // IP; credits live in billing). Counting local jobs — the old
-  // behavior — never moved for anonymous trial users and ignored credits.
+  // Real page numbers come from the server (anonymous free pages are counted
+  // per client IP; signed-in balances live in billing).
   const trialUsed = usage?.trial_used ?? 0;
-  const trialLimit = usage?.trial_limit ?? 1;
-  const trialRemaining = usage?.trial_remaining ?? trialLimit;
-  const freeScanProgress = trialLimit > 0 ? Math.min(trialUsed / trialLimit, 1) : 0;
-  const balanceCents = usage?.balance_cents ?? null;
+  const trialLimit = usage?.trial_limit || FREE_ANON_PAGES;
+  const pagesRemaining = usage?.pages_remaining ?? 0;
+  const freePages = usage?.free_pages ?? 0;
+  const planPages = usage?.plan_pages ?? 0;
+  const packPages = usage?.pack_pages ?? 0;
+  const freeExpiry = formatExpiry(usage?.free_expires_at);
+  const pagesProgress = isLoggedIn
+    ? Math.min(pagesRemaining / PLAN_PAGES, 1)
+    : Math.min(trialUsed / trialLimit, 1);
 
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [creditsLoading, setCreditsLoading] = useState(false);
-  const [creditsError, setCreditsError] = useState("");
-
-  const handleAddCredits = async () => {
-    setCreditsLoading(true);
-    setCreditsError("");
-    try {
-      const url = await createCheckoutSession("topup", user?.email ?? undefined);
-      if (url) {
-        window.location.href = url;
-        return;
-      }
-      setCreditsError("Failed to start checkout");
-    } catch (err) {
-      setCreditsError(err.message || "Failed to start checkout");
-    }
-    setCreditsLoading(false);
-  };
 
   // Ad-campaign offer (e.g. LinkedIn first month free) until they subscribe.
   const offer = getOffer(user);
@@ -127,26 +113,30 @@ export default function AppLayout({ children }) {
           </nav>
           {usage && (
             <div className="app-layout-summary-card">
-              <p className="app-layout-summary-label">Free Scan Limit</p>
-              <div className="app-layout-summary-bar-wrap">
-                <div className="app-layout-summary-bar" style={{ width: `${freeScanProgress * 100}%` }} />
-              </div>
-              <p className="app-layout-summary-value">{trialUsed} / {trialLimit} free scans used</p>
-              {isLoggedIn && balanceCents != null && trialRemaining === 0 && (
-                <p className="app-layout-summary-value">Credits: ${(balanceCents / 100).toFixed(2)}</p>
-              )}
-              {isLoggedIn && (
-                <button
-                  type="button"
-                  className="app-layout-summary-cta"
-                  onClick={handleAddCredits}
-                  disabled={creditsLoading}
-                >
-                  {creditsLoading ? "Redirecting…" : "Add Credits"}
-                </button>
-              )}
-              {creditsError && (
-                <p className="app-layout-summary-error" role="alert">{creditsError}</p>
+              {isLoggedIn ? (
+                <>
+                  <p className="app-layout-summary-label">Pages left</p>
+                  <div className="app-layout-summary-bar-wrap">
+                    <div className="app-layout-summary-bar" style={{ width: `${pagesProgress * 100}%` }} />
+                  </div>
+                  <p className="app-layout-summary-value"><strong>{pagesRemaining.toLocaleString()}</strong> pages</p>
+                  {freePages > 0 && (
+                    <p className="app-layout-summary-value">{freePages} free{freeExpiry ? ` until ${freeExpiry}` : ""}</p>
+                  )}
+                  {planPages > 0 && <p className="app-layout-summary-value">{planPages} on your plan</p>}
+                  {packPages > 0 && <p className="app-layout-summary-value">{packPages} from page packs</p>}
+                  <button type="button" className="app-layout-summary-cta" onClick={() => navigate("/settings#billing")}>
+                    Get more pages
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="app-layout-summary-label">Free pages</p>
+                  <div className="app-layout-summary-bar-wrap">
+                    <div className="app-layout-summary-bar" style={{ width: `${pagesProgress * 100}%` }} />
+                  </div>
+                  <p className="app-layout-summary-value">{trialUsed} / {trialLimit} free pages used</p>
+                </>
               )}
             </div>
           )}

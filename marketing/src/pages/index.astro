@@ -11,7 +11,10 @@ import SampleExport from '../components/SampleExport.astro';
 import FounderBlock from '../components/FounderBlock.astro';
 import StickyCta from '../components/StickyCta.astro';
 import { comparePages } from '../comparePages';
-import { SITE_URL, SITE_NAME, SITE_TAGLINE, SUPPORT_EMAIL, FREE_STATEMENTS, canonical } from '../consts';
+import {
+  SITE_URL, SITE_NAME, SITE_TAGLINE, SUPPORT_EMAIL, canonical,
+  FREE_ANON_PAGES, FREE_SIGNUP_PAGES, FREE_SIGNUP_DAYS, FREE_LABEL, PLAN_PRICE, PLAN_PAGES, PAGE_PACKS, ACCURATE_MULTIPLIER, PRICING_SUMMARY,
+} from '../consts';
 
 // Use-case cards pull from the real blog posts.
 const posts = await getCollection('blog');
@@ -39,7 +42,7 @@ const faqs = [
   },
   {
     q: 'How much does Bank Statement Scanner cost?',
-    a: `Bank Statement Scanner offers a $10/month subscription that adds $10 in credits each billing cycle. Credits are used per scan, from less than 1¢ to $1.50 depending on mode. You can also add one-time credit top-ups. Your first ${FREE_STATEMENTS} statements are free, no credit card required.`,
+    a: PRICING_SUMMARY,
   },
   {
     q: 'Can I ask the AI for specific transactions?',
@@ -141,7 +144,7 @@ const steps = [
         <p class="hero-meta">
           <span>No credit card required</span>
           <span class="dot" aria-hidden="true"></span>
-          <span>{FREE_STATEMENTS} statements free</span>
+          <span>{FREE_LABEL}</span>
           <span class="dot" aria-hidden="true"></span>
           <span>No annual contract</span>
         </p>
@@ -282,37 +285,48 @@ const steps = [
   <section class="pricing" id="pricing" aria-label="Pricing">
     <div class="container">
       <header class="section-head">
-        <h2>Simple, pay-as-you-go pricing</h2>
-        <p>Start with {FREE_STATEMENTS} free statements. Then $10 a month, monthly, no annual contract. Cancel anytime.</p>
+        <h2>Simple pricing, by the page</h2>
+        <p>Try {FREE_ANON_PAGES} pages free without an account. Your first month includes {FREE_SIGNUP_PAGES} pages free. Then ${PLAN_PRICE} a month, no annual contract. Cancel anytime.</p>
       </header>
       <div class="price-grid">
+        <article class="price-card">
+          <div class="price-label">Free</div>
+          <div class="price-value">$0<span>/first month</span></div>
+          <p class="price-tagline">{FREE_SIGNUP_PAGES} pages free for your first {FREE_SIGNUP_DAYS} days. No credit card.</p>
+          <ul class="price-list">
+            <li>{FREE_SIGNUP_PAGES} statement pages in your first month</li>
+            <li>{FREE_ANON_PAGES} pages free even without an account</li>
+            <li>CSV &amp; Excel export, AI categorization</li>
+            <li>Ask your statements questions</li>
+          </ul>
+          <a class="btn btn-outline price-btn" href="/signup" data-cta="pricing_free">Start free</a>
+        </article>
         <article class="price-card price-card--highlight">
           <div class="price-pill">Most popular</div>
-          <div class="price-label">Monthly subscription</div>
-          <div class="price-value">$10<span>/mo</span></div>
-          <p class="price-tagline">$10 of scan credit every month. What that gets you:</p>
+          <div class="price-label">Monthly</div>
+          <div class="price-value">${PLAN_PRICE}<span>/mo</span></div>
+          <p class="price-tagline">{PLAN_PAGES} pages every month. What that gets you:</p>
           <ul class="price-examples" role="list">
-            <li><strong>~10</strong><span>statements on Balanced</span></li>
-            <li><strong>~6</strong><span>statements on Accurate</span></li>
-            <li><strong>1,000+</strong><span>pages on Fast</span></li>
+            <li><strong>~16</strong><span>six-page statements</span></li>
+            <li><strong>~8</strong><span>six-page statements on High accuracy</span></li>
+            <li><strong>$0.10</strong><span>per page</span></li>
           </ul>
           <ul class="price-list">
-            <li>Mix modes per statement: Fast from &lt;1¢, Balanced $1, Accurate $1.50</li>
-            <li>CSV &amp; Excel export, AI categorization</li>
-            <li>Top up anytime for extra credits</li>
+            <li>{PLAN_PAGES} pages each billing cycle</li>
+            <li>Add page packs whenever you need more</li>
+            <li>Larger uploads, up to 50 MB</li>
             <li>Monthly billing, cancel anytime</li>
           </ul>
-          <a class="btn btn-primary price-btn" href="/scanner" data-cta="pricing_sub">Start with {FREE_STATEMENTS} free statements</a>
+          <a class="btn btn-primary price-btn" href="/signup" data-cta="pricing_sub">Start with {FREE_SIGNUP_PAGES} free pages</a>
         </article>
         <article class="price-card">
-          <div class="price-label">Optional top-up</div>
-          <div class="price-value price-value--custom">Add credits</div>
-          <p class="price-tagline">Busy month? Add a one-time top-up, with or without a subscription.</p>
+          <div class="price-label">Page packs</div>
+          <div class="price-value">from ${PAGE_PACKS[0].price}</div>
+          <p class="price-tagline">Busy month? Add pages anytime, with or without the plan.</p>
           <ul class="price-list">
-            <li>One-time credit purchases</li>
-            <li>Same per-statement prices as the plan</li>
-            <li>Same export &amp; categorization features</li>
-            <li>Works alongside your monthly plan</li>
+            {PAGE_PACKS.map((p) => <li>{p.pages} pages for ${p.price}</li>)}
+            <li>Pack pages never expire</li>
+            <li>High accuracy mode uses {ACCURATE_MULTIPLIER} pages per PDF page</li>
           </ul>
           <a class="btn btn-outline price-btn" href="/scanner" data-cta="pricing_topup">Try it free first</a>
         </article>
@@ -349,7 +363,7 @@ const steps = [
       <p>Join 10,000+ finance professionals who turn messy statements into clean, structured data with Bank Statement Scanner.</p>
       <div class="cta-band-actions">
         <a class="btn btn-invert" href="/scanner" data-cta="band">Start scanning now</a>
-        <span class="cta-band-note">{FREE_STATEMENTS} statements free · No credit card required.</span>
+        <span class="cta-band-note">{FREE_LABEL} · No credit card required.</span>
       </div>
     </div>
   </section>
@@ -383,7 +397,7 @@ const steps = [
   </section>
 
   <SampleExport />
-  <StickyCta note={`${FREE_STATEMENTS} statements free · No card`} />
+  <StickyCta note={`${FREE_SIGNUP_PAGES} pages free · No card`} />
 </Base>
 
 <style>
@@ -510,7 +524,7 @@ const steps = [
 
   /* Pricing */
   .pricing { padding-block: 72px; }
-  .price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; max-width: 820px; margin-inline: auto; }
+  .price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; max-width: 1080px; margin-inline: auto; }
   .price-card {
     position: relative; background: var(--color-surface); border: 1px solid var(--color-border);
     border-radius: var(--radius-lg); padding: 28px; box-shadow: var(--shadow-sm);

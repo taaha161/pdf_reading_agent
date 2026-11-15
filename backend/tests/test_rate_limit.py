@@ -49,8 +49,10 @@ def mock_process_pdf_deps():
     ), patch(
         "main.extract_and_categorize", return_value=([], "USD")
     ), patch("main.create_job_id", return_value=str(uuid.uuid4())), patch("main.set_job"), patch(
-        "main.count_trial_runs_by_ip", return_value=0
-    ), patch("main.record_trial_run"), patch("main.notify_scan"):
+        "main.sum_trial_pages_by_ip", return_value=0
+    ), patch("main.record_trial_run"), patch("main.notify_scan"), patch(
+        "main.ensure_free_grant", return_value={"plan_pages": 100}
+    ), patch("main.deduct_pages", return_value={"plan_pages": 99}), patch("main.insert_usage_log"), patch("main.count_pdf_pages", return_value=1):
         yield
 
 

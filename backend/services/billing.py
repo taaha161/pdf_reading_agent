@@ -8,17 +8,37 @@ from stripe import StripeError
 
 from services.ga4_mp import ga_ids_from_metadata, track_event
 from services.linkedin_capi import track_subscription_purchase
-from store import add_balance, get_billing, get_user_id_by_stripe_customer_id, set_balance, set_stripe_ids
+from store import add_pack_pages, get_billing, get_user_id_by_stripe_customer_id, set_plan_pages, set_stripe_ids
 
 logger = logging.getLogger("pdf_processor_app.billing")
 
-# Scan cost in cents: fast = 0.5¢, balanced = $1, accurate = $1.50
-SCAN_COST_CENTS = {"fast": 0.5, "balanced": 100, "accurate": 150}
+# --- Page pricing ---
+# Billing unit is a PDF page, counted before any processing.
+FREE_ANON_PAGES = 10  # without an account, per client IP (lifetime)
+FREE_SIGNUP_PAGES = 100  # one-time grant on signup...
+FREE_SIGNUP_DAYS = 30  # ...valid for the first 30 days
+PLAN_PAGES = 100  # $10/month plan: pages per billing cycle (reset, no rollover)
+PLAN_PRICE_CENTS = 1000
+# Page packs: id -> (pages, price in cents). Never expire. Any signed-in user can buy.
+PAGE_PACKS: dict[str, tuple[int, int]] = {
+    "10": (10, 200),
+    "30": (30, 500),
+    "100": (100, 1000),
+}
+DEFAULT_PACK = "30"
+# Pages charged per PDF page, by conversion mode.
+MODE_PAGE_MULTIPLIER = {"fast": 1, "balanced": 1, "accurate": 2}
+# Old $-credit top-ups still in flight at launch convert at $0.10/page.
+_LEGACY_CENTS_PER_PAGE = 10
+
+
+def scan_cost_pages(page_count: int, conversion_mode: str) -> int:
+    """Pages charged for scanning a PDF with `page_count` pages in this mode."""
+    return max(1, page_count) * MODE_PAGE_MULTIPLIER.get(conversion_mode, 1)
 
 _STRIPE_KEY = os.environ.get("STRIPE_SECRET_KEY", "").strip()
 _STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
 _PRICE_ID_MONTHLY = os.environ.get("STRIPE_PRICE_ID_MONTHLY", "").strip()
-_PRICE_ID_TOPUP = os.environ.get("STRIPE_PRICE_ID_TOPUP", "").strip()
 _FRONTEND_URL = (os.environ.get("FRONTEND_URL", "http://localhost:5173") or "http://localhost:5173").strip().rstrip("/")
 
 
@@ -50,7 +70,7 @@ def _has_had_subscription(customer_id: str) -> bool:
 
 
 def _stripe_available() -> bool:
-    return bool(_STRIPE_KEY and _PRICE_ID_MONTHLY and _PRICE_ID_TOPUP)
+    return bool(_STRIPE_KEY and _PRICE_ID_MONTHLY)
 
 
 def get_or_create_stripe_customer(user_id: str, email: str | None) -> str | None:
@@ -97,6 +117,7 @@ def create_checkout_session(
     ga_client_id: str | None = None,
     ga_session_id: str | None = None,
     ad_opt_out: bool = False,
+    pack: str | None = None,
 ) -> dict | None:
     """Create Stripe Checkout Session. Returns { 'url': str } or None on error.
 
@@ -104,6 +125,7 @@ def create_checkout_session(
     when the customer has never subscribed before; silently ignored otherwise.
     `ga_client_id`/`ga_session_id`: the browser's GA4 ids, stored in Stripe metadata
     so webhook events (subscribe, purchase) attribute to the visitor's ad session.
+    `pack` (topup only): a key of PAGE_PACKS; unknown values fall back to DEFAULT_PACK.
     """
     if not _stripe_available():
         logger.warning("Stripe not configured; cannot create checkout session")
@@ -136,14 +158,23 @@ def create_checkout_session(
                 allow_promotion_codes=True,
             )
         else:
+            pack_id = pack if pack in PAGE_PACKS else DEFAULT_PACK
+            pages, price_cents = PAGE_PACKS[pack_id]
             session = stripe.checkout.Session.create(
                 customer=customer_id,
                 mode="payment",
-                line_items=[{"price": _PRICE_ID_TOPUP, "quantity": 1}],
+                line_items=[{
+                    "price_data": {
+                        "currency": "usd",
+                        "unit_amount": price_cents,
+                        "product_data": {"name": f"{pages} extra pages", "description": "Bank Statement Scanner page pack. Never expires."},
+                    },
+                    "quantity": 1,
+                }],
                 success_url=success_url,
                 cancel_url=cancel_url,
                 client_reference_id=user_id,
-                metadata={"user_id": user_id, "topup": "1", **ga_meta},
+                metadata={"user_id": user_id, "topup": "1", "pack": pack_id, "pack_pages": str(pages), **ga_meta},
                 allow_promotion_codes=True,
             )
         return {"url": session.url, "sessionId": session.id}
@@ -190,13 +221,13 @@ def _handle_invoice_paid(event) -> tuple[bool, str]:
 
     amount_paid = invoice.get("amount_paid") or 0  # cents
 
-    # Subscription cycle or create: set balance to $10 (1000 cents)
+    # Subscription cycle or create: reset the monthly allowance to PLAN_PAGES
     if billing_reason in ("subscription_cycle", "subscription_create") and subscription_id:
         try:
-            set_balance(user_id, 1000)
+            set_plan_pages(user_id, PLAN_PAGES)
             set_stripe_ids(user_id, customer_id, subscription_id)
         except Exception as e:
-            logger.exception("set_balance failed: %s", e)
+            logger.exception("set_plan_pages failed: %s", e)
             return False, str(e)
         # First paid month only (not renewals): report the checkout to LinkedIn
         if billing_reason == "subscription_create" and not _ad_opt_out(_invoice_subscription_metadata(invoice)):
@@ -222,17 +253,10 @@ def _handle_invoice_paid(event) -> tuple[bool, str]:
                 },
                 _invoice_subscription_metadata(invoice),
             )
-        return True, "Balance set to 1000"
+        return True, f"Plan pages set to {PLAN_PAGES}"
 
-    # One-time payment (top-up): no subscription on invoice
-    if not subscription_id and amount_paid > 0:
-        try:
-            add_balance(user_id, amount_paid)
-            return True, "Top-up applied"
-        except Exception as e:
-            logger.exception("add_balance failed: %s", e)
-            return False, str(e)
-
+    # Page packs are credited from checkout.session.completed only (never here,
+    # so a pack paid via an invoice can't be credited twice).
     return True, "OK"
 
 
@@ -251,6 +275,7 @@ def _handle_subscription_deleted(event) -> tuple[bool, str]:
     user_id = _user_id_from_customer(customer_id, sub.get("id"), None)
     if user_id:
         set_stripe_ids(user_id, customer_id, None)
+        set_plan_pages(user_id, 0)  # the monthly allowance ends with the plan; packs are kept
     return True, "OK"
 
 
@@ -291,14 +316,15 @@ def _handle_checkout_completed(event) -> tuple[bool, str]:
     if not user_id:
         return True, "Could not resolve user_id for checkout.session.completed"
 
-    amount = session.get("amount_total") or 0  # cents
-    if not amount or amount <= 0:
-        return True, "No amount to apply for top-up"
+    amount = session.get("amount_total") or 0  # cents (after any promo code)
+    pages = _pack_pages_from_metadata(metadata, amount)
+    if pages <= 0:
+        return True, "No pages to apply for top-up"
 
     try:
-        add_balance(user_id, amount)
+        add_pack_pages(user_id, pages)
     except Exception as e:
-        logger.exception("add_balance failed on checkout.session.completed: %s", e)
+        logger.exception("add_pack_pages failed on checkout.session.completed: %s", e)
         return False, str(e)
     _track_ga4(
         user_id,
@@ -308,11 +334,19 @@ def _handle_checkout_completed(event) -> tuple[bool, str]:
             "value": amount / 100,
             "currency": (session.get("currency") or "usd").upper(),
             "payment_type": "topup",
-            "items": [{"item_id": "topup", "item_name": "Credit top-up", "price": amount / 100, "quantity": 1}],
+            "items": [{"item_id": f"pages_{pages}", "item_name": f"{pages} page pack", "price": amount / 100, "quantity": 1}],
         },
         metadata,
     )
-    return True, "Top-up applied (checkout.session.completed)"
+    return True, f"Top-up applied: {pages} pages"
+
+
+def _pack_pages_from_metadata(metadata: dict, amount_cents: int) -> int:
+    """Pages bought in a top-up checkout. Server-set pack id wins; legacy $-credit sessions convert by amount."""
+    pack_id = str(metadata.get("pack", "")).strip()
+    if pack_id in PAGE_PACKS:
+        return PAGE_PACKS[pack_id][0]
+    return max(0, int(amount_cents or 0)) // _LEGACY_CENTS_PER_PAGE
 
 
 def _invoice_subscription_id(invoice) -> str | None:

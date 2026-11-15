@@ -1,3 +1,4 @@
+from datetime import datetime
 import uuid
 from typing import Literal, Optional
 
@@ -32,7 +33,12 @@ class ProcessPdfResponse(BaseModel):
     trial_used: Optional[int] = None
     trial_limit: Optional[int] = None
     trial_remaining: Optional[int] = None
-    balance_cents: Optional[int] = None
+    pages_charged: Optional[int] = None  # pages this scan cost
+    pages_remaining: Optional[int] = None  # signed in only
+    free_pages: Optional[int] = None
+    free_expires_at: Optional[datetime] = None
+    plan_pages: Optional[int] = None
+    pack_pages: Optional[int] = None
 
 
 class ChatTurn(BaseModel):
@@ -94,17 +100,26 @@ class UpdateJobTransactionsRequest(BaseModel):
 
 
 class BillingBalanceResponse(BaseModel):
-    balance_cents: int
     subscription_active: bool
+    pages_remaining: int = 0  # free (unexpired) + plan + pack
+    free_pages: int = 0  # free-month pages left (0 once expired)
+    free_expires_at: Optional[datetime] = None
+    plan_pages: int = 0  # monthly plan pages left this cycle
+    pack_pages: int = 0  # purchased pages (never expire)
 
 
 class UsageResponse(BaseModel):
-    """Scan-limit state for the sidebar counter (works for trial + authenticated users)."""
+    """Page-limit state for the sidebar counter (works for anonymous + authenticated users).
+    trial_* are anonymous free pages (used / limit / remaining)."""
     authenticated: bool
     trial_used: int
     trial_limit: int
     trial_remaining: int
-    balance_cents: Optional[int] = None  # only for authenticated users
+    pages_remaining: Optional[int] = None  # authenticated only (free + plan + pack)
+    free_pages: Optional[int] = None
+    free_expires_at: Optional[datetime] = None
+    plan_pages: Optional[int] = None
+    pack_pages: Optional[int] = None
     subscription_active: bool = False
     max_file_bytes: int = 20 * 1024 * 1024  # upload limit for this caller's tier
 
@@ -113,6 +128,7 @@ class CheckoutSessionRequest(BaseModel):
     mode: str  # "subscription" | "topup"
     email: Optional[str] = None  # optional, for Stripe Customer
     offer: Optional[str] = None  # ad-campaign offer code (see billing.OFFERS); validated server-side
+    pack: Optional[str] = None  # topup only: page pack id (see billing.PAGE_PACKS): "10" | "30" | "100"
     ga_client_id: Optional[str] = Field(default=None, max_length=64)  # GA4 ids for server-side subscribe/purchase events
     ga_session_id: Optional[str] = Field(default=None, max_length=64)
     ad_opt_out: bool = False  # browser sent Global Privacy Control: no ad-platform conversions

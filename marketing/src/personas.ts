@@ -1,5 +1,5 @@
 /** Persona landing pages (/for/<slug>). */
-import { FREE_STATEMENTS } from './consts';
+import { FREE_LABEL, PRICING_SUMMARY } from './consts';
 
 export type Persona = {
   slug: string;
@@ -20,7 +20,7 @@ export const PERSONAS: Persona[] = [
     name: 'Accountants',
     seoTitle: 'Bank Statement Converter for Accountants and CPA Firms',
     description:
-      'Convert client bank statement PDFs into clean, categorized Excel or CSV files in seconds. Built for accountants and CPA firms. 3 statements free.',
+      'Convert client bank statement PDFs into clean, categorized Excel or CSV files in seconds. Built for accountants and CPA firms. 100 pages free your first month.',
     eyebrow: 'For accountants and CPA firms',
     h1: 'Spend tax season on advice, not retyping client statements.',
     sub: 'Upload a client’s bank or credit card statement. Get every transaction back in clean, categorized columns, checked against the statement’s balances, ready for your workpapers or QuickBooks.',
@@ -46,7 +46,7 @@ export const PERSONAS: Persona[] = [
       },
       {
         q: 'How is it priced for a practice?',
-        a: `Your first ${FREE_STATEMENTS} statements are free. After that, $10 a month adds $10 of scan credit, about 10 statements on Balanced mode. Top up in busy months. Monthly billing, no annual contract.`,
+        a: PRICING_SUMMARY,
       },
     ],
   },
@@ -55,7 +55,7 @@ export const PERSONAS: Persona[] = [
     name: 'Bookkeepers',
     seoTitle: 'Bank Statement to Excel and CSV for Bookkeepers',
     description:
-      'Turn client bank statement PDFs into categorized spreadsheets ready for QuickBooks or Xero. Built for bookkeepers catching up or closing the month. 3 statements free.',
+      'Turn client bank statement PDFs into categorized spreadsheets ready for QuickBooks or Xero. Built for bookkeepers catching up or closing the month. 100 pages free your first month.',
     eyebrow: 'For bookkeepers',
     h1: 'Catch-up bookkeeping without retyping a single statement.',
     sub: 'Upload the PDF. Get a categorized spreadsheet ready for QuickBooks or Xero in seconds, with balances checked against the statement so nothing slips through.',
@@ -81,7 +81,7 @@ export const PERSONAS: Persona[] = [
       },
       {
         q: 'What does it cost?',
-        a: `Your first ${FREE_STATEMENTS} statements are free. Then $10 a month adds $10 of scan credit, about 10 statements on Balanced mode. Monthly, cancel anytime.`,
+        a: PRICING_SUMMARY,
       },
     ],
   },
