@@ -224,6 +224,8 @@ def delete_user_data(user_id: str) -> None:
         cur.execute("DELETE FROM billing_usage_log WHERE user_id = %s", (user_id,))
         cur.execute("DELETE FROM user_billing WHERE user_id = %s", (user_id,))
         cur.execute("DELETE FROM scan_feedback WHERE user_id = %s", (user_id,))
+        # Commission rows stay (affiliate payout records); the referral link goes.
+        cur.execute("DELETE FROM affiliate_referrals WHERE user_id = %s", (user_id,))
 
 
 def record_trial_run(job_id: str, client_ip_hash: str | None = None, pages: int | None = None) -> None:
@@ -493,3 +495,189 @@ def insert_usage_log(user_id: str, job_id: str, pages: int, pages_after: int, co
             """,
             (user_id, job_id, pages_after, conversion_mode, pages),
         )
+
+
+# --- Affiliates ---
+
+_AFFILIATE_COLS = (
+    "id, name, email, code, revenue_share_pct, commission_months, discount_pct, discount_months, "
+    "discount_packs, stripe_coupon_id, active, notes, created_at, updated_at"
+)
+
+
+def create_affiliate(
+    name: str,
+    code: str,
+    revenue_share_pct: float,
+    email: str | None = None,
+    commission_months: int | None = None,
+    notes: str | None = None,
+    discount_pct: float = 0,
+    discount_months: int | None = None,
+    discount_packs: bool = False,
+) -> dict:
+    """Insert an affiliate. Raises psycopg2.errors.UniqueViolation if the code is taken."""
+    with _cursor() as cur:
+        cur.execute(
+            f"""
+            INSERT INTO affiliates
+              (name, email, code, revenue_share_pct, commission_months, notes, discount_pct, discount_months, discount_packs)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING {_AFFILIATE_COLS}
+            """,
+            (name, email, code, revenue_share_pct, commission_months, notes, discount_pct, discount_months, discount_packs),
+        )
+        return dict(cur.fetchone())
+
+
+_AFFILIATE_UPDATABLE = (
+    "name", "email", "revenue_share_pct", "commission_months", "active", "notes",
+    "discount_pct", "discount_months", "discount_packs",
+)
+
+
+def update_affiliate(affiliate_id: str, fields: dict) -> dict | None:
+    """Update the given fields (subset of _AFFILIATE_UPDATABLE). Returns the row or None if missing.
+
+    Changing the discount clears stripe_coupon_id (Stripe coupons are immutable), so
+    the next checkout creates a coupon with the new terms. Existing subscriptions keep theirs.
+    """
+    fields = {k: v for k, v in fields.items() if k in _AFFILIATE_UPDATABLE}
+    with _cursor() as cur:
+        if fields:
+            sets = ", ".join(f"{k} = %s" for k in fields)
+            if {"discount_pct", "discount_months"} & fields.keys():
+                sets += ", stripe_coupon_id = NULL"
+            cur.execute(
+                f"UPDATE affiliates SET {sets}, updated_at = NOW() WHERE id = %s RETURNING {_AFFILIATE_COLS}",
+                (*fields.values(), affiliate_id),
+            )
+        else:
+            cur.execute(f"SELECT {_AFFILIATE_COLS} FROM affiliates WHERE id = %s", (affiliate_id,))
+        row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def set_affiliate_coupon(affiliate_id: str, coupon_id: str) -> None:
+    with _cursor() as cur:
+        cur.execute("UPDATE affiliates SET stripe_coupon_id = %s WHERE id = %s", (coupon_id, affiliate_id))
+
+
+def get_affiliate_by_code(code: str) -> dict | None:
+    with _cursor() as cur:
+        cur.execute(f"SELECT {_AFFILIATE_COLS} FROM affiliates WHERE code = %s", (code,))
+        row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def list_affiliates() -> list[dict]:
+    """All affiliates with referral count and commission totals (cents)."""
+    with _cursor() as cur:
+        cur.execute(
+            f"""
+            SELECT {", ".join("a." + c.strip() for c in _AFFILIATE_COLS.split(","))},
+              (SELECT COUNT(*) FROM affiliate_referrals r WHERE r.affiliate_id = a.id) AS referrals,
+              COALESCE(SUM(c.amount_cents) FILTER (WHERE c.status <> 'void'), 0) AS revenue_cents,
+              COALESCE(SUM(c.commission_cents) FILTER (WHERE c.status = 'pending'), 0) AS pending_cents,
+              COALESCE(SUM(c.commission_cents) FILTER (WHERE c.status = 'paid'), 0) AS paid_cents
+            FROM affiliates a
+            LEFT JOIN affiliate_commissions c ON c.affiliate_id = a.id
+            GROUP BY a.id
+            ORDER BY a.created_at DESC
+            """
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+
+def get_user_created_at(user_id: str) -> datetime | None:
+    """Supabase auth account creation time (backend connects as owner, so auth.users is readable)."""
+    with _cursor() as cur:
+        cur.execute("SELECT created_at FROM auth.users WHERE id::text = %s", (user_id,))
+        row = cur.fetchone()
+    return row["created_at"] if row else None
+
+
+def create_referral(user_id: str, affiliate_id: str, code: str) -> bool:
+    """Bind user to affiliate. First binding wins; returns False if the user already had one."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO affiliate_referrals (user_id, affiliate_id, code)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (user_id) DO NOTHING
+            """,
+            (user_id, affiliate_id, code),
+        )
+        return cur.rowcount == 1
+
+
+def get_referral_with_affiliate(user_id: str) -> dict | None:
+    """The user's referral joined with its affiliate's current terms, or None."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            SELECT r.user_id, r.affiliate_id, r.code, r.created_at AS referred_at,
+                   a.revenue_share_pct, a.commission_months, a.active,
+                   a.discount_pct, a.discount_months, a.discount_packs, a.stripe_coupon_id
+            FROM affiliate_referrals r JOIN affiliates a ON a.id = r.affiliate_id
+            WHERE r.user_id = %s
+            """,
+            (user_id,),
+        )
+        row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def insert_commission(
+    affiliate_id: str,
+    user_id: str,
+    source_id: str,
+    kind: str,
+    amount_cents: int,
+    currency: str,
+    revenue_share_pct,
+    commission_cents: int,
+) -> bool:
+    """Record one commission. Idempotent on source_id; returns False if already recorded."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO affiliate_commissions
+              (affiliate_id, user_id, source_id, kind, amount_cents, currency, revenue_share_pct, commission_cents)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (source_id) DO NOTHING
+            """,
+            (affiliate_id, user_id, source_id, kind, amount_cents, currency, revenue_share_pct, commission_cents),
+        )
+        return cur.rowcount == 1
+
+
+def list_commissions(affiliate_id: str, status: str | None = None, limit: int = 500) -> list[dict]:
+    with _cursor() as cur:
+        cur.execute(
+            """
+            SELECT id, user_id, source_id, kind, amount_cents, currency, revenue_share_pct,
+                   commission_cents, status, paid_at, created_at
+            FROM affiliate_commissions
+            WHERE affiliate_id = %s AND (%s::text IS NULL OR status = %s)
+            ORDER BY created_at DESC
+            LIMIT %s
+            """,
+            (affiliate_id, status, status, limit),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+
+def mark_commissions_paid(affiliate_id: str, before: datetime | None = None) -> dict:
+    """Mark pending commissions (created before `before`, default now) as paid. Returns count and total."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            UPDATE affiliate_commissions SET status = 'paid', paid_at = NOW()
+            WHERE affiliate_id = %s AND status = 'pending' AND created_at <= COALESCE(%s, NOW())
+            RETURNING commission_cents
+            """,
+            (affiliate_id, before),
+        )
+        rows = cur.fetchall()
+    return {"count": len(rows), "total_cents": sum(r["commission_cents"] for r in rows)}

@@ -99,8 +99,18 @@ class UpdateJobTransactionsRequest(BaseModel):
     transactions: list[Transaction]
 
 
+class ReferralDiscount(BaseModel):
+    code: str
+    pct: float  # percent off
+    months: Optional[int] = None  # plan discount length once subscribed; None = forever
+    packs: bool = False  # page packs discounted right now
+    packs_ends_at: Optional[datetime] = None
+    plan_eligible: bool = True  # False once they've subscribed before (plan discount is first subscription only)
+
+
 class BillingBalanceResponse(BaseModel):
     subscription_active: bool
+    referral_discount: Optional[ReferralDiscount] = None
     pages_remaining: int = 0  # free (unexpired) + plan + pack
     free_pages: int = 0  # free-month pages left (0 once expired)
     free_expires_at: Optional[datetime] = None
@@ -186,3 +196,38 @@ class FeedbackRequest(BaseModel):
     rating: Optional[int] = Field(None, ge=1, le=5)
     comment: Optional[str] = Field(None, max_length=2000)
     contact_ok: bool = False
+
+
+# --- Affiliates ---
+
+class ReferralClaimRequest(BaseModel):
+    code: str = Field(max_length=64)
+
+
+class AffiliateCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    code: str = Field(max_length=32)  # 3-32 chars: a-z, 0-9, '-', '_' (stored lowercase)
+    revenue_share_pct: float = Field(ge=0, le=100)  # % of each payment by a referred user
+    email: Optional[str] = Field(default=None, max_length=320)
+    commission_months: Optional[int] = Field(default=None, gt=0)  # None = lifetime
+    notes: Optional[str] = Field(default=None, max_length=2000)
+    # Discount for users who sign up with the code. 0 = no discount.
+    discount_pct: float = Field(default=0, ge=0, le=100)  # % off the monthly plan (and packs if discount_packs)
+    discount_months: Optional[int] = Field(default=None, gt=0)  # plan: months from subscribing; packs: months from signup. None = forever
+    discount_packs: bool = False
+
+
+class AffiliateUpdateRequest(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    revenue_share_pct: Optional[float] = Field(default=None, ge=0, le=100)  # applies to future payments only
+    email: Optional[str] = Field(default=None, max_length=320)
+    commission_months: Optional[int] = Field(default=None, gt=0)
+    discount_pct: Optional[float] = Field(default=None, ge=0, le=100)  # new subscriptions only; existing keep their coupon
+    discount_months: Optional[int] = Field(default=None, gt=0)
+    discount_packs: Optional[bool] = None
+    active: Optional[bool] = None
+    notes: Optional[str] = Field(default=None, max_length=2000)
+
+
+class AffiliatePayoutRequest(BaseModel):
+    before: Optional[datetime] = None  # mark pending commissions up to this time paid (default: now)

@@ -10,6 +10,8 @@ import PasswordInput from "../components/PasswordInput";
 import { claimOfferForUser } from "../lib/offer";
 import { PLAN_SUBSCRIPTION, PLAN_TRIAL, rememberSignupPlan } from "../lib/signupPlan";
 import { getAttribution } from "../lib/attribution";
+import { describeDiscount, getPendingReferral, normalizeReferralCode, setPendingReferral } from "../lib/referral";
+import { lookupReferral } from "../api/client";
 import { FREE_ANON_PAGES, FREE_SIGNUP_DAYS, FREE_SIGNUP_PAGES, PLAN_PAGES, PLAN_PRICE } from "../lib/pricing";
 
 const PASSWORD_MIN_LENGTH = 8;
@@ -128,6 +130,24 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  // Affiliate code: prefilled from a ?ref= link, editable.
+  const [referralCode, setReferralCode] = useState(() => getPendingReferral() ?? "");
+  // Live check of the code: null = not checked yet, else { valid, discount }.
+  const [referralInfo, setReferralInfo] = useState(null);
+  useEffect(() => {
+    const code = normalizeReferralCode(referralCode);
+    setReferralInfo(null);
+    if (!code) return;
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const info = await lookupReferral(code);
+      if (!cancelled) setReferralInfo(info ?? { valid: false });
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [referralCode]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [signupSuccess, setSignupSuccess] = useState(false);
@@ -161,7 +181,10 @@ export default function AuthPage({ mode: initialMode = "login" }) {
     setLoading(true);
     clearMessage();
     // OAuth accounts don't exist yet, so keep the plan choice for first sign-in.
-    if (view === "signup") rememberSignupPlan(plan);
+    if (view === "signup") {
+      rememberSignupPlan(plan);
+      setPendingReferral(referralCode); // claimed on first sign-in
+    }
     try {
       const { error } = await supabase.auth.signInWithOAuth({ provider });
       if (error) setError(error.message);
@@ -195,6 +218,12 @@ export default function AuthPage({ mode: initialMode = "login" }) {
       setError("Name is required so we can recognize you.");
       return;
     }
+    const referralTrimmed = referralCode.trim();
+    const referral = referralTrimmed ? normalizeReferralCode(referralTrimmed) : null;
+    if (referralTrimmed && !referral) {
+      setError("That referral code doesn't look right. Check it, or leave it blank.");
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -211,7 +240,12 @@ export default function AuthPage({ mode: initialMode = "login" }) {
         password,
         options: {
           // attribution: which ad campaign (if any) brought this signup in.
-          data: { full_name: nameTrimmed, attribution: getAttribution() ?? undefined, signup_plan: plan },
+          data: {
+            full_name: nameTrimmed,
+            attribution: getAttribution() ?? undefined,
+            signup_plan: plan,
+            referral_code: referral ?? undefined, // claimed server-side on first sign-in
+          },
         },
       });
       if (error) throw error;
@@ -468,6 +502,26 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                       minLength={PASSWORD_MIN_LENGTH}
                       autoComplete="new-password"
                     />
+                    <label className="auth-label" htmlFor="signup-referral">Referral code (optional)</label>
+                    <input
+                      id="signup-referral"
+                      type="text"
+                      className="auth-input"
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value)}
+                      placeholder="e.g. jane"
+                      maxLength={32}
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      aria-describedby="signup-referral-status"
+                    />
+                    <p id="signup-referral-status" className="auth-referral-status" aria-live="polite">
+                      {referralCode.trim() && referralInfo?.valid === false && "We don't recognize that code. Check it, or leave it blank."}
+                      {referralInfo?.valid && (referralInfo.discount
+                        ? `Code applied: ${describeDiscount(referralInfo.discount)}.`
+                        : "Code applied.")}
+                    </p>
                     <fieldset className="auth-plan-picker">
                       <legend className="auth-label">Choose your plan</legend>
                       <label className={`auth-plan-option${isSubscription ? " is-selected" : ""}`}>

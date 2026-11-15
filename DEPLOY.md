@@ -144,3 +144,57 @@ An email goes to `NOTIFY_EMAIL_TO` on each event. All sends are best-effort — 
    - Table: `auth.users`, Events: **Insert**
    - Type: **HTTP Request**, Method: `POST`, URL: `https://<backend-url>/api/hooks/user-created`
    - HTTP Header: `X-Webhook-Secret: <same value as NOTIFY_WEBHOOK_SECRET>`
+
+## Affiliate program
+
+Affiliates are set up by us through admin endpoints guarded by `API_AUTH_SECRET`
+(same secret as `/admin/generate-blog`). Run `supabase/migrations/20261116000000_affiliates.sql` first.
+
+How it works:
+
+- Each affiliate gets a unique code (3–32 chars: a–z, 0–9, `-`, `_`) and their own `revenue_share_pct`.
+- A user signs up with the code by opening `https://bankstatementscanner.com/?ref=<code>` (any page;
+  kept 30 days) or typing it into **Referral code** on the signup form.
+- On the new account's first sign-in the app calls `POST /api/referral/claim`. Only accounts under 7 days
+  old can claim, once, so existing users can't be attached to an affiliate later.
+- Every payment by that user (subscription invoices, page packs) records a commission:
+  pre-tax amount paid × the affiliate's percentage **at that moment**. Free/trial ($0) invoices record nothing.
+  Changing an affiliate's percentage only affects future payments.
+- `commission_months` limits how long after signup payments earn commission (omit for lifetime).
+- Payouts are manual: pay the affiliate, then mark their pending commissions paid.
+- Optional **user discount** per affiliate (`discount_pct`, default 0 = none):
+  - Monthly plan: `discount_pct` off for `discount_months` from when they subscribe (omit = forever), first
+    subscription only. Applied as a Stripe coupon the backend creates automatically and reuses.
+  - Page packs (`discount_packs: true`): same % off while within `discount_months` of signup. Never below $0.50.
+  - The signup form shows the discount as soon as a valid code is entered; the Account page shows discounted prices.
+  - Discounted checkouts hide Stripe's promo-code box (Stripe allows one or the other).
+  - Commission is on what the user actually paid, so it's after the discount.
+  - Changing the discount affects new subscriptions only; existing subscribers keep the coupon they got.
+- Not automated: refunds/chargebacks. Void a commission by hand
+  (`UPDATE affiliate_commissions SET status = 'void' WHERE source_id = '<stripe id>'`).
+
+```bash
+API=https://<backend-host>; AUTH="Authorization: Bearer $API_AUTH_SECRET"
+
+# Create an affiliate: 20% of everything their referrals pay, for 12 months
+curl -X POST $API/admin/affiliates -H "$AUTH" -H 'Content-Type: application/json' \
+  -d '{"name":"Jane Doe","email":"jane@example.com","code":"jane","revenue_share_pct":20,"commission_months":12}'
+
+# ...and give their referrals 25% off the plan for 3 months, plus 25% off page packs in that window
+curl -X POST $API/admin/affiliates -H "$AUTH" -H 'Content-Type: application/json' \
+  -d '{"name":"Sam Lee","code":"sam","revenue_share_pct":20,"discount_pct":25,"discount_months":3,"discount_packs":true}'
+
+# Add or change a discount later
+curl -X PATCH $API/admin/affiliates/<id> -H "$AUTH" -H 'Content-Type: application/json' -d '{"discount_pct":10,"discount_months":1}'
+
+# List affiliates with referrals, referred revenue, pending/paid commission (cents)
+curl $API/admin/affiliates -H "$AUTH"
+
+# Change terms / deactivate (inactive codes can't be claimed and earn nothing new)
+curl -X PATCH $API/admin/affiliates/<id> -H "$AUTH" -H 'Content-Type: application/json' -d '{"revenue_share_pct":25}'
+curl -X PATCH $API/admin/affiliates/<id> -H "$AUTH" -H 'Content-Type: application/json' -d '{"active":false}'
+
+# Commission ledger, then record a payout (marks all pending up to now as paid)
+curl "$API/admin/affiliates/<id>/commissions?status=pending" -H "$AUTH"
+curl -X POST $API/admin/affiliates/<id>/payouts -H "$AUTH" -H 'Content-Type: application/json' -d '{}'
+```

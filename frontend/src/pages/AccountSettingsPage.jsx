@@ -5,6 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 import { createCheckoutSession, deleteAccount, getBillingBalance } from "../api/client";
 import { OFFERS, getOffer } from "../lib/offer";
+import { describeDiscount, discountedPrice, formatPrice } from "../lib/referral";
 import { ACCURATE_MULTIPLIER, FREE_SIGNUP_PAGES, PAGE_PACKS, PLAN_PAGES, PLAN_PRICE, formatExpiry } from "../lib/pricing";
 import "./AccountSettingsPage.css";
 import "./AuthPage.css";
@@ -118,6 +119,13 @@ export default function AccountSettingsPage() {
   };
 
   const offer = getOffer(user);
+  // Affiliate referral discount (server-side terms; checkout applies it).
+  const referral = billingBalance?.referral_discount ?? null;
+  const planDiscount = referral?.plan_eligible ? referral : null;
+  const planPriceLabel = planDiscount
+    ? `${formatPrice(discountedPrice(PLAN_PRICE, planDiscount.pct))}/month${planDiscount.months ? ` for ${planDiscount.months} month${planDiscount.months === 1 ? "" : "s"}` : ""}`
+    : `$${PLAN_PRICE}/month`;
+  const packPrice = (price) => (referral?.packs ? discountedPrice(price, referral.pct) : price);
 
   const handleSubscribe = async () => {
     setBillingLoading(true);
@@ -256,6 +264,12 @@ export default function AccountSettingsPage() {
                 {billingBalance.pack_pages > 0 && <li>{billingBalance.pack_pages} page-pack pages (never expire)</li>}
               </ul>
               <div className="account-settings-billing-actions">
+                {referral && (planDiscount || referral.packs) && (
+                  <p className="account-settings-offer">
+                    Referral code {referral.code.toUpperCase()}: {planDiscount ? describeDiscount(referral) : `${referral.pct}% off page packs`}
+                    {referral.packs && formatExpiry(referral.packs_ends_at) ? ` (packs until ${formatExpiry(referral.packs_ends_at)})` : ""}.
+                  </p>
+                )}
                 {!billingBalance.subscription_active && offer && (
                   <p className="account-settings-offer">{OFFERS[offer].label}. {PLAN_PAGES} pages a month, then ${PLAN_PRICE}/month. Cancel anytime.</p>
                 )}
@@ -266,7 +280,7 @@ export default function AccountSettingsPage() {
                     onClick={handleSubscribe}
                     disabled={billingLoading}
                   >
-                    {billingLoading ? "Redirecting…" : offer ? `${OFFERS[offer].cta} — then $${PLAN_PRICE}/month` : `Subscribe — $${PLAN_PRICE}/month for ${PLAN_PAGES} pages`}
+                    {billingLoading ? "Redirecting…" : offer ? `${OFFERS[offer].cta} — then ${planPriceLabel}` : `Subscribe — ${planPriceLabel} for ${PLAN_PAGES} pages`}
                   </button>
                 )}
               </div>
@@ -282,7 +296,10 @@ export default function AccountSettingsPage() {
                     disabled={billingLoading}
                   >
                     <span className="account-settings-pack-pages">{p.pages} pages</span>
-                    <span className="account-settings-pack-price">${p.price}</span>
+                    <span className="account-settings-pack-price">
+                      {packPrice(p.price) !== p.price && <s className="account-settings-pack-was">${p.price}</s>}{" "}
+                      {formatPrice(packPrice(p.price))}
+                    </span>
                   </button>
                 ))}
               </div>

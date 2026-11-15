@@ -861,3 +861,10 @@
   font-size: 0.82rem;
   color: var(--color-text-muted);
 }
+
+.auth-referral-status {
+  margin: -0.25rem 0 0.5rem;
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #64748b);
+}

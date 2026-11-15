@@ -215,6 +215,31 @@ export async function notifyLogin(token) {
   }
 }
 
+/** Public lookup for the signup form: { valid, discount } for a live code, or null if unknown/unreachable. */
+export async function lookupReferral(code) {
+  try {
+    const res = await fetch(`${API_BASE}/api/referral/${encodeURIComponent(code)}`, { credentials: "include" });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Bind this new account to an affiliate code. Returns { ok, reason } or null on network/server error. */
+export async function claimReferral(code, token) {
+  try {
+    const res = await fetch(`${API_BASE}/api/referral/claim`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders(token) },
+      credentials: "include",
+      body: JSON.stringify({ code }),
+    });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getUsage() {
   const res = await fetch(`${API_BASE}/api/usage`, {
     headers: authHeaders(),

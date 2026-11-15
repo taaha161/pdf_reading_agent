@@ -92,6 +92,15 @@ const fullTitle =
           localStorage.setItem("bss_attribution", JSON.stringify(touch));
         } catch (e) {}
       })();
+      // Affiliate link (?ref=<code>): same key/format as frontend/src/lib/referral.js.
+      (function () {
+        try {
+          var ref = (new URLSearchParams(window.location.search).get("ref") || "").trim().toLowerCase();
+          if (/^[a-z0-9][a-z0-9_-]{2,31}$/.test(ref)) {
+            localStorage.setItem("bss_ref", JSON.stringify({ code: ref, at: Date.now() }));
+          }
+        } catch (e) {}
+      })();
     </script>
     <!-- End Microsoft Clarity -->
     <!-- OAuth/session fragments (e.g. Supabase Google login) redirect to the site

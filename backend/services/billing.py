@@ -6,9 +6,11 @@ from typing import Literal
 import stripe
 from stripe import StripeError
 
+from services.affiliates import discounted_cents, user_discount
+from services.affiliates import record_payment as record_affiliate_payment
 from services.ga4_mp import ga_ids_from_metadata, track_event
 from services.linkedin_capi import track_subscription_purchase
-from store import add_pack_pages, get_billing, get_user_id_by_stripe_customer_id, set_plan_pages, set_stripe_ids
+from store import add_pack_pages, set_affiliate_coupon, get_billing, get_user_id_by_stripe_customer_id, set_plan_pages, set_stripe_ids
 
 logger = logging.getLogger("pdf_processor_app.billing")
 
@@ -69,6 +71,35 @@ def _has_had_subscription(customer_id: str) -> bool:
         return True
 
 
+def _referral_coupon_id(discount: dict) -> str | None:
+    """Stripe coupon for an affiliate's subscription discount; created once and cached on the affiliate."""
+    if discount.get("stripe_coupon_id"):
+        return discount["stripe_coupon_id"]
+    months = discount.get("months")
+    duration = {"duration": "repeating", "duration_in_months": months} if months else {"duration": "forever"}
+    try:
+        coupon = stripe.Coupon.create(
+            percent_off=discount["pct"],
+            name=f"Referral discount ({discount['code'].upper()})"[:40],
+            metadata={"affiliate_id": discount["affiliate_id"], "code": discount["code"]},
+            **duration,
+        )
+    except StripeError as e:
+        logger.warning("Referral coupon create failed; checkout without discount: %s", e)
+        return None
+    set_affiliate_coupon(discount["affiliate_id"], coupon.id)
+    return coupon.id
+
+
+def _referral_discount(user_id: str) -> dict | None:
+    """Never let a discount lookup failure block checkout."""
+    try:
+        return user_discount(user_id)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Referral discount lookup failed (continuing): %s", e)
+        return None
+
+
 def _stripe_available() -> bool:
     return bool(_STRIPE_KEY and _PRICE_ID_MONTHLY)
 
@@ -126,6 +157,10 @@ def create_checkout_session(
     `ga_client_id`/`ga_session_id`: the browser's GA4 ids, stored in Stripe metadata
     so webhook events (subscribe, purchase) attribute to the visitor's ad session.
     `pack` (topup only): a key of PAGE_PACKS; unknown values fall back to DEFAULT_PACK.
+    Referred users get their affiliate's discount (services.affiliates.user_discount):
+    a coupon on a first subscription, a lower price on page packs. Stripe allows
+    either a discount or promotion codes on a session, so a discounted checkout
+    doesn't show the promo-code box.
     """
     if not _stripe_available():
         logger.warning("Stripe not configured; cannot create checkout session")
@@ -139,6 +174,7 @@ def create_checkout_session(
     ga_meta = {k: str(v)[:64] for k, v in (("ga_client_id", ga_client_id), ("ga_session_id", ga_session_id)) if v}
     if ad_opt_out:
         ga_meta["ad_opt_out"] = "1"  # read back by the webhook; see _ad_opt_out
+    discount = _referral_discount(user_id)
     try:
         if mode == "subscription":
             subscription_data: dict = {"metadata": {"user_id": user_id, **ga_meta}}
@@ -146,6 +182,13 @@ def create_checkout_session(
             if trial_days and not _has_had_subscription(customer_id):
                 subscription_data["trial_period_days"] = trial_days
                 subscription_data["metadata"]["offer"] = offer.strip().lower()
+            promo: dict = {"allow_promotion_codes": True}
+            coupon_id = None
+            if discount and not _has_had_subscription(customer_id):  # first subscription only
+                coupon_id = _referral_coupon_id(discount)
+            if coupon_id:
+                promo = {"discounts": [{"coupon": coupon_id}]}
+                subscription_data["metadata"]["referral_code"] = discount["code"]
             session = stripe.checkout.Session.create(
                 customer=customer_id,
                 mode="subscription",
@@ -155,11 +198,17 @@ def create_checkout_session(
                 client_reference_id=user_id,
                 subscription_data=subscription_data,
                 metadata={"user_id": user_id, **ga_meta},
-                allow_promotion_codes=True,
+                **promo,
             )
         else:
             pack_id = pack if pack in PAGE_PACKS else DEFAULT_PACK
             pages, price_cents = PAGE_PACKS[pack_id]
+            promo = {"allow_promotion_codes": True}
+            discount_meta: dict = {}
+            if discount and discount["packs"]:
+                price_cents = discounted_cents(price_cents, discount["pct"])
+                promo = {}
+                discount_meta = {"referral_code": discount["code"], "referral_discount_pct": str(discount["pct"])}
             session = stripe.checkout.Session.create(
                 customer=customer_id,
                 mode="payment",
@@ -174,8 +223,8 @@ def create_checkout_session(
                 success_url=success_url,
                 cancel_url=cancel_url,
                 client_reference_id=user_id,
-                metadata={"user_id": user_id, "topup": "1", "pack": pack_id, "pack_pages": str(pages), **ga_meta},
-                allow_promotion_codes=True,
+                metadata={"user_id": user_id, "topup": "1", "pack": pack_id, "pack_pages": str(pages), **discount_meta, **ga_meta},
+                **promo,
             )
         return {"url": session.url, "sessionId": session.id}
     except StripeError as e:
@@ -241,6 +290,9 @@ def _handle_invoice_paid(event) -> tuple[bool, str]:
             except Exception as e:  # noqa: BLE001
                 logger.warning("LinkedIn purchase conversion failed (continuing): %s", e)
         if amount_paid > 0:
+            record_affiliate_payment(
+                user_id, invoice.get("id"), amount_paid - _invoice_tax_cents(invoice), invoice.get("currency"), "subscription"
+            )
             _track_ga4(
                 user_id,
                 "purchase",
@@ -326,6 +378,8 @@ def _handle_checkout_completed(event) -> tuple[bool, str]:
     except Exception as e:
         logger.exception("add_pack_pages failed on checkout.session.completed: %s", e)
         return False, str(e)
+    tax = int(((session.get("total_details") or {}).get("amount_tax")) or 0)
+    record_affiliate_payment(user_id, session.get("id"), amount - tax, session.get("currency"), "pack")
     _track_ga4(
         user_id,
         "purchase",
@@ -363,6 +417,13 @@ def _invoice_subscription_id(invoice) -> str | None:
     if isinstance(sub, dict):  # expanded object
         sub = sub.get("id")
     return sub or None
+
+
+def _invoice_tax_cents(invoice) -> int:
+    """Tax on an invoice (older `tax` field or newer `total_taxes` list). Commissions are on pre-tax revenue."""
+    if invoice.get("tax") is not None:
+        return int(invoice.get("tax") or 0)
+    return sum(int((t or {}).get("amount") or 0) for t in (invoice.get("total_taxes") or []))
 
 
 def _invoice_subscription_metadata(invoice) -> dict:

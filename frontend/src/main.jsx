@@ -12,6 +12,7 @@ import { initSupabase } from './lib/supabase'
 import { setApiBase } from './api/client'
 import { captureOfferFromUrl } from './lib/offer'
 import { captureAttributionFromUrl } from './lib/attribution'
+import { captureReferralFromUrl } from './lib/referral'
 import { initMonitoring, captureMessage } from './lib/monitoring'
 
 // First, so errors during config/bootstrap are reported too.
@@ -20,6 +21,7 @@ initMonitoring()
 // Before routing/auth redirects can drop the query string.
 captureOfferFromUrl()
 captureAttributionFromUrl()
+captureReferralFromUrl()
 
 function BootstrappedApp() {
   const [ready, setReady] = useState(false);
