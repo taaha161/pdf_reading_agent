@@ -39,6 +39,10 @@ from slowapi.errors import RateLimitExceeded
 
 from auth import get_current_claims, get_current_user, get_current_user_optional
 from models.schemas import (
+    AffiliateCreateRequest,
+    AffiliatePayoutRequest,
+    AffiliateUpdateRequest,
+    ReferralClaimRequest,
     BillingBalanceResponse,
     UsageResponse,
     CategorySummary,
@@ -67,6 +71,7 @@ from services.billing import (
     handle_webhook,
     scan_cost_pages,
 )
+from services.affiliates import claim_referral, normalize_code, public_discount, user_discount, valid_code
 from services.chat_service import get_reply
 from services.summary import _parse_amount, _summary_by_category  # noqa: F401
 from services.remote_pdf import RemotePdfError, RemotePdfTooLarge, fetch_pdf
@@ -114,9 +119,11 @@ from store import (
     set_job,
     update_job_transactions,
 )
+import store
 
 try:
     import psycopg2
+    import psycopg2.errors
 except ImportError:
     psycopg2 = None
 
@@ -1186,7 +1193,31 @@ def chat(request: Request, body: ChatRequest, user_id: str = Depends(get_current
 def get_billing_balance(user_id: str = Depends(get_current_user)):
     """Return current page balance and subscription status."""
     billing = _load_billing(user_id)
-    return BillingBalanceResponse(subscription_active=_subscription_active(billing), **_billing_fields(billing))
+    return BillingBalanceResponse(
+        subscription_active=_subscription_active(billing),
+        referral_discount=_referral_discount_info(user_id, billing),
+        **_billing_fields(billing),
+    )
+
+
+def _referral_discount_info(user_id: str, billing: dict | None) -> dict | None:
+    """Referral discount for the Account page. Plan eligibility here is a hint
+    (no prior subscription on record); checkout re-checks against Stripe."""
+    try:
+        d = user_discount(user_id)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("referral discount lookup failed: %s", e)
+        return None
+    if not d:
+        return None
+    return {
+        "code": d["code"],
+        "pct": d["pct"],
+        "months": d["months"],
+        "packs": d["packs"],
+        "packs_ends_at": d["packs_ends_at"],
+        "plan_eligible": not (billing or {}).get("stripe_subscription_id"),
+    }
 
 
 @app.get("/api/usage", response_model=UsageResponse)
@@ -1269,6 +1300,98 @@ def admin_generate_blog(request: Request):
         raise HTTPException(502, f"Blog generation failed: {e}")
     logger.info("Blog generated: %s", result.get("slug"))
     return result
+
+
+# --- Affiliates ---
+
+@app.options("/api/referral/claim")
+async def preflight_referral_claim(request: Request):
+    return await _preflight_response(request)
+
+
+@app.options("/api/referral/{code}")
+async def preflight_referral_lookup(request: Request, code: str):
+    return await _preflight_response(request)
+
+
+@app.get("/api/referral/{code}")
+@limiter.limit("20/minute")
+def referral_lookup(request: Request, code: str):
+    """Public: is this a live referral code, and what discount does it give? (signup form preview)"""
+    info = public_discount(code)
+    if not info:
+        raise HTTPException(404, "Unknown referral code")
+    return info
+
+
+@app.post("/api/referral/claim")
+@limiter.limit("10/minute")
+def referral_claim(request: Request, body: ReferralClaimRequest, user_id: str = Depends(get_current_user)):
+    """Bind a just-created account to the affiliate whose code it signed up with.
+
+    The frontend calls this once after signup (code from the signup form or a
+    ?ref= link). Only accounts under services.affiliates.CLAIM_WINDOW old can
+    claim, and only once. `reason` lets the UI tell a typo from a non-event.
+    """
+    bound, reason = claim_referral(user_id, body.code)
+    return {"ok": bound, "reason": reason}
+
+
+@app.get("/admin/affiliates")
+def admin_list_affiliates(request: Request):
+    """All affiliates with referral counts, referred revenue, pending and paid commission (cents)."""
+    _require_admin(request)
+    return {"affiliates": jsonable_encoder(store.list_affiliates())}
+
+
+@app.post("/admin/affiliates", status_code=201)
+def admin_create_affiliate(request: Request, body: AffiliateCreateRequest):
+    """Set up an affiliate with their code and revenue-share percentage."""
+    _require_admin(request)
+    code = normalize_code(body.code)
+    if not valid_code(code):
+        raise HTTPException(400, "code must be 3-32 chars: letters, digits, '-' or '_'")
+    try:
+        row = store.create_affiliate(
+            name=body.name.strip(),
+            code=code,
+            revenue_share_pct=body.revenue_share_pct,
+            email=(body.email or "").strip() or None,
+            commission_months=body.commission_months,
+            notes=body.notes,
+            discount_pct=body.discount_pct,
+            discount_months=body.discount_months,
+            discount_packs=body.discount_packs,
+        )
+    except psycopg2.errors.UniqueViolation:
+        raise HTTPException(409, f"Code '{code}' is already taken")
+    return jsonable_encoder(row)
+
+
+@app.patch("/admin/affiliates/{affiliate_id}")
+def admin_update_affiliate(request: Request, affiliate_id: uuid.UUID, body: AffiliateUpdateRequest):
+    """Change an affiliate's terms. A new revenue_share_pct applies to future payments only."""
+    _require_admin(request)
+    row = store.update_affiliate(str(affiliate_id), body.model_dump(exclude_unset=True))
+    if not row:
+        raise HTTPException(404, "Affiliate not found")
+    return jsonable_encoder(row)
+
+
+@app.get("/admin/affiliates/{affiliate_id}/commissions")
+def admin_list_commissions(request: Request, affiliate_id: uuid.UUID, status: str | None = None):
+    """Commission ledger for one affiliate (newest first). Filter with ?status=pending|paid|void."""
+    _require_admin(request)
+    if status not in (None, "pending", "paid", "void"):
+        raise HTTPException(400, "status must be pending, paid or void")
+    return {"commissions": jsonable_encoder(store.list_commissions(str(affiliate_id), status))}
+
+
+@app.post("/admin/affiliates/{affiliate_id}/payouts")
+def admin_record_payout(request: Request, affiliate_id: uuid.UUID, body: AffiliatePayoutRequest):
+    """After paying an affiliate, mark their pending commissions (up to `before`) paid."""
+    _require_admin(request)
+    return store.mark_commissions_paid(str(affiliate_id), body.before)
 
 
 @app.post("/api/events/login")

@@ -4,6 +4,7 @@ import { notifyLogin, setApiAuthToken } from "../api/client";
 import { trackOAuthSignupIfNew } from "../lib/trackSignup";
 import { claimOfferForUser } from "../lib/offer";
 import { getAttribution } from "../lib/attribution";
+import { claimReferralIfNew } from "../lib/referral";
 import { setMonitoringUser } from "../lib/monitoring";
 
 // OAuth signups skip AuthPage's signUp() (where email signups attach
@@ -61,6 +62,8 @@ export function AuthProvider({ children }) {
       if (event === "SIGNED_IN") claimOfferForUser(s?.user);
       // New account → record which campaign brought it in (once).
       if (event === "SIGNED_IN") saveAttributionIfNew(s?.user);
+      // New account that signed up with an affiliate code → bind it server-side (once).
+      if (event === "SIGNED_IN") void claimReferralIfNew(s?.user, s?.access_token);
       // Owner login notification: only on a real SIGNED_IN (not INITIAL_SESSION
       // or TOKEN_REFRESHED), deduped to once per browser session per user.
       if (event === "SIGNED_IN" && s?.user?.id && s?.access_token) {

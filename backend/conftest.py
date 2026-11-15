@@ -31,3 +31,25 @@ def client():
             yield c
     finally:
         app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def affiliate_payment():
+    """Keep webhook tests off the database: affiliate commission recording is mocked.
+
+    Request this fixture by name to assert on the mock.
+    """
+    from unittest.mock import patch
+
+    with patch("services.billing.record_affiliate_payment") as mock:
+        yield mock
+
+
+@pytest.fixture(autouse=True)
+def no_live_analytics(monkeypatch):
+    """backend/.env holds real GA4/LinkedIn secrets; tests must never send live conversions.
+
+    Tests that exercise dispatch set their own fake secret with monkeypatch.setenv.
+    """
+    monkeypatch.delenv("GA4_API_SECRET", raising=False)
+    monkeypatch.delenv("LINKEDIN_CAPI_TOKEN", raising=False)

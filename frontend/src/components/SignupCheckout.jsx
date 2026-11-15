@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { createCheckoutSession, getBillingBalance } from "../api/client";
 import { getOffer } from "../lib/offer";
+import { waitForReferralClaim } from "../lib/referral";
 import { markSignupCheckoutStarted, needsSignupCheckout } from "../lib/signupPlan";
 
 /**
@@ -28,6 +29,8 @@ export default function SignupCheckout() {
           return;
         }
         setRedirecting(true);
+        // A referral code from signup must be bound first, or checkout misses its discount.
+        await waitForReferralClaim();
         const url = await createCheckoutSession("subscription", user.email ?? undefined, getOffer(user), accessToken);
         await markSignupCheckoutStarted();
         if (url) window.location.href = url;
