@@ -7,6 +7,9 @@ import pytest
 from services import billing, paid_signup
 
 NOW = datetime.now(timezone.utc)
+# Dummy values for the password rules, not real credentials.
+STRONG_PW = "Good#Pass1"  # ggignore
+WEAK_PW = "weak"  # ggignore
 
 
 def _user(uid="u1", email="new@example.com", customer="cus_new", has_password=False, age=timedelta(minutes=5)):
@@ -117,7 +120,7 @@ def test_password_allowed(user, ok):
 
 
 @pytest.mark.parametrize("pw,ok", [("Short1!", False), ("alllower1!", False), ("NoNumber!!", False),
-                                   ("NoSpecial11", False), ("Good#Pass1", True)])
+                                   ("NoSpecial11", False), (STRONG_PW, True)])
 def test_password_rules(pw, ok):
     assert (paid_signup.password_problem(pw) is None) is ok
 
@@ -133,7 +136,7 @@ def test_set_initial_password_on_created_account():
          patch.object(paid_signup, "ensure_account", return_value={"user_id": "u1", "created_here": True, "existing_account": False}), \
          patch.object(paid_signup, "get_auth_user", return_value=_user()), \
          patch.object(paid_signup, "_admin", return_value=_resp(200)) as admin:
-        assert paid_signup.set_initial_password("cs_1", "Good#Pass1") == "new@example.com"
+        assert paid_signup.set_initial_password("cs_1", STRONG_PW) == "new@example.com"
     assert admin.call_args.args[:2] == ("PUT", "users/u1")
 
 
@@ -144,14 +147,14 @@ def test_set_initial_password_refuses_existing_account():
          patch.object(paid_signup, "get_auth_user", return_value=existing), \
          patch.object(paid_signup, "_admin") as admin:
         with pytest.raises(paid_signup.PasswordError):
-            paid_signup.set_initial_password("cs_1", "Good#Pass1")
+            paid_signup.set_initial_password("cs_1", STRONG_PW)
     admin.assert_not_called()
 
 
 def test_set_initial_password_rejects_weak_password_before_stripe():
     with patch.object(paid_signup.stripe.checkout.Session, "retrieve") as retrieve:
         with pytest.raises(paid_signup.PasswordError):
-            paid_signup.set_initial_password("cs_1", "weak")
+            paid_signup.set_initial_password("cs_1", WEAK_PW)
     retrieve.assert_not_called()
 
 
