@@ -592,8 +592,9 @@ def list_affiliates() -> list[dict]:
 def get_auth_user(user_id: str | None = None, email: str | None = None) -> dict | None:
     """Supabase auth user by id or (case-insensitive) email.
 
-    {id, email, created_at, has_password, paid_signup_customer}: the last is the
-    Stripe customer whose guest checkout created this account (paid signup), else None.
+    {id, email, created_at, has_password, paid_signup_customer, full_name}:
+    paid_signup_customer is the Stripe customer whose guest checkout created this
+    account (paid signup), else None; full_name is the display name, else None.
     """
     if not user_id and not email:
         return None
@@ -603,7 +604,9 @@ def get_auth_user(user_id: str | None = None, email: str | None = None) -> dict 
             f"""
             SELECT id::text AS id, email, created_at,
                    (coalesce(encrypted_password, '') <> '') AS has_password,
-                   raw_user_meta_data->>'paid_signup_customer' AS paid_signup_customer
+                   raw_user_meta_data->>'paid_signup_customer' AS paid_signup_customer,
+                   coalesce(nullif(trim(raw_user_meta_data->>'full_name'), ''),
+                            nullif(trim(raw_user_meta_data->>'name'), '')) AS full_name
             FROM auth.users WHERE {where} AND deleted_at IS NULL
             ORDER BY created_at LIMIT 1
             """,

@@ -102,6 +102,7 @@ from services.scan_jobs import create_scan, fail_scan, finish_scan, get_scan, se
 from services.recaptcha import verify_recaptcha
 from services.statement_agent import extract_and_categorize
 from store import (
+    get_auth_user,
     create_job_id,
     deduct_pages,
     delete_user_data,
@@ -825,8 +826,15 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
 
     # Owner notification (best-effort, non-blocking): a PDF was scanned.
     try:
+        scan_user = None
+        if user_id:
+            try:
+                scan_user = get_auth_user(user_id=user_id)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("scan notification: user lookup failed: %s", e)
         notify_scan(
-            email=None,
+            email=(scan_user or {}).get("email"),
+            name=(scan_user or {}).get("full_name"),
             user_id=user_id,
             is_trial=is_trial,
             transaction_count=len(transactions),

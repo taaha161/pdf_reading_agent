@@ -241,16 +241,18 @@ def notify_scan(
     email: str | None,
     user_id: str | None,
     is_trial: bool,
+    name: str | None = None,
     transaction_count: int,
     conversion_mode: str,
     filename: str | None = None,
 ) -> None:
-    who = "anonymous trial" if is_trial else (email or user_id or "unknown")
+    who = "anonymous trial" if is_trial else (name or email or user_id or "unknown")
     _notify(
         f"PDF scanned: {who}",
         (
             "A PDF was scanned.\n\n"
-            f"User: {'anonymous trial' if is_trial else (email or 'n/a')}\n"
+            f"User: {'anonymous trial' if is_trial else (name or 'n/a')}\n"
+            f"Email: {'n/a' if is_trial else (email or 'n/a')}\n"
             f"User ID: {user_id or 'n/a'}\n"
             f"File: {filename or 'n/a'}\n"
             f"Transactions: {transaction_count}\n"
