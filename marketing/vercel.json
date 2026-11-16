@@ -398,6 +398,14 @@
       "destination": "https://app.bankstatementscanner.com/signup"
     },
     {
+      "source": "/subscribe",
+      "destination": "https://app.bankstatementscanner.com/subscribe"
+    },
+    {
+      "source": "/welcome",
+      "destination": "https://app.bankstatementscanner.com/welcome"
+    },
+    {
       "source": "/forgot-password",
       "destination": "https://app.bankstatementscanner.com/forgot-password"
     },

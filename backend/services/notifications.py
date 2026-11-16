@@ -140,6 +140,64 @@ def _notify(subject: str, text: str) -> None:
     threading.Thread(target=_send, args=(subject, text), daemon=True).start()
 
 
+def notify_team(subject: str, text: str) -> None:
+    """Fire-and-forget email to the team inbox (NOTIFY_EMAIL_TO)."""
+    _notify(subject, text)
+
+
+_PAID_WELCOME_TEXT = """Welcome to Bank Statement Scanner!
+
+Your Monthly plan is active: {pages} pages every month.
+
+If you haven't set your password yet, set it here to log in:
+{link}
+
+(Signed up with Google using this same email? You can also just use "Continue with Google".)
+
+Questions? Just reply to this email.
+
+The Bank Statement Scanner team
+"""
+
+_PAID_WELCOME_HTML = """<div style="font-family:Inter,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;max-width:520px;margin:0 auto;color:#0f172a">
+<h1 style="font-size:22px;margin:0 0 12px">You're subscribed &#10003;</h1>
+<p style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px">Your Monthly plan is active: <strong>{pages} pages every month</strong>.</p>
+<p style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 20px">If you haven't set your password yet, set it now to log in to your account.</p>
+<p style="margin:0 0 24px"><a href="{link}" style="display:inline-block;padding:12px 22px;background:#2563eb;color:#fff;border-radius:10px;font-weight:600;text-decoration:none">Set your password</a></p>
+<p style="font-size:13px;line-height:1.6;color:#64748b;margin:0">Signed up with Google using this email? You can also use &ldquo;Continue with Google&rdquo;. Questions? Just reply to this email.</p>
+</div>"""
+
+
+def send_paid_welcome_email(to: str, link: str, pages: int = 100) -> None:
+    """Fire-and-forget welcome for a paid signup, with a set-password link."""
+
+    def _go() -> None:
+        key = _api_key()
+        if not key:
+            logger.info("RESEND_API_KEY not set; skip paid welcome email")
+            return
+        try:
+            resp = httpx.post(
+                _RESEND_ENDPOINT,
+                headers={"Authorization": f"Bearer {key}"},
+                json={
+                    "from": _from_addr(),
+                    "to": [to],
+                    "reply_to": _to_addr(),
+                    "subject": "You're subscribed: set your password",
+                    "text": _PAID_WELCOME_TEXT.format(pages=pages, link=link),
+                    "html": _PAID_WELCOME_HTML.format(pages=pages, link=link),
+                },
+                timeout=10.0,
+            )
+            if resp.status_code >= 300:
+                logger.warning("paid welcome email failed (%s): %s", resp.status_code, resp.text[:300])
+        except Exception as e:  # noqa: BLE001
+            logger.warning("paid welcome email error (continuing): %s", e)
+
+    threading.Thread(target=_go, daemon=True).start()
+
+
 def notify_signup(email: str | None, user_id: str | None = None) -> None:
     who = email or user_id or "unknown"
     _notify(

@@ -61,6 +61,13 @@ export const ROUTE_META = {
   "/settings": {
     title: `Account settings — ${APP_NAME}`,
     description: "Manage your account settings and preferences.",
+  },  "/subscribe": {
+    title: `Monthly plan checkout — ${APP_NAME}`,
+    description: "Subscribe to the Monthly plan.",
+  },
+  "/welcome": {
+    title: `Welcome — ${APP_NAME}`,
+    description: "Finish setting up your account.",
   },
 };
 

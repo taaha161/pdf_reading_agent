@@ -265,6 +265,11 @@ def _handle_invoice_paid(event) -> tuple[bool, str]:
         return True, "No customer"
 
     user_id = _user_id_from_customer(customer_id, subscription_id, invoice.get("client_reference_id"))
+    sub_meta = _invoice_subscription_metadata(invoice)
+    if not user_id and _is_paid_signup(sub_meta):
+        user_id = _paid_signup_user(customer_id, sub_meta, invoice.get("customer_email"))
+        if not user_id:
+            return False, "Paid signup account not ready; retry"  # non-2xx -> Stripe retries
     if not user_id:
         return True, "Could not resolve user_id"
 
@@ -316,6 +321,11 @@ def _handle_subscription_updated(event) -> tuple[bool, str]:
     sub = event["data"]["object"]
     customer_id = sub.get("customer")
     user_id = _user_id_from_customer(customer_id, sub.get("id"), None)
+    meta = sub.get("metadata") or {}
+    if not user_id and _is_paid_signup(meta) and sub.get("status") in ("active", "trialing"):
+        user_id = _paid_signup_user(customer_id, meta)
+        if not user_id:
+            return False, "Paid signup account not ready; retry"
     if user_id and sub.get("status") in ("active", "trialing"):
         set_stripe_ids(user_id, customer_id, sub.get("id"))
     return True, "OK"
@@ -338,6 +348,11 @@ def _handle_checkout_completed(event) -> tuple[bool, str]:
 
     if session.get("mode") == "subscription":
         user_id = metadata.get("user_id") or session.get("client_reference_id")
+        if not user_id and _is_paid_signup(metadata):
+            details = session.get("customer_details") or {}
+            user_id = _paid_signup_user(session.get("customer"), metadata, details.get("email"), details.get("name"))
+            if not user_id:
+                return False, "Paid signup account not ready; retry"
         if user_id:
             _track_ga4(
                 user_id,
@@ -443,6 +458,23 @@ def _track_ga4(user_id: str, event_name: str, params: dict, metadata: dict | Non
         track_event(user_id, event_name, params, client_id, session_id, ad_opt_out=_ad_opt_out(metadata))
     except Exception as e:  # noqa: BLE001 - analytics must never fail a webhook
         logger.warning("GA4 %s event failed (continuing): %s", event_name, e)
+
+
+def _is_paid_signup(metadata: dict | None) -> bool:
+    """Checkout started from the pricing page with no account (services.paid_signup)."""
+    return (metadata or {}).get("flow") == "paid_signup"
+
+
+def _paid_signup_user(customer_id: str | None, metadata: dict, email: str | None = None, name: str | None = None) -> str | None:
+    """Create/link the account for a paid signup; its user_id, or None if not possible yet."""
+    from services import paid_signup  # imports billing; avoid a cycle at import time
+
+    try:
+        acct = paid_signup.ensure_account(customer_id, email, metadata.get("referral_code"), name)
+    except Exception as e:  # noqa: BLE001
+        logger.exception("paid signup ensure_account failed: %s", e)
+        return None
+    return acct["user_id"] if acct else None
 
 
 def _user_id_from_customer(stripe_customer_id: str | None, subscription_id: str | None, client_reference_id: str | None) -> str | None:

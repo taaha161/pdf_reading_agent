@@ -9,6 +9,8 @@ const NOINDEX_PATHS = new Set([
   "/reset-password",
   "/dashboard",
   "/settings",
+  "/subscribe",
+  "/welcome",
 ]);
 
 /**

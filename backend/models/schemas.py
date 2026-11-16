@@ -144,6 +144,18 @@ class CheckoutSessionRequest(BaseModel):
     ad_opt_out: bool = False  # browser sent Global Privacy Control: no ad-platform conversions
 
 
+class GuestCheckoutRequest(BaseModel):
+    """Pricing page "Get Monthly" with no account (paid signup: pay first, account after)."""
+    referral_code: Optional[str] = Field(default=None, max_length=32)
+    ga_client_id: Optional[str] = Field(default=None, max_length=64)
+    ga_session_id: Optional[str] = Field(default=None, max_length=64)
+    ad_opt_out: bool = False
+
+
+class PaidSignupPasswordRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=128)
+
+
 class CheckoutSessionResponse(BaseModel):
     url: str
     sessionId: Optional[str] = None

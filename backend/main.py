@@ -50,6 +50,8 @@ from models.schemas import (
     ChatResponse,
     CheckoutSessionRequest,
     CheckoutSessionResponse,
+    GuestCheckoutRequest,
+    PaidSignupPasswordRequest,
     DashboardStats,
     EmailSpreadsheetRequest,
     ExportRequest,
@@ -72,6 +74,7 @@ from services.billing import (
     scan_cost_pages,
 )
 from services.affiliates import claim_referral, normalize_code, public_discount, user_discount, valid_code
+from services import paid_signup
 from services.chat_service import get_reply
 from services.summary import _parse_amount, _summary_by_category  # noqa: F401
 from services.remote_pdf import RemotePdfError, RemotePdfTooLarge, fetch_pdf
@@ -1269,6 +1272,42 @@ def create_billing_checkout_session(body: CheckoutSessionRequest, user_id: str =
     if not result or not result.get("url"):
         raise HTTPException(502, "Could not create checkout session. Please try again.")
     return CheckoutSessionResponse(url=result["url"], sessionId=result.get("sessionId"))
+
+
+# --- Paid signup (pay first, account after; see services/paid_signup.py) ---
+
+@app.post("/api/signup/checkout", response_model=CheckoutSessionResponse)
+@limiter.limit("10/minute")
+def paid_signup_checkout(request: Request, body: GuestCheckoutRequest):
+    """Public: Stripe subscription Checkout for a visitor without an account."""
+    result = paid_signup.create_guest_checkout(
+        body.referral_code, body.ga_client_id, body.ga_session_id, body.ad_opt_out
+    )
+    if not result or not result.get("url"):
+        raise HTTPException(502, "Could not start checkout. Please try again.")
+    return CheckoutSessionResponse(url=result["url"], sessionId=result.get("sessionId"))
+
+
+@app.get("/api/signup/session/{session_id}")
+@limiter.limit("30/minute")
+def paid_signup_session(request: Request, session_id: str):
+    """Public (session id is the secret): payment status + account state for /welcome."""
+    try:
+        return paid_signup.session_status(session_id[:255])
+    except Exception as e:  # noqa: BLE001
+        logger.exception("paid signup session status failed: %s", e)
+        return {"status": "pending"}
+
+
+@app.post("/api/signup/session/{session_id}/password")
+@limiter.limit("5/minute")
+def paid_signup_password(request: Request, session_id: str, body: PaidSignupPasswordRequest):
+    """Set the first password on the account this paid checkout created (once)."""
+    try:
+        email = paid_signup.set_initial_password(session_id[:255], body.password)
+    except paid_signup.PasswordError as e:
+        raise HTTPException(400, str(e))
+    return {"email": email}
 
 
 _ADMIN_SECRET = os.environ.get("API_AUTH_SECRET", "").strip()

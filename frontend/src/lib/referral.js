@@ -28,6 +28,14 @@ export function setPendingReferral(code) {
   }
 }
 
+export function clearPendingReferral() {
+  try {
+    localStorage.removeItem(PENDING_KEY);
+  } catch {
+    /* storage blocked */
+  }
+}
+
 /** Remember ?ref=<code> from the current URL. */
 export function captureReferralFromUrl() {
   try {
