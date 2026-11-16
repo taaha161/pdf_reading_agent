@@ -28,7 +28,7 @@ faqs:
   - q: "Where do I find statements in the Navy Federal app?"
     a: "Select More from the navigation menu, then Account and Tax Statements."
   - q: "Will this work on a scanned Navy Federal statement?"
-    a: "Yes. Scanned and photographed statements go through OCR. Choose accurate mode for faint or skewed scans."
+    a: "Yes. Scanned PDFs go through OCR, including phone photos saved as a PDF. Choose accurate mode for faint or skewed scans."
   - q: "Can I import the result into QuickBooks or Xero?"
     a: "Export to CSV and use your accounting software's bank-statement import. Map the date, description, and amount columns when prompted."
 sources:

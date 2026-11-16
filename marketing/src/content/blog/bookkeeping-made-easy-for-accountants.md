@@ -128,4 +128,4 @@ When every member of your team executes this identical playbook, onboarding thro
 
 Adopting modern automation isn't about replacing the judgment and expertise of professional accountants—it is about removing the tedious administrative burdens that dilute the value of your work. Implementing structured tools makes bookkeeping straightforward, accurate, and consistently profitable.
 
-Instead of wasting unbillable hours typing figures from stubborn PDF statements, streamline your document intake using [Bank Statement Scanner](/). With rapid optical recognition, automated balance checks, and instant export to clean CSV or Excel, Bank Statement Scanner turns client document chaos into pristine, import-ready financial data so your firm can focus on high-impact advisory services.
+Instead of wasting unbillable hours typing figures from stubborn PDF statements, streamline your document intake using [Bank Statement Scanner](/). With rapid optical recognition, AI categorization, and instant export to clean CSV or Excel, Bank Statement Scanner turns client document chaos into pristine, import-ready financial data so your firm can focus on high-impact advisory services.

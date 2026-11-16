@@ -22,7 +22,7 @@ const {
 
 <div class="upload-card" data-dropzone data-cta-name={cta} data-params={params}>
   <span class="upload-badge">Drag &amp; drop bank statements</span>
-  <span class="upload-sub">PDF, scans, or photos</span>
+  <span class="upload-sub">Digital or scanned PDFs</span>
   <div class="upload-drop" role="button" tabindex="0" aria-describedby="dz-hint" aria-label="Upload a bank statement">
     <span class="upload-icon" aria-hidden="true">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -33,10 +33,10 @@ const {
     <span class="upload-title" data-dz-title>Drop a statement here</span>
     <span class="upload-hint" id="dz-hint">{hint}</span>
     <span class="btn btn-primary upload-btn">Upload PDF for free</span>
-    <span class="upload-limits"><span>MAX 50MB</span> · <span>Computer-generated or scanned PDF only</span></span>
+    <span class="upload-limits"><span>PDF only</span> · <span>Up to 20 MB free, 50 MB on Monthly</span></span>
     <span class="upload-error" data-dz-error role="alert" hidden></span>
   </div>
-  <input type="file" accept="application/pdf,.pdf,image/*" data-dz-input hidden />
+  <input type="file" accept="application/pdf,.pdf" data-dz-input hidden />
 </div>
 
 <script>
@@ -60,9 +60,9 @@ const {
     const accept = async (file: File | undefined, how: 'drop' | 'pick') => {
       if (!file || busy) return;
       err.hidden = true;
-      const ok = file.type === 'application/pdf' || /\.pdf$/i.test(file.name) || file.type.startsWith('image/');
-      if (!ok) return showError('That file type isn’t supported. Upload a PDF, scan, or photo.');
-      if (file.size > MAX_BYTES) return showError('That file is over 50MB. Try a smaller PDF.');
+      const ok = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+      if (!ok) return showError('Only PDF files are supported. Scan paper statements or photos to PDF first.');
+      if (file.size > MAX_BYTES) return showError('That file is over 50 MB, the largest we accept. Try splitting it into smaller PDFs.');
       busy = true;
       zone.classList.add('is-busy');
       title.textContent = `Opening ${file.name}…`;

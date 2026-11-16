@@ -28,7 +28,7 @@ faqs:
   - q: "Can I download PNC transactions straight to Excel?"
     a: "Recent activity can be exported as CSV, which opens in Excel. Guides report that window is about 90 days. For older months, convert the PDF statements."
   - q: "Will this work on a scanned PNC statement?"
-    a: "Yes. Scanned and photographed statements go through OCR. Choose accurate mode for faint or skewed scans."
+    a: "Yes. Scanned PDFs go through OCR, including phone photos saved as a PDF. Choose accurate mode for faint or skewed scans."
   - q: "How do I check the converted file is complete?"
     a: "Add up deposits and withdrawals in your export and compare them with the account summary. Beginning balance plus deposits minus withdrawals should equal the ending balance."
 sources:

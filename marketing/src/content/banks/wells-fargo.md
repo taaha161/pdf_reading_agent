@@ -28,7 +28,7 @@ faqs:
   - q: "Can I download Wells Fargo transactions straight to Excel?"
     a: "Recent activity can be downloaded in Comma Delimited format, which opens in Excel. Guides report that window is 90 days by default and longer on some accounts. Older months need the PDF statement converted."
   - q: "Will this work on a scanned Wells Fargo statement?"
-    a: "Yes. Scanned and photographed statements go through OCR. Choose accurate mode for faint or skewed scans."
+    a: "Yes. Scanned PDFs go through OCR, including phone photos saved as a PDF. Choose accurate mode for faint or skewed scans."
   - q: "Can I import the result into QuickBooks or Xero?"
     a: "Export to CSV and use your accounting software's bank-statement import. Map the date, description, and amount columns when prompted."
 sources:

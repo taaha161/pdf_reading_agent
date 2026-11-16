@@ -54,7 +54,7 @@ const VARIANTS = {
 const pairs = [
   { old: 'Retype every date, payee and amount', new: 'Every transaction extracted for you' },
   { old: 'Copy-paste that breaks the columns', new: 'Clean columns, ready to sort and filter' },
-  { old: 'Hunt for the typo that throws off the balance', new: 'Balances checked against the statement' },
+  { old: 'Scroll pages to find every payment to one payee', new: 'Ask for them in plain English, export just those rows' },
   { old: 'Categorize hundreds of rows one by one', new: 'Every row categorized automatically' },
 ];
 
@@ -64,7 +64,7 @@ const steps = [
   {
     title: 'Drop in the PDF',
     tag: 'Free, no signup',
-    body: 'Any bank or credit card statement: digital, scanned, or a phone photo.',
+    body: 'Any bank or credit card statement: digital, scanned, or a phone photo saved as a PDF.',
     icon: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 18v-6m0 0-2.5 2.5M12 12l2.5 2.5"/>'),
   },
   {
@@ -88,7 +88,7 @@ const faqs = [
   },
   {
     q: 'My statements are scanned paper. Does it still work?',
-    a: 'Yes. Scanned PDFs, digital PDFs and photos of statements all work, from Chase, Wells Fargo, Amex and 100+ other banks and card issuers.',
+    a: 'Yes. Scanned and digital PDFs both work, from Chase, Wells Fargo, Amex and 100+ other banks and card issuers. Phone photos work once saved as a PDF.',
   },
   {
     q: 'What does the free month include?',
@@ -144,14 +144,6 @@ const faqs = [
           <ul class="reassure">
             {REASSURE.map((r) => <li>{r}</li>)}
           </ul>
-          <div class="trust">
-            <span class="avatars" aria-hidden="true">
-              <img src="/avatars/avatar-1.jpg" alt="" width="32" height="32" />
-              <img src="/avatars/avatar-2.jpg" alt="" width="32" height="32" />
-              <img src="/avatars/avatar-3.jpg" alt="" width="32" height="32" />
-            </span>
-            <span>10,000+ finance professionals have stopped typing statements</span>
-          </div>
         </div>
 
         <!-- Real upload box: the dropped PDF is handed to /scanner, which starts the free scan on arrival -->
@@ -183,7 +175,7 @@ const faqs = [
       <div class="container watch-inner">
         <header class="head">
           <h2 id="watch-h">Watch a statement become a spreadsheet in 22 seconds.</h2>
-          <p>Drop in the PDF. Every transaction comes back categorized and checked against the balances. You type nothing.</p>
+          <p>Drop in the PDF. Every transaction comes back categorized. You type nothing.</p>
         </header>
         <ProductVideo />
         <div class="center">
@@ -282,14 +274,6 @@ const faqs = [
           </ul>
           <a class="btn btn-invert btn-lg js-cta" href={CTA_HREF} data-cta="offer">{CTA_LABEL} →</a>
           <p class="offer-guarantee">Not for you? Just stop. There is nothing to cancel.</p>
-          <div class="trust trust--light">
-            <span class="avatars" aria-hidden="true">
-              <img src="/avatars/avatar-1.jpg" alt="" width="32" height="32" loading="lazy" />
-              <img src="/avatars/avatar-2.jpg" alt="" width="32" height="32" loading="lazy" />
-              <img src="/avatars/avatar-3.jpg" alt="" width="32" height="32" loading="lazy" />
-            </span>
-            <span>Join 10,000+ finance professionals</span>
-          </div>
         </div>
       </div>
     </section>
@@ -404,12 +388,7 @@ const faqs = [
   .reassure--center { justify-content: center; }
   .reassure--light { color: rgba(255,255,255,0.8); }
   .reassure--light li::before { color: #4ade80; }
-  .trust--light { justify-content: center; color: rgba(255,255,255,0.92); margin-top: 18px; }
   .offer-guarantee { margin: 16px 0 0; font-size: 15px; color: rgba(255,255,255,0.88); }
-  .trust { display: flex; align-items: center; gap: 12px; margin-top: 26px; font-size: 14px; font-weight: 600; }
-  .avatars { display: inline-flex; }
-  .avatars img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
-  .avatars img + img { margin-left: -9px; }
 
   /* Proof strip */
   .proof { border-block: 1px solid var(--color-border); padding-block: 28px; }

@@ -30,7 +30,7 @@ faqs:
   - q: "Can I still get statements after closing my Ally account?"
     a: "Ally says that if you close all your Ally Bank accounts, statements and tax forms for the last 7 years stay viewable online."
   - q: "Will this work on a scanned Ally statement?"
-    a: "Yes. Scanned and photographed statements go through OCR. Choose accurate mode for faint or skewed scans."
+    a: "Yes. Scanned PDFs go through OCR, including phone photos saved as a PDF. Choose accurate mode for faint or skewed scans."
 sources:
   - label: "Ally Bank: Account information FAQs (official)"
     url: "https://www.ally.com/help/bank/account-information.html"
