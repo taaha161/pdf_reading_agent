@@ -868,3 +868,62 @@
   font-size: 0.85rem;
   color: var(--color-text-muted, #64748b);
 }
+
+.auth-referral-status.is-success {
+  color: #15803d;
+  font-weight: 500;
+}
+
+.auth-referral-status.is-error {
+  color: var(--color-error);
+}
+
+.auth-referral-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.auth-referral-row .auth-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-referral-row .auth-input.is-applied {
+  border-color: var(--color-success);
+  background: var(--color-success-muted);
+  font-weight: 600;
+}
+
+.auth-referral-btn {
+  flex-shrink: 0;
+  padding: 0 1.1rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-on-primary, #fff);
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.auth-referral-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.auth-referral-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.auth-referral-btn.is-remove {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.auth-referral-btn.is-remove:hover {
+  background: var(--color-bg);
+}
