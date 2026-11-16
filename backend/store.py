@@ -589,6 +589,49 @@ def list_affiliates() -> list[dict]:
         return [dict(r) for r in cur.fetchall()]
 
 
+def get_auth_user(user_id: str | None = None, email: str | None = None) -> dict | None:
+    """Supabase auth user by id or (case-insensitive) email.
+
+    {id, email, created_at, has_password, paid_signup_customer}: the last is the
+    Stripe customer whose guest checkout created this account (paid signup), else None.
+    """
+    if not user_id and not email:
+        return None
+    where, arg = ("id::text = %s", user_id) if user_id else ("lower(email) = lower(%s)", email)
+    with _cursor() as cur:
+        cur.execute(
+            f"""
+            SELECT id::text AS id, email, created_at,
+                   (coalesce(encrypted_password, '') <> '') AS has_password,
+                   raw_user_meta_data->>'paid_signup_customer' AS paid_signup_customer
+            FROM auth.users WHERE {where} AND deleted_at IS NULL
+            ORDER BY created_at LIMIT 1
+            """,
+            (arg,),
+        )
+        row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def mark_free_grant_used(user_id: str) -> None:
+    """Paid signups skip the free month: record the one-time grant as already spent.
+
+    ensure_free_grant only grants while free_expires_at IS NULL, so setting it
+    (with 0 pages) means the grant never happens for this account.
+    """
+    with _cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO user_billing (user_id, free_pages, free_expires_at, updated_at)
+            VALUES (%s, 0, NOW(), NOW())
+            ON CONFLICT (user_id) DO UPDATE SET
+              free_expires_at = COALESCE(user_billing.free_expires_at, NOW()),
+              updated_at = NOW()
+            """,
+            (user_id,),
+        )
+
+
 def get_user_created_at(user_id: str) -> datetime | None:
     """Supabase auth account creation time (backend connects as owner, so auth.users is readable)."""
     with _cursor() as cur:

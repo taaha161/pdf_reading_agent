@@ -15,7 +15,8 @@ import ContactPage from "./pages/ContactPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageMeta from "./components/PageMeta";
-import SignupCheckout from "./components/SignupCheckout";
+import SubscribePage from "./pages/SubscribePage";
+import WelcomePage from "./pages/WelcomePage";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -30,11 +31,12 @@ function AppContent() {
     <>
       <ScrollToTop />
       <PageMeta />
-      <SignupCheckout />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<AuthPage mode="login" />} />
         <Route path="/signup" element={<AuthPage mode="signup" />} />
+        <Route path="/subscribe" element={<SubscribePage />} />
+        <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/forgot-password" element={<AuthPage mode="forgot" />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />

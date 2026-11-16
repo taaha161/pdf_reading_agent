@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { sendTikTokSignupEvent } from "../lib/tiktokSignupEvent";
@@ -7,115 +7,61 @@ import { useAuth } from "../contexts/AuthContext";
 import logo from "../assets/pdf_to_excel_logo.png";
 import "./AuthPage.css";
 import PasswordInput from "../components/PasswordInput";
+import PasswordChecklist from "../components/PasswordChecklist";
+import ReferralCodeField from "../components/ReferralCodeField";
+import SignupLayout, { BenefitList, SecurityList, SocialProof, ValuePanel } from "../components/SignupLayout";
+import { GoogleLogo, TrustRow } from "../components/AuthBits";
 import { claimOfferForUser } from "../lib/offer";
-import { PLAN_SUBSCRIPTION, PLAN_TRIAL, rememberSignupPlan } from "../lib/signupPlan";
 import { getAttribution } from "../lib/attribution";
-import {
-  clearPendingReferral,
-  describeDiscount,
-  getPendingReferral,
-  normalizeReferralCode,
-  setPendingReferral,
-} from "../lib/referral";
-import { lookupReferral } from "../api/client";
+import { setPendingReferral } from "../lib/referral";
+import { PASSWORD_MIN_LENGTH, passwordOk } from "../lib/password";
 import { FREE_ANON_PAGES, FREE_SIGNUP_DAYS, FREE_SIGNUP_PAGES, PLAN_PAGES, PLAN_PRICE } from "../lib/pricing";
 
-const PASSWORD_MIN_LENGTH = 8;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RESEND_COOLDOWN_S = 30;
 
-/** Google G logo SVG (official brand colors) */
-function GoogleLogo({ className }) {
+function MailIcon() {
   return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+    <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden>
+      <path d="M3 6h18v12H3z M3 7l9 6 9-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
     </svg>
   );
 }
 
-/** Shield icon for \"Smart Categorization\" card */
-function ShieldIcon() {
+/** Left panel for /signup: normal, or after the anonymous free pages ran out. */
+function SignupAside({ trialExhausted }) {
+  if (trialExhausted) {
+    return (
+      <ValuePanel
+        eyebrow={`You've used your ${FREE_ANON_PAGES} guest pages`}
+        title={`Keep going with ${FREE_SIGNUP_PAGES} more pages, free`}
+        lead={`Create a free account and your next ${FREE_SIGNUP_PAGES} pages are on us for ${FREE_SIGNUP_DAYS} days. No credit card.`}
+      >
+        <ol className="su-meter" aria-label="Your free pages">
+          <li><strong>{FREE_ANON_PAGES} pages</strong><span>Guest limit, used</span></li>
+          <li className="is-free"><strong>+{FREE_SIGNUP_PAGES} pages</strong><span>Free with an account</span></li>
+        </ol>
+        <SecurityList />
+        <SocialProof />
+      </ValuePanel>
+    );
+  }
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden focusable="false">
-      <path
-        d="M12 3 6 5v6c0 4.1 2.7 7.5 6 8.5 3.3-1 6-4.4 6-8.5V5l-6-2Z"
-        fill="currentColor"
+    <ValuePanel
+      eyebrow="Free account"
+      title="Turn bank statements into clean spreadsheets"
+      lead="Upload a PDF statement from any bank and get categorized transactions in Excel or CSV in seconds."
+    >
+      <BenefitList
+        items={[
+          "Works with any bank, digital or scanned PDFs",
+          "AI categorizes every transaction for you",
+          "Ask your statements questions in plain English",
+        ]}
       />
-      <path
-        d="M10.5 12.5 12 14l3-3"
-        fill="none"
-        stroke="#0f172a"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-/** Lightning bolt icon for \"Instant Processing\" */
-function BoltIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden focusable="false">
-      <path
-        d="M13 2 5 13h5l-1 9 8-11h-5l1-9Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-/** Gift icon for the "unlock free pages" banner */
-function GiftIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden focusable="false">
-      <path
-        d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7Zm0 0h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-/** Check icon for a used scan slot */
-function CheckIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden focusable="false">
-      <path d="m5 12 5 5 9-10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-/** Strong password: min 8 chars, uppercase, lowercase, number, special char */
-function validatePasswordStrength(password) {
-  if (!password || password.length < PASSWORD_MIN_LENGTH) return { ok: false, message: `At least ${PASSWORD_MIN_LENGTH} characters` };
-  if (!/[A-Z]/.test(password)) return { ok: false, message: "One uppercase letter" };
-  if (!/[a-z]/.test(password)) return { ok: false, message: "One lowercase letter" };
-  if (!/[0-9]/.test(password)) return { ok: false, message: "One number" };
-  if (!/[^A-Za-z0-9]/.test(password)) return { ok: false, message: "One special character (!@#$%^&* etc.)" };
-  return { ok: true };
-}
-
-/** Avatars + "Trusted by 10,000+" social proof, shared by the login and signup panels. */
-function TrustRow() {
-  return (
-    <div className="auth-trust-row">
-      <div className="auth-avatar-group" aria-hidden>
-        {/* Add your images to public/auth-avatars/ as avatar-1.jpg, avatar-2.jpg, avatar-3.jpg */}
-        <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-1.jpg)" }} />
-        <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-2.jpg)" }} />
-        <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-3.jpg)" }} />
-        <span className="auth-badge">10k+</span>
-      </div>
-      <div className="auth-trust-copy">
-        <span className="auth-trust-label">Trusted by 10,000+ finance professionals</span>
-      </div>
-    </div>
+      <SecurityList />
+      <SocialProof />
+    </ValuePanel>
   );
 }
 
@@ -134,61 +80,27 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const [view, setView] = useState(mode); // "login" | "signup" | "forgot-password"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  // Affiliate code: prefilled from a ?ref= link (and auto-applied), else typed + Apply.
-  const [referralCode, setReferralCode] = useState(() => getPendingReferral() ?? "");
-  // Applied code: { code, discount } once the server confirms it.
-  const [appliedReferral, setAppliedReferral] = useState(null);
-  // "idle" | "checking" | "invalid"
-  const [referralStatus, setReferralStatus] = useState("idle");
-
-  const applyReferral = async (raw = referralCode) => {
-    const code = normalizeReferralCode(raw);
-    if (!code) {
-      setReferralStatus(raw.trim() ? "invalid" : "idle");
-      return;
-    }
-    setReferralStatus("checking");
-    const info = await lookupReferral(code);
-    if (info?.valid) {
-      setAppliedReferral({ code, discount: info.discount ?? null });
-      setReferralCode(code);
-      setReferralStatus("idle");
-    } else {
-      setReferralStatus("invalid");
-    }
-  };
-
-  const removeReferral = () => {
-    setAppliedReferral(null);
-    setReferralCode("");
-    setReferralStatus("idle");
-    clearPendingReferral(); // so the ?ref= code isn't claimed on first sign-in
-  };
-
-  // Came in through an affiliate link: apply its code without a click.
-  useEffect(() => {
-    const pending = getPendingReferral();
-    if (pending) applyReferral(pending);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Referral code field state: { applied: {code, discount} | null, pendingText }.
+  const [referral, setReferral] = useState({ applied: null, pendingText: "" });
+  const onReferralChange = useCallback((r) => setReferral(r), []);
+  // Signup field errors, shown after the first submit attempt.
+  const [submitted, setSubmitted] = useState(false);
+  const [pwFocused, setPwFocused] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+  const resendTimer = useRef(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  // Free month is the default: every new account gets it, no card needed.
-  const [plan, setPlan] = useState(PLAN_TRIAL);
-  const isSubscription = plan === PLAN_SUBSCRIPTION;
-  const trialScansLabel = `${FREE_SIGNUP_PAGES} free pages for your first month`;
 
   useEffect(() => {
     setView(mode);
     // e.g. redirected here from the scanner after using the free pages
-    // (the trial-exhausted signup view has its own banner instead)
+    // (the trial-exhausted signup view has its own panel instead)
     setMessage(notice && !trialExhausted ? { type: "success", text: notice } : { type: "", text: "" });
     setSignupSuccess(false);
-    setConfirmPassword("");
+    setSubmitted(false);
   }, [mode, notice, trialExhausted]);
 
   // Redirect if already logged in (skip on reset-password; that page handles its own logic)
@@ -198,6 +110,8 @@ export default function AuthPage({ mode: initialMode = "login" }) {
     }
   }, [user, view, navigate]);
 
+  useEffect(() => () => clearInterval(resendTimer.current), []);
+
   const setError = (text) => setMessage({ type: "error", text });
   const setSuccess = (text) => setMessage({ type: "success", text });
   const clearMessage = () => setMessage({ type: "", text: "" });
@@ -205,11 +119,8 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const handleSocialLogin = async (provider) => {
     setLoading(true);
     clearMessage();
-    // OAuth accounts don't exist yet, so keep the plan choice for first sign-in.
-    if (view === "signup") {
-      rememberSignupPlan(plan);
-      if (appliedReferral) setPendingReferral(appliedReferral.code); // claimed on first sign-in
-    }
+    // OAuth accounts don't exist yet: keep the referral for the first sign-in.
+    if (view === "signup" && referral.applied) setPendingReferral(referral.applied.code);
     try {
       const { error } = await supabase.auth.signInWithOAuth({ provider });
       if (error) setError(error.message);
@@ -235,26 +146,34 @@ export default function AuthPage({ mode: initialMode = "login" }) {
     }
   };
 
+  const signupErrors = {
+    name: !fullName.trim() ? "Enter your name" : "",
+    email: !EMAIL_RE.test(email.trim()) ? "Enter a valid email address" : "",
+    password: !passwordOk(password) ? "Password doesn't meet the requirements below" : "",
+    referral: referral.pendingText ? "Click Apply to use this code, or clear the field" : "",
+  };
+
+  const startResendCooldown = () => {
+    setResendIn(RESEND_COOLDOWN_S);
+    clearInterval(resendTimer.current);
+    resendTimer.current = setInterval(() => {
+      setResendIn((s) => {
+        if (s <= 1) clearInterval(resendTimer.current);
+        return Math.max(0, s - 1);
+      });
+    }, 1000);
+  };
+
   const handleSignUp = async (e) => {
     e.preventDefault();
     clearMessage();
-    const nameTrimmed = fullName.trim();
-    if (!nameTrimmed) {
-      setError("Name is required so we can recognize you.");
-      return;
-    }
-    const referral = appliedReferral?.code ?? null;
-    if (!referral && referralCode.trim()) {
-      setError("Click Apply to use your referral code, or clear the field.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-    const strength = validatePasswordStrength(password);
-    if (!strength.ok) {
-      setError(`Password must have: ${strength.message}`);
+    setSubmitted(true);
+    const firstError = Object.values(signupErrors).find(Boolean);
+    if (firstError) {
+      // Move focus to the first field with a problem.
+      const order = [["name", "su-name"], ["email", "su-email"], ["password", "su-password"], ["referral", "su-referral-input"]];
+      const bad = order.find(([k]) => signupErrors[k]);
+      document.getElementById(bad?.[1])?.focus();
       return;
     }
     setLoading(true);
@@ -265,10 +184,10 @@ export default function AuthPage({ mode: initialMode = "login" }) {
         options: {
           // attribution: which ad campaign (if any) brought this signup in.
           data: {
-            full_name: nameTrimmed,
+            full_name: fullName.trim(),
             attribution: getAttribution() ?? undefined,
-            signup_plan: plan,
-            referral_code: referral ?? undefined, // claimed server-side on first sign-in
+            signup_plan: "trial",
+            referral_code: referral.applied?.code ?? undefined, // claimed server-side on first sign-in
           },
         },
       });
@@ -277,13 +196,24 @@ export default function AuthPage({ mode: initialMode = "login" }) {
       trackSignup({ method: "email", userId: signUpData?.user?.id });
       // Bind the ad offer now: the confirmation link may open in another tab.
       claimOfferForUser(signUpData?.user);
-      rememberSignupPlan(plan);
       setSignupSuccess(true);
-      setSuccess("Check your email to confirm your account. Then you can log in.");
+      startResendCooldown();
     } catch (err) {
       setError(err.message || "Sign up failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    clearMessage();
+    try {
+      const { error } = await supabase.auth.resend({ type: "signup", email: email.trim() });
+      if (error) throw error;
+      setSuccess("Sent again. Check your inbox and spam folder.");
+      startResendCooldown();
+    } catch (err) {
+      setError(err.message || "Couldn't resend the email. Try again in a minute.");
     }
   };
 
@@ -350,323 +280,123 @@ export default function AuthPage({ mode: initialMode = "login" }) {
     );
   }
 
-  // --- Sign up view ---
+  // --- Sign up view (free account; the paid plan signs up through /subscribe) ---
   if (view === "signup") {
+    const showErr = (k) => submitted && signupErrors[k];
     return (
-      <div className="auth-page auth-page--split">
-        <header className="auth-header">
-          <Link to="/" className="auth-logo">
-            <span className="auth-logo-icon" aria-hidden>
-              <img src={logo} alt="" />
-            </span>
-            <span className="auth-logo-text">Bank Statement Scanner</span>
-          </Link>
-          <div className="auth-header-right">
-            <span className="auth-header-copy">Already have an account?</span>
-            <Link to="/login" className="auth-header-link">Log In</Link>
-          </div>
-        </header>
-
-        <main
-          className={`auth-shell auth-shell--signup${trialExhausted ? " auth-shell--trial" : ""}`}
-          aria-label="Create account"
-        >
-          <section className="auth-panel auth-panel-left">
-            {trialExhausted ? (
-              <>
-                <span className="auth-trial-eyebrow">You&apos;ve reached the {FREE_ANON_PAGES}-page guest limit</span>
-                <h1 className="auth-hero-title">
-                  Get {FREE_SIGNUP_PAGES} pages <span>free.</span>
-                </h1>
-                <p className="auth-hero-body">
-                  Create a free account and your first {FREE_SIGNUP_PAGES} pages are on us for {FREE_SIGNUP_DAYS} days.
-                  No credit card needed.
-                </p>
-                <ol className="auth-scan-meter" aria-label="Your free pages">
-                  <li className="auth-scan-slot auth-scan-slot--used">
-                    <span className="auth-scan-slot-icon"><CheckIcon /></span>
-                    <span className="auth-scan-slot-title">{FREE_ANON_PAGES} pages</span>
-                    <span className="auth-scan-slot-status">Guest limit</span>
-                  </li>
-                  <li className="auth-scan-slot auth-scan-slot--free">
-                    <span className="auth-scan-slot-icon">+</span>
-                    <span className="auth-scan-slot-title">{FREE_SIGNUP_PAGES} pages</span>
-                    <span className="auth-scan-slot-status">Free on sign-up</span>
-                  </li>
-                </ol>
-                <ol className="auth-trial-steps">
-                  <li>Create your account below, it takes 30 seconds</li>
-                  <li>Confirm your email</li>
-                  <li>Convert up to {FREE_SIGNUP_PAGES} statement pages to Excel, free</li>
-                </ol>
-              </>
-            ) : (
-              <>
-                <h1 className="auth-hero-title">
-                  Smart financial <span>management starts here.</span>
-                </h1>
-                <p className="auth-hero-body">
-                  Join thousands of users who trust Bank Statement Scanner for secure, automated financial insights
-                  and statement processing.
-                </p>
-              </>
-            )}
-            <div className="auth-feature-stack">
-              <div className="auth-feature-card">
-                <div className="auth-feature-icon auth-feature-icon--shield" aria-hidden>
-                  <ShieldIcon />
-                </div>
-                <div>
-                  <h2>Smart Categorization</h2>
-                  <p>Automatically categorize your transactions with AI.</p>
-                </div>
-              </div>
-              <div className="auth-feature-card">
-                <div className="auth-feature-icon auth-feature-icon--bolt" aria-hidden>
-                  <BoltIcon />
-                </div>
-                <div>
-                  <h2>Convert PDF to Excel in seconds</h2>
-                  <p>Scan and convert PDF to Excel in seconds.</p>
-                </div>
-              </div>
+      <SignupLayout aside={<SignupAside trialExhausted={trialExhausted} />}>
+        {signupSuccess ? (
+          <div className="su-state" role="status">
+            <span className="su-state-icon"><MailIcon /></span>
+            <h2 className="su-title">Check your inbox</h2>
+            <p className="su-sub">
+              We sent a confirmation link to <strong>{email.trim()}</strong>. Click it to activate your account and
+              get your {FREE_SIGNUP_PAGES} free pages.
+            </p>
+            <div className="su-state-actions">
+              <Link to="/login" className="su-btn su-btn-primary">I&apos;ve confirmed, log in</Link>
+              <button type="button" className="su-btn su-btn-secondary" onClick={handleResend} disabled={resendIn > 0}>
+                {resendIn > 0 ? `Resend email in ${resendIn}s` : "Resend email"}
+              </button>
+              <button type="button" className="su-link-btn" style={{ alignSelf: "center" }} onClick={() => { setSignupSuccess(false); clearMessage(); }}>
+                Wrong email? Go back
+              </button>
             </div>
-            <div className="auth-photo-card">
-              <TrustRow />
-            </div>
-            <footer className="auth-shell-footer">
-              <Link to="/contact" className="auth-footer-link">Help Center</Link>
-              <button type="button" className="auth-footer-link">Security</button>
-              <Link to="/contact?topic=sales" className="auth-footer-link">Contact Sales</Link>
-            </footer>
-          </section>
-
-          <section className="auth-panel auth-panel-right">
-            <div className="auth-card auth-card--elevated">
-              {trialExhausted && !signupSuccess && (
-                <div className="auth-trial-banner" role="status">
-                  <span className="auth-trial-banner-icon" aria-hidden><GiftIcon /></span>
-                  <div>
-                    <p className="auth-trial-banner-title">
-                      Unlock {FREE_SIGNUP_PAGES} free pages
-                    </p>
-                    <p className="auth-trial-banner-body">
-                      You&apos;ve used your {FREE_ANON_PAGES} free pages. Create a free account to keep converting statements.
-                    </p>
-                  </div>
-                </div>
-              )}
-              <h2 className="auth-title">Create your account</h2>
-              <p className="auth-description">
-                {isSubscription
-                  ? `Subscribe for $${PLAN_PRICE}/month and get ${PLAN_PAGES} pages every month, on top of your free month.`
-                  : `Start free with ${trialScansLabel}. No credit card needed.`}
+            {message.text && (
+              <p className={message.type === "error" ? "su-alert" : "su-alert su-alert--info"} role="alert" style={{ marginTop: "1rem" }}>
+                {message.text}
               </p>
+            )}
+          </div>
+        ) : (
+          <>
+            <h2 className="su-title">Create your free account</h2>
+            <p className="su-sub">
+              <strong>{FREE_SIGNUP_PAGES} pages free</strong> for {FREE_SIGNUP_DAYS} days. No credit card needed.
+            </p>
 
-              {signupSuccess ? (
-                <div className="auth-success-block">
-                  <p className="auth-message auth-message-success">
-                    We sent a confirmation link to <strong>{email}</strong>. Click the link in that email to activate your
-                    account, then log in below.{" "}
-                    {isSubscription
-                      ? "We'll take you to checkout to start your subscription."
-                      : `Your ${trialScansLabel} will be ready.`}
-                  </p>
-                  <Link
-                    to="/login"
-                    className="auth-btn auth-btn-primary"
-                    style={{ textDecoration: "none", textAlign: "center" }}
-                  >
-                    Go to log in
-                  </Link>
-                </div>
-              ) : (
-                <>
-                  <form onSubmit={handleSignUp} className="auth-form">
-                    <label className="auth-label">Full Name</label>
-                    <input
-                      type="text"
-                      className="auth-input"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="John Doe"
-                      required
-                      minLength={1}
-                      autoComplete="name"
-                    />
-                    <label className="auth-label">Email Address</label>
-                    <input
-                      type="email"
-                      className="auth-input"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="email@example.com"
-                      required
-                      autoComplete="email"
-                    />
-                    <label className="auth-label">Password</label>
-                    <PasswordInput
-                      className="auth-input"
-                      name="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Min. 8 characters"
-                      required
-                      minLength={PASSWORD_MIN_LENGTH}
-                      autoComplete="new-password"
-                    />
-                    <label className="auth-label">Confirm password</label>
-                    <PasswordInput
-                      className="auth-input"
-                      name="confirm-password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Re-enter your password"
-                      required
-                      minLength={PASSWORD_MIN_LENGTH}
-                      autoComplete="new-password"
-                    />
-                    <label className="auth-label" htmlFor="signup-referral">Referral code (optional)</label>
-                    <div className="auth-referral-row">
-                      <input
-                        id="signup-referral"
-                        type="text"
-                        className={`auth-input${appliedReferral ? " is-applied" : ""}`}
-                        value={referralCode}
-                        onChange={(e) => {
-                          setReferralCode(e.target.value);
-                          if (referralStatus === "invalid") setReferralStatus("idle");
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault(); // apply the code, don't submit the signup form
-                            if (!appliedReferral) applyReferral();
-                          }
-                        }}
-                        placeholder="e.g. jane"
-                        maxLength={32}
-                        readOnly={!!appliedReferral}
-                        autoComplete="off"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        aria-describedby="signup-referral-status"
-                      />
-                      {appliedReferral ? (
-                        <button type="button" className="auth-referral-btn is-remove" onClick={removeReferral}>
-                          Remove
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="auth-referral-btn"
-                          onClick={() => applyReferral()}
-                          disabled={!referralCode.trim() || referralStatus === "checking"}
-                        >
-                          {referralStatus === "checking" ? "Checking…" : "Apply"}
-                        </button>
-                      )}
-                    </div>
-                    <p
-                      id="signup-referral-status"
-                      className={`auth-referral-status${appliedReferral ? " is-success" : ""}${referralStatus === "invalid" ? " is-error" : ""}`}
-                      aria-live="polite"
-                    >
-                      {referralStatus === "invalid" && "We don't recognize that code. Check it, or leave it blank."}
-                      {appliedReferral && (appliedReferral.discount
-                        ? `✓ Code applied: ${describeDiscount(appliedReferral.discount)}.`
-                        : "✓ Code applied.")}
-                    </p>
-                    <fieldset className="auth-plan-picker">
-                      <legend className="auth-label">Choose your plan</legend>
-                      <label className={`auth-plan-option${isSubscription ? " is-selected" : ""}`}>
-                        <input
-                          type="radio"
-                          name="signup-plan"
-                          value={PLAN_SUBSCRIPTION}
-                          checked={isSubscription}
-                          onChange={() => setPlan(PLAN_SUBSCRIPTION)}
-                        />
-                        <span className="auth-plan-text">
-                          <span className="auth-plan-title">
-                            Monthly plan <span className="auth-plan-price">${PLAN_PRICE}/month</span>
-                          </span>
-                          <span className="auth-plan-desc">{PLAN_PAGES} pages every month, plus your free month. Cancel anytime.</span>
-                        </span>
-                      </label>
-                      <label className={`auth-plan-option${!isSubscription ? " is-selected" : ""}`}>
-                        <input
-                          type="radio"
-                          name="signup-plan"
-                          value={PLAN_TRIAL}
-                          checked={!isSubscription}
-                          onChange={() => setPlan(PLAN_TRIAL)}
-                        />
-                        <span className="auth-plan-text">
-                          <span className="auth-plan-title">
-                            Free month <span className="auth-plan-price">$0</span>
-                          </span>
-                          <span className="auth-plan-desc">
-                            {trialScansLabel}. No credit card needed.
-                          </span>
-                        </span>
-                      </label>
-                    </fieldset>
-                    <label className="auth-checkbox-row">
-                      <input type="checkbox" required />
-                      <span>
-                        I agree to the{" "}
-                        <Link to="/terms-of-service" className="auth-link-inline">Terms of Service</Link>{" "}
-                        and{" "}
-                        <Link to="/privacy-policy" className="auth-link-inline">Privacy Policy</Link>.
-                      </span>
-                    </label>
-                    <button type="submit" className="auth-btn auth-btn-primary auth-btn-block" disabled={loading}>
-                      {loading
-                        ? "Creating account…"
-                        : isSubscription
-                          ? "Create account & subscribe →"
-                          : `Create account & get ${trialScansLabel} →`}
-                    </button>
-                  </form>
+            <button type="button" className="su-btn su-btn-google" onClick={() => handleSocialLogin("google")} disabled={loading}>
+              <GoogleLogo />
+              Continue with Google
+            </button>
+            <div className="su-divider">or sign up with email</div>
 
-                  <div className="auth-divider">OR SIGN UP WITH</div>
-                  <div className="auth-social auth-social-row">
-                    <button
-                      type="button"
-                      className="auth-btn auth-btn-provider"
-                      onClick={() => handleSocialLogin("google")}
-                      disabled={loading}
-                    >
-                      <GoogleLogo className="auth-btn-google-icon" />
-                      <span>Google</span>
-                    </button>
-                    {/* <button
-                      type="button"
-                      className="auth-btn auth-btn-provider"
-                      onClick={() => handleSocialLogin("github")}
-                      disabled={loading}
-                    >
-                      <span className="auth-provider-icon">G</span>
-                      <span>GitHub</span>
-                    </button> */}
-                  </div>
-                </>
-              )}
+            <form onSubmit={handleSignUp} className="su-form" noValidate>
+              <div className="su-field">
+                <label className="su-label" htmlFor="su-name">Full name</label>
+                <input
+                  id="su-name"
+                  type="text"
+                  className={`su-input${showErr("name") ? " is-invalid" : ""}`}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Jane Doe"
+                  autoComplete="name"
+                  aria-invalid={!!showErr("name")}
+                  aria-describedby="su-name-err"
+                />
+                <p id="su-name-err" className="su-hint is-error">{showErr("name")}</p>
+              </div>
 
-              {!signupSuccess && message.text && (
-                <p className={`auth-message auth-message-${message.type}`} role="alert">
+              <div className="su-field">
+                <label className="su-label" htmlFor="su-email">Email</label>
+                <input
+                  id="su-email"
+                  type="email"
+                  className={`su-input${showErr("email") ? " is-invalid" : ""}`}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  autoComplete="email"
+                  inputMode="email"
+                  aria-invalid={!!showErr("email")}
+                  aria-describedby="su-email-err"
+                />
+                <p id="su-email-err" className="su-hint is-error">{showErr("email")}</p>
+              </div>
+
+              <div className="su-field">
+                <label className="su-label" htmlFor="su-password">Password</label>
+                <PasswordInput
+                  id="su-password"
+                  className={`su-input${showErr("password") ? " is-invalid" : ""}`}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setPwFocused(true)}
+                  placeholder={`At least ${PASSWORD_MIN_LENGTH} characters`}
+                  autoComplete="new-password"
+                  aria-invalid={!!showErr("password")}
+                  aria-describedby="su-pw-rules"
+                />
+                {(pwFocused || password || submitted) && (
+                  <PasswordChecklist id="su-pw-rules" password={password} showErrors={submitted} />
+                )}
+              </div>
+
+              <ReferralCodeField onChange={onReferralChange} />
+              {showErr("referral") && <p className="su-hint is-error" role="alert">{signupErrors.referral}</p>}
+
+              {message.text && (
+                <p className={message.type === "error" ? "su-alert" : "su-alert su-alert--info"} role="alert">
                   {message.text}
                 </p>
               )}
-            </div>
 
-            <p className="auth-shell-copy">
-              © {new Date().getFullYear()} Bank Statement Scanner Inc. All rights reserved. Your data is handled according to our
-              standard security protocols.
+              <button type="submit" className="su-btn su-btn-primary" disabled={loading}>
+                {loading ? "Creating your account…" : "Create free account →"}
+              </button>
+            </form>
+
+            <p className="su-legal">
+              By creating an account you agree to our{" "}
+              <Link to="/terms-of-service">Terms of Service</Link> and <Link to="/privacy-policy">Privacy Policy</Link>.
             </p>
-          </section>
-        </main>
-      </div>
+            <p className="su-alt">
+              Need more pages? <Link to="/subscribe">Get the Monthly plan: {PLAN_PAGES} pages/mo for ${PLAN_PRICE} →</Link>
+            </p>
+          </>
+        )}
+      </SignupLayout>
     );
   }
 
@@ -737,17 +467,6 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                 <GoogleLogo className="auth-btn-google-icon" />
                 <span>Google</span>
               </button>
-              {/*
-              <button
-                type="button"
-                className="auth-btn auth-btn-provider"
-                onClick={() => handleSocialLogin("apple")}
-                disabled={loading}
-              >
-                <span className="auth-provider-icon"></span>
-                <span>Apple</span>
-              </button>
-              */}
             </div>
 
             {message.text && (

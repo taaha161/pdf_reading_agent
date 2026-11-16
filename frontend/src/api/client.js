@@ -219,7 +219,8 @@ export async function notifyLogin(token) {
 export async function lookupReferral(code) {
   try {
     const res = await fetch(`${API_BASE}/api/referral/${encodeURIComponent(code)}`, { credentials: "include" });
-    return res.ok ? await res.json() : null;
+    if (res.status === 404) return { valid: false }; // unknown or inactive code
+    return res.ok ? await res.json() : null; // null: couldn't check (network/server)
   } catch {
     return null;
   }
@@ -274,6 +275,46 @@ export async function createCheckoutSession(mode, email = null, offer = null, to
   }
   const data = await res.json();
   return data.url;
+}
+
+/** Paid signup: Stripe subscription checkout with no account yet. Returns the Checkout URL. */
+export async function startPaidSignup(referralCode = null) {
+  const body = { ...getGaIds() };
+  if (referralCode) body.referral_code = referralCode;
+  if (typeof navigator !== "undefined" && navigator.globalPrivacyControl === true) body.ad_opt_out = true;
+  const res = await fetch(`${API_BASE}/api/signup/checkout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Couldn't start checkout. Please try again.");
+  }
+  return (await res.json()).url;
+}
+
+/** Paid signup: payment + account state for the /welcome page. */
+export async function getPaidSignupSession(sessionId) {
+  const res = await fetch(`${API_BASE}/api/signup/session/${encodeURIComponent(sessionId)}`);
+  if (!res.ok) return { status: res.status === 429 ? "pending" : "error" };
+  return res.json();
+}
+
+/** Paid signup: set the first password on the new account. Returns { email }. */
+export async function setPaidSignupPassword(sessionId, password) {
+  const res = await fetch(`${API_BASE}/api/signup/session/${encodeURIComponent(sessionId)}/password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many attempts. Please wait a minute and try again.");
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Couldn't save your password. Please try again.");
+  }
+  return res.json();
 }
 
 export async function deleteJobData(jobId) {

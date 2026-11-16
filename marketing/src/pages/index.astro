@@ -317,7 +317,8 @@ const steps = [
             <li>Larger uploads, up to 50 MB</li>
             <li>Monthly billing, cancel anytime</li>
           </ul>
-          <a class="btn btn-primary price-btn" href="/signup" data-cta="pricing_sub">Start with {FREE_SIGNUP_PAGES} free pages</a>
+          <a class="btn btn-primary price-btn" href="/subscribe" data-cta="pricing_sub">Get Monthly</a>
+          <p class="price-fineprint">Pay securely with Stripe, then set your password.</p>
         </article>
         <article class="price-card">
           <div class="price-label">Page packs</div>
@@ -544,6 +545,7 @@ const steps = [
   .price-list li { font-size: 15px; padding-left: 24px; position: relative; }
   .price-list li::before { content: "✓"; position: absolute; left: 0; color: var(--color-primary); font-weight: 700; }
   .price-btn { width: 100%; }
+  .price-fineprint { margin: 0.6rem 0 0; font-size: 0.8rem; color: var(--color-text-muted); text-align: center; }
   .price-examples { list-style: none; margin: 0 0 18px; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .price-examples li {
     display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px;
