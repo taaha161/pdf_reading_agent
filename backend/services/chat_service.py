@@ -31,6 +31,9 @@ HISTORY_MAX_CHARS = 1500
 # Tool filter limits (see _alts).
 MAX_FILTER_CHARS = 500
 MAX_FILTER_ALTERNATIVES = 20
+# Sub-category (groups) limits: higher than filters, since a statement can have many senders/merchants.
+MAX_GROUPS = 50
+MAX_GROUPS_CHARS = 2000
 # Rows that match no group in a grouped export.
 OTHER_GROUP = "Other"
 MAX_GROUP_LABEL_CHARS = 60
@@ -91,6 +94,10 @@ Ground rules:
   group has its own name or several search terms. Use the names the user used as group labels. The download then
   gets a Sub-category column and a totals table per sub-category plus the net total. Call the groups
   "sub-categories" when talking to the user; report each one's figures from "by_group" and the combined net.
+- When you create the sub-categories yourself ("group them into sub-categories by description"), use the shortest
+  word that identifies each group (e.g. "raast", not "raast p2p transfer from"). Before the final attach, read the
+  rows whose "group" is "Other": if any of them belongs to an existing sub-category (same keyword, merchant or
+  person), add a term for it to that sub-category and call the tool again, so Other holds only rows that fit no group.
 - If the data cannot answer the question, say so plainly instead of guessing.
 - Use the statement currency when showing amounts. Be concise; use a short list or table when listing rows.
 - When the user asks to see, list, give, find, show or export transactions (e.g. "give me transactions from John",
@@ -115,6 +122,15 @@ def _get_client() -> genai.Client:
 
 def _norm(s: Any) -> str:
     return re.sub(r"\s+", " ", str(s or "")).strip().lower()
+
+
+def _compact(s: Any) -> str:
+    """Lowercase letters and digits only, for sub-category matching.
+
+    Statements glue or split words and punctuation unpredictably ("RAAST-P2P", "Raast_P2P",
+    "-- fromFaisal Aftab", "RA AST"), so terms and row text are compared with all of it removed.
+    """
+    return re.sub(r"[\W_]+", "", str(s or "")).lower()
 
 
 def _is_debit(t: dict) -> bool:
@@ -193,13 +209,14 @@ def _match(
 def parse_groups(groups: Any) -> list[tuple[str, list[str]]]:
     """[(label, search terms)] from "John|Alice" or "Shopping=amazon,ebay|Rides=uber".
 
-    A plain item is both the label and the search term. Capped like filters (see _alts).
+    A plain item is both the label and the search term. Terms ignore case, spaces and punctuation (see _compact).
+    Capped at MAX_GROUPS groups and MAX_GROUPS_CHARS characters.
     """
     out: list[tuple[str, list[str]]] = []
-    for item in str(groups or "")[:MAX_FILTER_CHARS].split("|")[:MAX_FILTER_ALTERNATIVES]:
+    for item in str(groups or "")[:MAX_GROUPS_CHARS].split("|")[:MAX_GROUPS]:
         label, _, terms = item.partition("=")
         label = re.sub(r"\s+", " ", label).strip()[:MAX_GROUP_LABEL_CHARS]
-        terms_list = [a for a in (_norm(p) for p in (terms or label).split(",")) if a]
+        terms_list = [a for a in (_compact(p) for p in (terms or label).split(",")) if a]
         if label and terms_list and label.casefold() not in {g[0].casefold() for g in out}:
             out.append((label, terms_list))
     return out
@@ -219,7 +236,7 @@ def default_groups(description_contains: str = "", category_contains: str = "") 
 
 def group_of(t: dict, groups: list[tuple[str, list[str]]]) -> str:
     """Label of the first group with a term in the row's description or category, else OTHER_GROUP."""
-    text = _norm(t.get("description")) + " " + _norm(t.get("category"))
+    text = _compact(t.get("description")) + " " + _compact(t.get("category"))
     for label, terms in groups:
         if any(term in text for term in terms):
             return label
@@ -371,6 +388,7 @@ def get_reply(
             type: "credit" (money in) or "debit" (money out).
             groups: Optional labels for rows, "|"-separated, e.g. "John|Alice" or "Shopping=amazon,ebay|Rides=uber".
                 A row gets the first group whose term appears in its description or category, else "Other".
+                Up to 50 groups.
 
         Returns:
             count, credit_count, debit_count, credit_total, debit_total, net (credit minus debit),
@@ -406,7 +424,7 @@ def get_reply(
             date_contains: Text that must appear in the date as written in the statement, e.g. "Jul 2025"; "Jul 2025|Aug 2025" for several.
             type: "credit" (money in) or "debit" (money out).
             groups: Optional labels added as a Sub-category column with per-sub-category totals in the download, "|"-separated,
-                e.g. "John|Alice" or "Shopping=amazon,ebay|Rides=uber". Rows matching no group are "Other".
+                e.g. "John|Alice" or "Shopping=amazon,ebay|Rides=uber". Rows matching no group are "Other". Up to 50 groups.
 
         Returns:
             The same result as query_transactions (count, totals, by_category, by_group, rows), plus "attached_count".
