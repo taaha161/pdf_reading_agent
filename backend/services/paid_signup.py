@@ -142,7 +142,7 @@ def ensure_account(customer_id: str, email: str | None = None, referral_code: st
                 return None
         if not email:
             return None
-        user = get_auth_user(email=email) or _create_user(email, customer_id, name)
+        user = get_auth_user(email=email) or _create_user(email, customer_id, name, referral_code)
         if not user:
             return None
         _link_customer(user, customer_id)
@@ -159,7 +159,8 @@ def ensure_account(customer_id: str, email: str | None = None, referral_code: st
     return {"user_id": user["id"], "created_here": created_here, "existing_account": not created_here}
 
 
-def _create_user(email: str, customer_id: str, name: str | None) -> dict | None:
+def _create_user(email: str, customer_id: str, name: str | None,
+                 referral_code: str | None = None) -> dict | None:
     """Create the confirmed Supabase account for a paid signup (or find it if a racing call won)."""
     meta = {"signup_flow": FLOW, "paid_signup_customer": customer_id, "signup_plan": "subscription"}
     if name:
@@ -173,7 +174,8 @@ def _create_user(email: str, customer_id: str, name: str | None) -> dict | None:
         user = get_auth_user(user_id=r.json().get("id"))
         if user:
             logger.info("paid signup: created user %s for customer %s", user["id"], customer_id)
-            notify_signup(email, user["id"])
+            notify_signup(email, user["id"], name=(name or "").strip() or None,
+                          referral_code=referral_code or None)
             _send_welcome(email)
         return user
     if r.status_code == 422:  # already registered: another event for this checkout got here first

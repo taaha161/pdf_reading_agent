@@ -83,6 +83,7 @@ from services.xlsx_export import XLSX_MIME, summary_to_xlsx, transactions_to_xls
 from services.notifications import (
     notify_email_capture,
     notify_feedback,
+    name_from_metadata,
     notify_login,
     notify_scan,
     notify_signup,
@@ -107,6 +108,7 @@ from store import (
     ensure_free_grant,
     free_pages_available,
     get_billing,
+    get_referral_with_affiliate,
     pages_available,
     get_job,
     insert_usage_log,
@@ -1441,7 +1443,21 @@ def event_login(claims: dict = Depends(get_current_claims)):
     The frontend dedupes to avoid firing on token refresh / initial session.
     """
     try:
-        notify_login(email=claims.get("email"), user_id=claims.get("sub"))
+        user_id = claims.get("sub")
+        meta = claims.get("user_metadata") or {}
+        referral_code = None
+        try:
+            ref = get_referral_with_affiliate(user_id) if user_id else None
+            referral_code = ref["code"] if ref else None
+        except Exception as e:  # noqa: BLE001
+            logger.warning("login notification: referral lookup failed: %s", e)
+        referral_code = referral_code or normalize_code(meta.get("referral_code")) or None
+        notify_login(
+            email=claims.get("email"),
+            user_id=user_id,
+            name=name_from_metadata(meta),
+            referral_code=referral_code,
+        )
     except Exception as e:  # noqa: BLE001
         logger.warning("login notification failed (continuing): %s", e)
     return {"ok": True}
@@ -1469,7 +1485,13 @@ async def hook_user_created(request: Request):
     record = body.get("record") if isinstance(body, dict) else None
     record = record if isinstance(record, dict) else {}
     try:
-        notify_signup(email=record.get("email"), user_id=record.get("id"))
+        meta = record.get("raw_user_meta_data") or {}
+        notify_signup(
+            email=record.get("email"),
+            user_id=record.get("id"),
+            name=name_from_metadata(meta),
+            referral_code=normalize_code(meta.get("referral_code") if isinstance(meta, dict) else None) or None,
+        )
     except Exception as e:  # noqa: BLE001
         logger.warning("signup notification failed (continuing): %s", e)
     return {"ok": True}

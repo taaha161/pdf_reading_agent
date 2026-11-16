@@ -198,19 +198,41 @@ def send_paid_welcome_email(to: str, link: str, pages: int = 100) -> None:
     threading.Thread(target=_go, daemon=True).start()
 
 
-def notify_signup(email: str | None, user_id: str | None = None) -> None:
-    who = email or user_id or "unknown"
-    _notify(
-        f"New signup: {who}",
-        f"A new user signed up.\n\nEmail: {email or 'n/a'}\nUser ID: {user_id or 'n/a'}",
+def name_from_metadata(meta: dict | None) -> str | None:
+    """Display name from Supabase user metadata (email signup: full_name; Google: full_name/name)."""
+    if not isinstance(meta, dict):
+        return None
+    for key in ("full_name", "name"):
+        val = meta.get(key)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+    return None
+
+
+def _user_lines(email: str | None, user_id: str | None, name: str | None, referral_code: str | None) -> str:
+    return (
+        f"Name: {name or 'n/a'}\n"
+        f"Email: {email or 'n/a'}\n"
+        f"Referral code: {referral_code or 'none'}\n"
+        f"User ID: {user_id or 'n/a'}"
     )
 
 
-def notify_login(email: str | None, user_id: str | None = None) -> None:
-    who = email or user_id or "unknown"
+def notify_signup(email: str | None, user_id: str | None = None, *,
+                  name: str | None = None, referral_code: str | None = None) -> None:
+    who = name or email or user_id or "unknown"
+    _notify(
+        f"New signup: {who}" + (f" (ref: {referral_code})" if referral_code else ""),
+        "A new user signed up.\n\n" + _user_lines(email, user_id, name, referral_code),
+    )
+
+
+def notify_login(email: str | None, user_id: str | None = None, *,
+                 name: str | None = None, referral_code: str | None = None) -> None:
+    who = name or email or user_id or "unknown"
     _notify(
         f"User login: {who}",
-        f"A user logged in.\n\nEmail: {email or 'n/a'}\nUser ID: {user_id or 'n/a'}",
+        "A user logged in.\n\n" + _user_lines(email, user_id, name, referral_code),
     )
 
 
