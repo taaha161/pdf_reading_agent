@@ -48,7 +48,7 @@ All admin endpoints need `API_AUTH_SECRET` (the same secret the daily blog job u
 environment variables and `backend/.env`).
 
 ```bash
-export API=https://pdf-statement-api.onrender.com
+export API=https://pdf-reading-agent.onrender.com
 export API_AUTH_SECRET='<your secret>'
 
 curl -X POST $API/admin/affiliates \
