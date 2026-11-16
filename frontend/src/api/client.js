@@ -54,7 +54,10 @@ function scanError(status, detail, fallback) {
   const msg = Array.isArray(detail) ? detail.map((d) => d.msg || d).join(", ") : obj?.detail || detail || fallback;
   const e = new Error(msg);
   if (status === 403 && obj?.code === "RECAPTCHA_FAILED") e.isRecaptchaFailed = true;
-  if (status === 401 && typeof msg === "string" && msg.toLowerCase().includes("trial limit")) e.isTrialLimit = true;
+  // Anonymous free pages used up. The string check covers a backend deployed before TRIAL_LIMIT existed.
+  if (status === 401 && (obj?.code === "TRIAL_LIMIT" || (typeof msg === "string" && msg.toLowerCase().includes("trial limit")))) {
+    e.isTrialLimit = true;
+  }
   // Anonymous PDF bigger than the free pages left: sign up to scan it.
   if (status === 401 && obj?.code === "FREE_PAGES_EXCEEDED") {
     e.isTrialLimit = true;

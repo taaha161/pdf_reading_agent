@@ -272,6 +272,41 @@
   margin-bottom: 0.5rem;
 }
 
+.chat-gate {
+  margin-bottom: 0.6rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-subtle);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.chat-gate p {
+  margin: 0 0 0.6rem;
+}
+
+.chat-gate-btn {
+  padding: 0.5rem 0.9rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-gate-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.chat-gate-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .chat-tip {
   margin: 0 0 0.5rem;
   font-size: 0.75rem;

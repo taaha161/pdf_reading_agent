@@ -481,6 +481,7 @@ TRIAL_LIMIT_MESSAGE = (
     f"Create a free account to get {FREE_SIGNUP_PAGES} free pages for your first month."
 )
 FREE_PAGES_EXCEEDED_CODE = "FREE_PAGES_EXCEEDED"
+TRIAL_LIMIT_CODE = "TRIAL_LIMIT"
 INSUFFICIENT_CREDITS_CODE = "INSUFFICIENT_CREDITS"
 
 
@@ -658,7 +659,7 @@ async def _prepare_scan(
     if user_id is None:
         anon_used = _anon_pages_used(request)
         if anon_used >= FREE_ANON_PAGES:
-            raise HTTPException(status_code=401, detail=TRIAL_LIMIT_MESSAGE)
+            raise HTTPException(status_code=401, detail={"detail": TRIAL_LIMIT_MESSAGE, "code": TRIAL_LIMIT_CODE})
 
     # Normalize: only "ocr" or "vision" (for scanned PDFs)
     scanned_method_val = "ocr" if scanned_method and scanned_method.strip().lower() == "ocr" else "vision"

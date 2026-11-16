@@ -14,7 +14,7 @@ import { useUsage } from "../contexts/UsageContext";
 import { runScan, getJob, updateJobTransactions } from "../api/client";
 import "./ScannerPage.css";
 import PasswordInput from "../components/PasswordInput";
-import { takeHandedOffFile } from "../lib/fileHandoff";
+import { handOffFile, takeHandedOffFile } from "../lib/fileHandoff";
 import { trackEvent } from "../lib/analytics";
 import { fileTooLarge, formatMB, maxFileBytes, MAX_FILE_BYTES_SIGNED_IN, MB } from "../lib/fileSize";
 import { trackLinkedInConversion, LINKEDIN_TRIAL_SCAN_CONVERSION_ID } from "../lib/linkedinConversions";
@@ -76,6 +76,7 @@ function transactionsToCsvBrowser(transactions) {
 const SAMPLE_JOB_ID = "sample";
 
 const TRIAL_LIMIT_NOTICE = `You've used your ${FREE_ANON_PAGES} free pages. Create a free account to get ${FREE_SIGNUP_PAGES} free pages for your first month.`;
+const CHAT_NOTICE = `Create a free account to ask questions about your statement. Your first month includes ${FREE_SIGNUP_PAGES} pages free.`;
 const FILE_SIZE_NOTICE = `Free accounts can upload PDFs up to ${formatMB(MAX_FILE_BYTES_SIGNED_IN)}.`;
 
 const FEEDBACK_SCAN_COUNT_KEY = "bss_scan_count";
@@ -192,6 +193,19 @@ export default function ScannerPage() {
       }),
     [navigate]
   );
+  // Guest wants chat: keep their statement in this browser so it reopens after signup
+  // (login returns to /scanner?handoff=1; the dashboard offers it after email confirmation).
+  const lastFileRef = useRef(null);
+  const goToSignupForChat = useCallback(async () => {
+    const kept = lastFileRef.current ? await handOffFile(lastFileRef.current) : false;
+    navigate("/signup", {
+      state: {
+        from: { pathname: "/scanner", search: kept ? "?handoff=1" : "" },
+        notice: CHAT_NOTICE,
+        reason: "chat",
+      },
+    });
+  }, [navigate]);
   const goToSignupForFileSize = useCallback(
     () =>
       navigate("/signup", {
@@ -243,6 +257,7 @@ export default function ScannerPage() {
   }, [routeJobId, isLoggedIn]);
 
   const handleUpload = async (file, password) => {
+    lastFileRef.current = file;
     // With a password the modal stays up ("Unlocking…") until the server accepts it,
     // then closes and the page loader takes over. Without one, show the loader right away.
     const viaPassword = password != null;
@@ -352,7 +367,8 @@ export default function ScannerPage() {
   //  ?sample=1  — show the built-in sample statement's results (no upload, no trial used).
   const entryHandled = useRef(false);
   useEffect(() => {
-    if (entryHandled.current || routeJobId) return;
+    // Wait for auth so a signed-in user's handed-off file is scanned on their account, not as a guest.
+    if (entryHandled.current || routeJobId || authLoading) return;
     const handoff = searchParams.get("handoff") === "1";
     const sample = searchParams.get("sample") === "1";
     if (!handoff && !sample) return;
@@ -366,7 +382,7 @@ export default function ScannerPage() {
       if (file) handleUpload(file);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading]);
 
   const loadSample = () => {
     const rows = sampleStatement.transactions;
@@ -572,14 +588,6 @@ export default function ScannerPage() {
             {error && (
               <p className="scanner-alert error">
                 {error}
-                {error.includes("Trial limit") && (
-                  <>
-                    {" "}
-                    <button type="button" className="scanner-alert-link" onClick={() => navigate("/login")}>
-                      Log in to process more
-                    </button>
-                  </>
-                )}
                 {tooLargeUpgrade === "signup" && (
                   <>
                     {" "}
@@ -705,7 +713,7 @@ export default function ScannerPage() {
                   jobId={jobId}
                   disabled={!jobId}
                   requireLogin={!isLoggedIn}
-                  onRequireLogin={() => navigate("/login")}
+                  onRequireLogin={goToSignupForChat}
                   hideHeading
                 />
               </div>

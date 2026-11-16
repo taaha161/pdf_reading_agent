@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { exportTransactions, sendChatMessage } from "../api/client";
+import { FREE_SIGNUP_PAGES } from "../lib/pricing";
 import "./ChatPanel.css";
 
 const SUGGESTIONS = [
@@ -80,6 +81,8 @@ export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogi
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // Guest tried to ask: explain the account requirement here instead of leaving the page.
+  const [gated, setGated] = useState(false);
   const listRef = useRef(null);
 
   useEffect(() => {
@@ -89,8 +92,7 @@ export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogi
 
   const send = async (preset) => {
     if (requireLogin) {
-      setError("Please log in to chat.");
-      onRequireLogin?.();
+      setGated(true);
       return;
     }
     const text = (preset ?? input).trim();
@@ -157,6 +159,17 @@ export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogi
         )}
       </div>
       {error && <div className="chat-error">{error}</div>}
+      {requireLogin && gated && (
+        <div className="chat-gate" role="status">
+          <p>
+            Asking questions needs a free account, with {FREE_SIGNUP_PAGES} pages free your first month.
+            After you sign up, we&rsquo;ll reopen this statement so you can ask.
+          </p>
+          <button type="button" className="chat-gate-btn" onClick={() => onRequireLogin?.()}>
+            Create free account
+          </button>
+        </div>
+      )}
       {messages.length > 0 && (
         <p className="chat-tip">
           Tip: ask for any transactions, like &ldquo;all payments to John in March&rdquo;, and download them as Excel or CSV.

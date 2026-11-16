@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import { useAuth } from "../contexts/AuthContext";
 import { useJobs } from "../contexts/JobsContext";
 import { deleteJobData, deleteJobsData } from "../api/client";
+import { peekHandedOffFileName, takeHandedOffFile } from "../lib/fileHandoff";
 import "./Dashboard.css";
 
 function formatDate(isoString) {
@@ -37,10 +38,29 @@ export default function Dashboard() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState("");
+  // Job ids waiting for the user to confirm deletion (inline, not a browser dialog).
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+  const confirmBtnRef = useRef(null);
+  // A statement kept in this browser while the user signed up (e.g. to use chat).
+  const [pendingFileName, setPendingFileName] = useState(null);
 
   useEffect(() => {
     if (accessToken) loadJobs();
   }, [accessToken, loadJobs]);
+
+  useEffect(() => {
+    peekHandedOffFileName().then(setPendingFileName);
+  }, []);
+
+  useEffect(() => {
+    if (pendingDelete) confirmBtnRef.current?.focus();
+  }, [pendingDelete]);
+
+  const dismissPendingFile = () => {
+    takeHandedOffFile(); // deletes it from this browser
+    setPendingFileName(null);
+  };
 
   const toggleSelect = (id) => {
     setSelectedIds((prev) => {
@@ -59,31 +79,35 @@ export default function Dashboard() {
     else setSelectedIds(new Set(jobsWithPayload.map((j) => j.id)));
   };
 
-  const handleDeleteOne = async (jobId, e) => {
+  const handleDeleteOne = (jobId, e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!window.confirm("Delete stored data for this job? The job will remain in your list (for usage count).")) return;
-    setDeleting(true);
-    try {
-      await deleteJobData(jobId);
-      refreshJobs();
-    } catch (err) {
-      alert(err.message || "Failed to delete job data");
-    } finally {
-      setDeleting(false);
-    }
+    setDeleteError(null);
+    setPendingDelete([jobId]);
   };
 
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     if (selectedIds.size === 0) return;
-    if (!window.confirm(`Delete stored data for ${selectedIds.size} job(s)? Jobs will remain in your list (for usage count).`)) return;
+    setDeleteError(null);
+    setPendingDelete(Array.from(selectedIds));
+  };
+
+  const confirmDelete = async () => {
+    const ids = pendingDelete;
+    if (!ids?.length) return;
     setDeleting(true);
     try {
-      await deleteJobsData(Array.from(selectedIds));
-      setSelectedIds(new Set());
+      if (ids.length === 1) await deleteJobData(ids[0]);
+      else await deleteJobsData(ids);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+      setPendingDelete(null);
       refreshJobs();
     } catch (err) {
-      alert(err.message || "Failed to delete job data");
+      setDeleteError(`Couldn't delete the data: ${err.message || "please try again"}. Nothing was removed.`);
     } finally {
       setDeleting(false);
     }
@@ -130,6 +154,20 @@ export default function Dashboard() {
                 <Link to="/login">Log in</Link>
               </p>
             )}
+          </div>
+        )}
+
+        {pendingFileName && (
+          <div className="dashboard-resume" role="status">
+            <p>
+              <strong>{pendingFileName}</strong> is ready to scan on your account.
+            </p>
+            <div className="dashboard-resume-actions">
+              <Link to="/scanner?handoff=1" className="dashboard-btn dashboard-btn-primary">Scan it now</Link>
+              <button type="button" className="dashboard-btn dashboard-btn-secondary" onClick={dismissPendingFile}>
+                Dismiss
+              </button>
+            </div>
           </div>
         )}
 
@@ -204,6 +242,45 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {deleteError && (
+                <div className="dashboard-alert" role="alert">{deleteError}</div>
+              )}
+
+              {pendingDelete && (
+                <div
+                  className="dashboard-confirm"
+                  role="alertdialog"
+                  aria-labelledby="dashboard-confirm-text"
+                  onKeyDown={(e) => e.key === "Escape" && !deleting && setPendingDelete(null)}
+                >
+                  <p id="dashboard-confirm-text">
+                    Delete the saved transactions for{" "}
+                    {pendingDelete.length === 1 ? "this statement" : `${pendingDelete.length} statements`}? This can&rsquo;t be
+                    undone. {pendingDelete.length === 1 ? "The statement stays" : "They stay"} in your list and still
+                    count toward pages used.
+                  </p>
+                  <div className="dashboard-confirm-actions">
+                    <button
+                      ref={confirmBtnRef}
+                      type="button"
+                      className="dashboard-btn dashboard-btn-danger"
+                      onClick={confirmDelete}
+                      disabled={deleting}
+                    >
+                      {deleting ? "Deleting…" : "Delete data"}
+                    </button>
+                    <button
+                      type="button"
+                      className="dashboard-btn dashboard-btn-secondary"
+                      onClick={() => setPendingDelete(null)}
+                      disabled={deleting}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {jobs.length === 0 ? (
                 <div className="dashboard-empty">
                   <p className="dashboard-empty-title">No jobs yet</p>
@@ -262,7 +339,7 @@ export default function Dashboard() {
                                 className="dashboard-table-action-btn"
                                 onClick={(e) => handleDeleteOne(job.id, e)}
                                 disabled={deleting || !job.has_payload}
-                                aria-label="Delete job data"
+                                aria-label={`Delete saved data for statement from ${formatDate(job.created_at)}`}
                               >
                                 <TrashIcon />
                               </button>
@@ -284,7 +361,7 @@ export default function Dashboard() {
                             onClick={handleDeleteSelected}
                             disabled={deleting}
                           >
-                            {deleting ? "Deleting…" : `Delete ${selectedIds.size} selected`}
+                            {`Delete ${selectedIds.size} selected`}
                           </button>
                         </>
                       )}

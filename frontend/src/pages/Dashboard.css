@@ -73,6 +73,76 @@
   background: var(--color-primary-subtle);
 }
 
+.dashboard-btn {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.dashboard-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dashboard-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.dashboard-btn-danger {
+  color: var(--color-on-primary);
+  background: var(--color-error);
+}
+
+.dashboard-btn-danger:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+/* Inline delete confirmation (replaces the browser confirm dialog) */
+.dashboard-confirm {
+  margin-bottom: 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-md);
+  background: var(--color-error-bg);
+  color: var(--color-text);
+  font-size: 0.925rem;
+  line-height: 1.5;
+}
+
+.dashboard-confirm p {
+  margin: 0 0 0.75rem;
+  max-width: 70ch;
+}
+
+.dashboard-confirm-actions,
+.dashboard-resume-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* A statement kept while the user signed up, ready to scan */
+.dashboard-resume {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--color-primary-muted);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-subtle);
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.dashboard-resume p {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .dashboard-alert {
   padding: 0.875rem 1rem;
   margin-bottom: 1.5rem;

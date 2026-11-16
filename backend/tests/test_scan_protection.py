@@ -77,7 +77,8 @@ def test_anonymous_free_pages_are_per_ip_and_ignore_cookies(anon_client):
     anon_client.pages = 1
     r = _scan(anon_client, "1.1.1.1")
     assert r.status_code == 401
-    assert "trial limit" in r.json()["detail"].lower()
+    assert r.json()["detail"]["code"] == "TRIAL_LIMIT"
+    assert "trial limit" in r.json()["detail"]["detail"].lower()
 
     # A different IP has its own allowance.
     assert _scan(anon_client, "2.2.2.2").status_code == 200
