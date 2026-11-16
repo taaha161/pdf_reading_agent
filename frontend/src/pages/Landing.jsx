@@ -91,7 +91,7 @@ export default function Landing() {
           name: "Is my financial data secure?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Yes. Bank Statement Scanner uses bank-grade security. You can also use incognito mode to process statements without saving them to your account.",
+            text: "Yes. Uploads and downloads are encrypted over HTTPS, and payments are handled by Stripe, so we never see your card. You can also use incognito mode to process a statement without saving it to your account.",
           },
         },
       ],
@@ -265,16 +265,16 @@ export default function Landing() {
             </div>
             <div className="landing-hero-stats" id="results">
               <div>
-                <div className="landing-hero-stat-value">12k+</div>
-                <div className="landing-hero-stat-label">Finance teams</div>
+                <div className="landing-hero-stat-value">{FREE_ANON_PAGES} pages</div>
+                <div className="landing-hero-stat-label">Free without an account</div>
               </div>
               <div>
-                <div className="landing-hero-stat-value">8 hrs</div>
-                <div className="landing-hero-stat-label">Saved per client</div>
+                <div className="landing-hero-stat-value">{FREE_SIGNUP_PAGES} pages</div>
+                <div className="landing-hero-stat-label">Free your first month</div>
               </div>
               <div>
-                <div className="landing-hero-stat-value">Upto 100%</div>
-                <div className="landing-hero-stat-label">Extraction accuracy</div>
+                <div className="landing-hero-stat-value">Excel &amp; CSV</div>
+                <div className="landing-hero-stat-label">Export formats</div>
               </div>
             </div>
           </div>
@@ -283,7 +283,7 @@ export default function Landing() {
             <div className="landing-upload-card" aria-label="Upload bank statements">
               <div className="landing-upload-header">
                 <span className="landing-upload-badge">Drag &amp; drop bank statements</span>
-                <span className="landing-upload-sub">PDF, scans, or photos</span>
+                <span className="landing-upload-sub">Digital or scanned PDFs</span>
               </div>
               <div
                 className="landing-upload-dropzone"
@@ -369,7 +369,7 @@ export default function Landing() {
               <div>
                 <h3 className="landing-feature-title">AI-powered extraction</h3>
                 <p className="landing-feature-text">
-                  Instantly pull line-item data from any computer generated or photo scanned PDF with upto 100% accuracy.
+                  Pull every line item from digital or scanned PDF statements, including password-protected ones.
                 </p>
               </div>
             </article>
@@ -399,7 +399,7 @@ export default function Landing() {
               <div>
                 <h3 className="landing-feature-title">Secure &amp; private</h3>
                 <p className="landing-feature-text">
-                  Bank-grade security. Go incognito mode to protect your privacy.
+                  Encrypted over HTTPS. Use incognito mode to process a statement without saving it.
                 </p>
               </div>
             </article>

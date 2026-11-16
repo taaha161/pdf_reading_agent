@@ -326,7 +326,7 @@ export const competitors: Competitor[] = [
       },
     ],
     fit: {
-      us: ['Your statements are scanned or photographed', 'You want transactions ready to use, not raw tables', 'You convert more than the odd statement', 'You want categories added'],
+      us: ['Your statements are scanned PDFs', 'You want transactions ready to use, not raw tables', 'You convert more than the odd statement', 'You want categories added'],
       them: ['You want something free', 'Your statements are clean digital PDFs', 'Your files must stay on your computer', 'You don’t mind cleanup in Excel'],
     },
     faqs: [

@@ -9,8 +9,8 @@ import "./AuthPage.css";
 import PasswordInput from "../components/PasswordInput";
 import PasswordChecklist from "../components/PasswordChecklist";
 import ReferralCodeField from "../components/ReferralCodeField";
-import SignupLayout, { BenefitList, SecurityList, SocialProof, ValuePanel } from "../components/SignupLayout";
-import { GoogleLogo, TrustRow } from "../components/AuthBits";
+import SignupLayout, { BenefitList, SecurityList, ValuePanel } from "../components/SignupLayout";
+import { GoogleLogo } from "../components/AuthBits";
 import { claimOfferForUser } from "../lib/offer";
 import { getAttribution } from "../lib/attribution";
 import { setPendingReferral } from "../lib/referral";
@@ -42,7 +42,6 @@ function SignupAside({ trialExhausted }) {
           <li className="is-free"><strong>+{FREE_SIGNUP_PAGES} pages</strong><span>Free with an account</span></li>
         </ol>
         <SecurityList />
-        <SocialProof />
       </ValuePanel>
     );
   }
@@ -60,7 +59,6 @@ function SignupAside({ trialExhausted }) {
         ]}
       />
       <SecurityList />
-      <SocialProof />
     </ValuePanel>
   );
 }
@@ -497,10 +495,9 @@ export default function AuthPage({ mode: initialMode = "login" }) {
             </div>
             <h2 className="auth-right-title">Automate your financial data entry today.</h2>
             <p className="auth-right-body">
-              Connect your statements, scan and categorize transactions with AI, and sync everything to your favorite
-              accounting software in seconds.
+              Upload a PDF statement, get every transaction categorized by AI, and download Excel or CSV ready to
+              import into QuickBooks, Xero or your own workbook.
             </p>
-            <TrustRow />
           </div>
         </section>
       </main>

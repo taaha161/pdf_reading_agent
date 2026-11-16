@@ -12,20 +12,3 @@ export function GoogleLogo({ className, size = 20 }) {
   );
 }
 
-/** Avatars + "Trusted by 10,000+" social proof. */
-export function TrustRow() {
-  return (
-    <div className="auth-trust-row">
-      <div className="auth-avatar-group" aria-hidden>
-        {/* Add your images to public/auth-avatars/ as avatar-1.jpg, avatar-2.jpg, avatar-3.jpg */}
-        <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-1.jpg)" }} />
-        <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-2.jpg)" }} />
-        <span className="auth-avatar auth-avatar--img" style={{ backgroundImage: "url(/auth-avatars/avatar-3.jpg)" }} />
-        <span className="auth-badge">10k+</span>
-      </div>
-      <div className="auth-trust-copy">
-        <span className="auth-trust-label">Trusted by 10,000+ finance professionals</span>
-      </div>
-    </div>
-  );
-}

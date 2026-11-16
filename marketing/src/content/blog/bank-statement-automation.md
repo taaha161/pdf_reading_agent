@@ -92,7 +92,7 @@ Gather your source files in a single folder. Check that files are not password-p
 Upload your files to an automated bank statement scanner. If dealing with extensive multi-year audits or high-volume client onboarding, choose a tool that allows you to [convert multiple bank statements in bulk](/blog/convert-multiple-bank-statements-in-bulk). This removes the need to process documents individually.
 
 ### Step 3: Run Layout and Mathematical Validation
-Once the extraction engine parses the statement, review the summary balance checks. Confirm that:
+Once the extraction engine parses the statement, check the totals yourself. Confirm that:
 - Beginning Balance + Total Deposits - Total Withdrawals = Ending Balance.
 - Dates adhere to a uniform calendar format (such as `YYYY-MM-DD`).
 - Debit and credit columns are parsed into distinct signed values or dedicated fields according to your ledger requirements.

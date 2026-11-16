@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { createCheckoutSession, getBillingBalance, startPaidSignup } from "../api/client";
 import { getPendingReferral } from "../lib/referral";
 import { getOffer } from "../lib/offer";
-import SignupLayout, { BenefitList, SecurityList, SocialProof, ValuePanel } from "../components/SignupLayout";
+import SignupLayout, { BenefitList, SecurityList, ValuePanel } from "../components/SignupLayout";
 import { PLAN_PAGES, PLAN_PRICE } from "../lib/pricing";
 
 /**
@@ -49,7 +49,6 @@ export default function SubscribePage() {
         <ValuePanel eyebrow="Monthly plan" title={`$${PLAN_PRICE}/month for ${PLAN_PAGES} pages`} lead="Cancel anytime. No annual contract.">
           <BenefitList items={[`${PLAN_PAGES} statement pages every month`, "CSV & Excel export, AI categorization", "Ask your statements questions"]} />
           <SecurityList />
-          <SocialProof />
         </ValuePanel>
       }
     >

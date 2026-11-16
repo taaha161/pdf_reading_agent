@@ -30,7 +30,7 @@ faqs:
   - q: "Does this work for TD Canada Trust?"
     a: "Yes. Statements from TD Canada Trust and other banks convert the same way. This page covers TD Bank in the US."
   - q: "Will this work on a scanned TD statement?"
-    a: "Yes. Scanned and photographed statements go through OCR. Choose accurate mode for faint or skewed scans."
+    a: "Yes. Scanned PDFs go through OCR, including phone photos saved as a PDF. Choose accurate mode for faint or skewed scans."
 sources:
   - label: "TD Bank: Online Banking and statements (official)"
     url: "https://www.td.com/us/en/personal-banking/online-banking"

@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import logo from "../assets/pdf_to_excel_logo.png";
-import { TrustRow } from "./AuthBits";
 import "./SignupLayout.css";
 
 const Check = () => (
@@ -89,10 +88,3 @@ export function SecurityList() {
   );
 }
 
-export function SocialProof() {
-  return (
-    <div className="su-proof">
-      <TrustRow />
-    </div>
-  );
-}

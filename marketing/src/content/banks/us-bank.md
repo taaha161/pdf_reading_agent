@@ -28,7 +28,7 @@ faqs:
   - q: "Can I download transactions in the U.S. Bank app?"
     a: "No. U.S. Bank says transaction downloads aren't available in the mobile app. Use online banking in a browser."
   - q: "Will this work on a scanned U.S. Bank statement?"
-    a: "Yes. Scanned and photographed statements go through OCR. Choose accurate mode for faint or skewed scans."
+    a: "Yes. Scanned PDFs go through OCR, including phone photos saved as a PDF. Choose accurate mode for faint or skewed scans."
   - q: "Can I import the result into QuickBooks or Xero?"
     a: "Export to CSV and use your accounting software's bank-statement import. Map the date, description, and amount columns when prompted."
 sources:

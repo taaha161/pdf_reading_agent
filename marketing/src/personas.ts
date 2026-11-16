@@ -23,12 +23,12 @@ export const PERSONAS: Persona[] = [
       'Convert client bank statement PDFs into clean, categorized Excel or CSV files in seconds. Built for accountants and CPA firms. 100 pages free your first month.',
     eyebrow: 'For accountants and CPA firms',
     h1: 'Spend tax season on advice, not retyping client statements.',
-    sub: 'Upload a client’s bank or credit card statement. Get every transaction back in clean, categorized columns, checked against the statement’s balances, ready for your workpapers or QuickBooks.',
+    sub: 'Upload a client’s bank or credit card statement. Get every transaction back in clean, categorized columns, ready for your workpapers or QuickBooks.',
     pains: [
       { old: 'Clients send a stack of PDFs instead of a bank feed', new: 'Turn each PDF into rows in seconds' },
       { old: 'Staff hours lost to keying dates and amounts', new: 'Every transaction extracted and categorized' },
-      { old: 'A typo throws off the reconciliation', new: 'Opening + credits − debits checked against closing' },
-      { old: 'Scanned paper statements from older years', new: 'Scans and photos go through OCR' },
+      { old: 'Hunting a statement for every payment to one payee', new: 'Ask for them in plain English and export just those rows' },
+      { old: 'Scanned paper statements from older years', new: 'Scanned PDFs go through OCR' },
     ],
     guide: 'bank-statement-scanner-for-accountants',
     faqs: [
@@ -58,12 +58,12 @@ export const PERSONAS: Persona[] = [
       'Turn client bank statement PDFs into categorized spreadsheets ready for QuickBooks or Xero. Built for bookkeepers catching up or closing the month. 100 pages free your first month.',
     eyebrow: 'For bookkeepers',
     h1: 'Catch-up bookkeeping without retyping a single statement.',
-    sub: 'Upload the PDF. Get a categorized spreadsheet ready for QuickBooks or Xero in seconds, with balances checked against the statement so nothing slips through.',
+    sub: 'Upload the PDF. Get a categorized spreadsheet ready for QuickBooks or Xero in seconds, so you review a finished file instead of typing one.',
     pains: [
       { old: 'Bank feeds only reach back a few months', new: 'Convert PDF statements from any year' },
       { old: 'Copy-paste from PDFs breaks the columns', new: 'Clean date, description, amount and type columns' },
       { old: 'Categorizing hundreds of rows by hand', new: 'Every row categorized automatically' },
-      { old: 'Finding the one missing transaction', new: 'Balance check shows when something is off' },
+      { old: 'Pulling every charge from one vendor', new: 'Ask for them in plain English and export just those rows' },
     ],
     guide: 'automate-monthly-bookkeeping-data-entry',
     faqs: [
@@ -77,7 +77,7 @@ export const PERSONAS: Persona[] = [
       },
       {
         q: 'Does it work with scanned statements?',
-        a: 'Yes. Scanned PDFs and photos go through OCR. For low-quality copies, pick Accurate mode.',
+        a: 'Yes. Scanned PDFs go through OCR. For low-quality copies, pick Accurate mode. Phone photos work once saved as a PDF.',
       },
       {
         q: 'What does it cost?',
