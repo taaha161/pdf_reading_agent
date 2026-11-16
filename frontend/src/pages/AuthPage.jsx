@@ -68,7 +68,8 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const location = useLocation();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const from = location.state?.from?.pathname || "/dashboard";
+  const fromLoc = location.state?.from;
+  const from = fromLoc?.pathname ? `${fromLoc.pathname}${fromLoc.search || ""}` : "/dashboard";
   const notice = location.state?.notice;
   // Redirected from the scanner after the anonymous free pages ran out.
   const trialExhausted = location.state?.reason === "trial-exhausted";
@@ -104,9 +105,9 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   // Redirect if already logged in (skip on reset-password; that page handles its own logic)
   useEffect(() => {
     if (user && view !== "reset-password") {
-      navigate("/dashboard", { replace: true });
+      navigate(from, { replace: true });
     }
-  }, [user, view, navigate]);
+  }, [user, view, navigate, from]);
 
   useEffect(() => () => clearInterval(resendTimer.current), []);
 

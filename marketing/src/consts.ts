@@ -15,6 +15,14 @@ export function canonical(path: string): string {
 }
 
 /**
+ * Upload size limits in MB by tier. Match frontend/src/lib/fileSize.js and backend/main.py
+ * (the server enforces them; /scanner shows each visitor their own limit).
+ */
+export const MAX_UPLOAD_MB_GUEST = 20;
+export const MAX_UPLOAD_MB_FREE_ACCOUNT = 30;
+export const MAX_UPLOAD_MB_PAID = 50;
+
+/**
  * Page-based pricing. Matches backend/services/billing.py and frontend/src/lib/pricing.js.
  * A "page" is one PDF page; High accuracy mode uses ACCURATE_MULTIPLIER pages per PDF page.
  */

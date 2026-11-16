@@ -7,6 +7,8 @@
  * Dropping a file anywhere on the page also lands here, so a stray drop never opens the
  * PDF in the browser and takes the visitor off the site.
  */
+import { MAX_UPLOAD_MB_GUEST, MAX_UPLOAD_MB_PAID } from '../consts';
+
 interface Props {
   hint?: string;
   cta?: string;
@@ -20,7 +22,7 @@ const {
 } = Astro.props;
 ---
 
-<div class="upload-card" data-dropzone data-cta-name={cta} data-params={params}>
+<div class="upload-card" data-dropzone data-cta-name={cta} data-params={params} data-max-mb={MAX_UPLOAD_MB_PAID}>
   <span class="upload-badge">Drag &amp; drop bank statements</span>
   <span class="upload-sub">Digital or scanned PDFs</span>
   <div class="upload-drop" role="button" tabindex="0" aria-describedby="dz-hint" aria-label="Upload a bank statement">
@@ -33,7 +35,7 @@ const {
     <span class="upload-title" data-dz-title>Drop a statement here</span>
     <span class="upload-hint" id="dz-hint">{hint}</span>
     <span class="btn btn-primary upload-btn">Upload PDF for free</span>
-    <span class="upload-limits"><span>PDF only</span> · <span>Up to 20 MB free, 50 MB on Monthly</span></span>
+    <span class="upload-limits"><span>PDF only</span> · <span>Up to {MAX_UPLOAD_MB_GUEST} MB free, {MAX_UPLOAD_MB_PAID} MB on Monthly</span></span>
     <span class="upload-error" data-dz-error role="alert" hidden></span>
   </div>
   <input type="file" accept="application/pdf,.pdf" data-dz-input hidden />
@@ -42,9 +44,11 @@ const {
 <script>
   import { handOffFile } from '../lib/fileHandoff';
 
-  const MAX_BYTES = 50 * 1024 * 1024;
   const zone = document.querySelector<HTMLElement>('[data-dropzone]');
   if (zone) {
+    // Largest file any plan accepts; /scanner then checks this visitor's own limit.
+    const maxMb = Number(zone.dataset.maxMb) || 50;
+    const MAX_BYTES = maxMb * 1024 * 1024;
     const drop = zone.querySelector<HTMLElement>('.upload-drop')!;
     const input = zone.querySelector<HTMLInputElement>('[data-dz-input]')!;
     const title = zone.querySelector<HTMLElement>('[data-dz-title]')!;
@@ -62,7 +66,7 @@ const {
       err.hidden = true;
       const ok = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
       if (!ok) return showError('Only PDF files are supported. Scan paper statements or photos to PDF first.');
-      if (file.size > MAX_BYTES) return showError('That file is over 50 MB, the largest we accept. Try splitting it into smaller PDFs.');
+      if (file.size > MAX_BYTES) return showError(`That file is over ${maxMb} MB, the largest we accept. Try splitting it into smaller PDFs.`);
       busy = true;
       zone.classList.add('is-busy');
       title.textContent = `Opening ${file.name}…`;
