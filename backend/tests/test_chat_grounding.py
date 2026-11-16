@@ -187,7 +187,7 @@ def test_parse_groups_plain_and_labelled():
         ("Shopping", ["amazon", "ebay"]), ("Rides", ["uber"]), ("john", ["john"]),
     ]
     assert cs.parse_groups("") == []
-    assert len(cs.parse_groups("|".join(f"g{i}" for i in range(50)))) == cs.MAX_FILTER_ALTERNATIVES
+    assert len(cs.parse_groups("|".join(f"g{i}" for i in range(80)))) == cs.MAX_GROUPS == 50
 
 
 def test_query_reports_totals_per_group():
@@ -217,6 +217,34 @@ def test_several_names_without_groups_are_grouped_by_name(monkeypatch):
     _fake_client(monkeypatch, lambda t: t["attach_transactions"](description_contains="wajid ali|alice khan"))
     _, rows = cs.get_reply({"transactions": GROUP_TX}, "transactions for Wajid Ali and Alice Khan")
     assert [r["group"] for r in rows] == ["Wajid Ali", "Wajid Ali", "Alice Khan"]
+
+
+RAAST_TX = [
+    {"date": "01 Sep 2025", "description": "RAAST P2P Fund Transfer from ALI", "amount": "10", "type": "credit", "category": "Raast P2P - Received"},
+    {"date": "02 Sep 2025", "description": "RAAST-P2P/IN SARA", "amount": "20", "type": "credit", "category": "Transfers In"},
+    {"date": "03 Sep 2025", "description": "Raast_P2P credit OMAR", "amount": "30", "type": "credit", "category": "Transfers In"},
+    {"date": "04 Sep 2025", "description": "Salary SEP", "amount": "500", "type": "credit", "category": "Salary"},
+    {"date": "05 Sep 2025", "description": "Raast P2P Fund transfer -- fromFaisal Aftab RAAST PY001", "amount": "40", "type": "credit", "category": "Raast P2P - Received"},
+]
+
+
+def test_group_terms_ignore_glued_and_split_words():
+    rows = cs.export_rows(RAAST_TX[-1:], groups="Faisal=from faisal aftab")
+    assert rows[0]["group"] == "Faisal"
+    rows = cs.export_rows([{**RAAST_TX[0], "description": "RA AST P2P from ALI"}], groups="Raast")
+    assert rows[0]["group"] == "Raast"
+
+
+def test_group_terms_ignore_punctuation():
+    rows = cs.export_rows(RAAST_TX, type="credit", groups="Raast=raast p2p|Salary")
+    assert [r["group"] for r in rows] == ["Raast", "Raast", "Raast", "Salary", "Raast"]
+    r = cs.query_rows(RAAST_TX, type="credit", groups="Raast=RAAST-P2P|Salary")
+    assert r["by_group"]["Raast"] == {"count": 4, "credit_total": 100.0, "debit_total": 0.0, "net": 100.0}
+    assert "Other" not in r["by_group"]
+
+
+def test_prompt_tells_model_to_recheck_other_group():
+    assert 'whose "group" is "Other"' in cs.SYSTEM_INSTRUCTION
 
 
 def test_single_filter_value_adds_no_group_column(monkeypatch):
