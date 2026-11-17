@@ -103,6 +103,7 @@ from services.recaptcha import verify_recaptcha
 from services.statement_agent import extract_and_categorize
 from store import (
     get_auth_user,
+    get_job_owner,
     create_job_id,
     deduct_pages,
     delete_user_data,
@@ -1129,8 +1130,25 @@ def submit_feedback(
         record_feedback(user_id, job_id, body.rating, comment, contact_ok, _client_ip_hash(request))
     except Exception as e:
         logger.warning("scan_feedback insert failed (continuing): %s", e)
+    # Identify the submitter for the team email: logged-in user, else the owner of the linked job.
+    owner_id, via_job_link = user_id, False
+    if not owner_id and job_id:
+        try:
+            owner_id, via_job_link = get_job_owner(job_id), True
+        except Exception as e:  # noqa: BLE001
+            logger.warning("feedback job owner lookup failed (continuing): %s", e)
+    who = None
+    if owner_id:
+        try:
+            who = get_auth_user(user_id=owner_id)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("feedback user lookup failed (continuing): %s", e)
     try:
-        notify_feedback(body.rating, comment, user_id, contact_ok)
+        notify_feedback(
+            body.rating, comment, owner_id, contact_ok,
+            email=(who or {}).get("email"), name=(who or {}).get("full_name"),
+            job_id=job_id, via_job_link=via_job_link and bool(who),
+        )
     except Exception as e:  # noqa: BLE001
         logger.warning("feedback notification failed (continuing): %s", e)
     return {"ok": True}
