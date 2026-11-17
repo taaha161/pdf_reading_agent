@@ -10,6 +10,8 @@ from typing import Any, Callable
 from google import genai
 from google.genai.types import FinishReason, GenerateContentConfig, ThinkingConfig, ThinkingLevel
 
+from services.balances import fill_running_balances, parse_money
+
 logger = logging.getLogger("statement_agent")
 
 CATEGORIES = [
@@ -343,6 +345,22 @@ def _extract_chunk(
     return [t for t in salvaged if isinstance(t, dict)], currency
 
 
+def _drop_page_break_rows(transactions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Remove rows that moved no money (amount blank or 0), e.g. "Carried forward"/"Brought forward"
+    page-break rows that slipped through as transactions. A printed balance on such a row moves to
+    the row before (when it has none), so it still anchors the running balance. Rows whose amount
+    is unreadable text are kept so nothing real is lost."""
+    kept: list[dict[str, Any]] = []
+    for t in transactions:
+        raw = str(t.get("amount") or "").strip()
+        if not raw or parse_money(raw) == 0:
+            if kept and t.get("balance") and not kept[-1].get("balance"):
+                kept[-1]["balance"] = t["balance"]
+            continue
+        kept.append(t)
+    return kept
+
+
 def extract_and_categorize(
     raw_text: str,
     on_chunk: Callable[[int, int], None] | None = None,
@@ -369,10 +387,13 @@ def extract_and_categorize(
         f"{categories_str}. "
         + CATEGORY_GUIDANCE
         + ' For each data row: use Date for "date", Description for "description" (preserve exactly). '
-        "If Credit column has a non-zero value use type \"credit\" and amount as that value; if Debit has non-zero use type \"debit\" and amount as absolute value. Ignore Balance. "
+        "If Credit column has a non-zero value use type \"credit\" and amount as that value; if Debit has non-zero use type \"debit\" and amount as absolute value. "
+        "If the statement has a single Amount column instead, use its sign or Dr/Cr marker for type (negative, \"-\", \"Dr\" or brackets = debit) and output amount as the absolute value. "
+        "For \"balance\" copy the Balance printed on that same row exactly as shown, including any Cr/Dr marker or minus sign (e.g. \"6,103.27 Cr\"); use \"\" when that row shows no balance. Never calculate a balance yourself. "
         "Rows that look identical (same date, description and amount) are separate transactions: output every one, never merge or skip repeats. "
         "EXCLUDE: Opening Balance, Closing Balance, summary/footer tables (Total Deposit, End Of Statement), header rows. "
-        "Output format: First, a valid JSON array of objects. Each object must have: \"date\", \"description\", \"amount\", \"type\" (\"credit\" or \"debit\"), \"category\" (one of the list above). "
+        "\"Carried forward\" and \"Brought forward\" rows are page breaks, not transactions: skip them. A description cut off by a page break continues on the next page; join the two parts into ONE transaction. "
+        "Output format: First, a valid JSON array of objects. Each object must have: \"date\", \"description\", \"amount\", \"type\" (\"credit\" or \"debit\"), \"balance\", \"category\" (one of the list above). "
         "Output the complete array—no truncation. Then on the next line write exactly: CURRENCY: <currency code e.g. USD PKR GBP or UNKNOWN if not found in the statement>. "
         "If no transactions are found, output [] then CURRENCY: UNKNOWN."
     )
@@ -437,7 +458,8 @@ def extract_and_categorize(
         )
         fallback_system = (
             "The input is markdown from a bank statement with tables (Date, Description, Debit, Credit). "
-            "Extract EVERY transaction row: date, description, amount, type (\"credit\" or \"debit\"). "
+            "Extract EVERY transaction row: date, description, amount, type (\"credit\" or \"debit\"), "
+            "balance (the Balance printed on that row exactly as shown, or \"\" if none). "
             "Skip Opening/Closing balance and summary rows. Return ONLY a JSON array."
         )
         fallback_out = ""
@@ -510,8 +532,11 @@ def extract_and_categorize(
             if str(t.get("type", "")).lower() in ("credit", "cr")
             else "debit",
             "category": cat,
+            "balance": str(t.get("balance") or "").strip(),
         })
-    transactions = normalized
+    normalized = _drop_page_break_rows(normalized)
+    # Printed balances kept; rows without one get a running balance worked out from them.
+    transactions = fill_running_balances(normalized)
     logger.info(
         "extract_and_categorize: done, %d transactions, currency=%s (%.2f s total)",
         len(transactions),

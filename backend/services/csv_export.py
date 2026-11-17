@@ -4,7 +4,10 @@ import io
 import re
 from typing import Any
 
+# Stored/internal row shape (chat context, trial CSV round-trip).
 FIELDS = ["date", "description", "amount", "type", "category"]
+# Downloaded files are laid out like a statement: separate Debit and Credit columns, then Balance.
+DEBIT, CREDIT, BALANCE = "debit", "credit", "balance"
 GROUP_FIELD = "group"
 _NUMBER_RE = re.compile(r"^-?\d+(\.\d+)?$")
 
@@ -24,16 +27,43 @@ def amount_value(raw: Any) -> float | str:
     return float(text) if _NUMBER_RE.match(text) else str(raw or "")
 
 
+def money_value(raw: Any) -> float | str:
+    """Like amount_value but without the sign: Debit/Credit columns hold sizes, the column says
+    which way the money went."""
+    value = amount_value(raw)
+    return abs(value) if isinstance(value, float) else value
+
+
+def has_balances(transactions: list[dict[str, Any]]) -> bool:
+    """True when any row carries a balance (statements without balances get no Balance column)."""
+    return any(str(t.get(BALANCE) or "").strip() for t in transactions)
+
+
+def statement_row(t: dict[str, Any]) -> dict[str, Any]:
+    """A stored row with its amount moved into the Debit or Credit column (the other left blank)."""
+    kind = str(t.get("type") or "").strip().lower()
+    amount = money_value(t.get("amount"))
+    row = {**t, DEBIT: "", CREDIT: ""}
+    if kind == "credit":
+        row[CREDIT] = amount
+    elif kind == "debit":
+        row[DEBIT] = amount
+    else:  # unknown direction: keep the printed amount where it can be seen
+        row[DEBIT] = amount
+    row[BALANCE] = amount_value(t.get(BALANCE)) if str(t.get(BALANCE) or "").strip() else ""
+    return row
+
+
 def export_totals(transactions: list[dict[str, Any]]) -> tuple[int, float, float]:
     """(row count, credit total, debit total) over numeric amounts, matching the spreadsheet formulas."""
     credit = debit = 0.0
     for t in transactions:
-        value = amount_value(t.get("amount"))
+        value = money_value(t.get("amount"))
         if isinstance(value, float):
             kind = str(t.get("type") or "").strip().lower()
             if kind == "credit":
                 credit += value
-            elif kind == "debit":
+            else:  # debit, or unknown (shown in the Debit column, see statement_row)
                 debit += value
     return len(transactions), round(credit, 2), round(debit, 2)
 
@@ -72,29 +102,49 @@ def has_groups(transactions: list[dict[str, Any]]) -> bool:
     return any(str(t.get(GROUP_FIELD) or "").strip() for t in transactions)
 
 
-def export_fields(include_categories: bool = True, include_groups: bool = False) -> list[str]:
-    """Columns for an export; the uncategorized variant drops the category column, and grouped
-    chat exports add a group column (shown as "Sub-category") at the end."""
-    fields = FIELDS if include_categories else [f for f in FIELDS if f != "category"]
-    return fields + [GROUP_FIELD] if include_groups else fields
+def export_fields(
+    include_categories: bool = True, include_groups: bool = False, include_balance: bool = False
+) -> list[str]:
+    """Columns of a downloaded file: Date, Description, Debit, Credit[, Balance][, Category][, Sub-category].
+    Balance only when the statement had balances; the uncategorized variant drops Category; grouped
+    chat exports add the group column (shown as "Sub-category") at the end."""
+    fields = ["date", "description", DEBIT, CREDIT]
+    if include_balance:
+        fields.append(BALANCE)
+    if include_categories:
+        fields.append("category")
+    if include_groups:
+        fields.append(GROUP_FIELD)
+    return fields
 
 
 def transactions_to_csv(
-    transactions: list[dict[str, Any]], include_categories: bool = True, include_totals: bool = False
+    transactions: list[dict[str, Any]],
+    include_categories: bool = True,
+    include_totals: bool = False,
+    ledger: bool = False,
 ) -> str:
-    """Return CSV string with columns: date, description, amount, type[, category][, group].
+    """Return the CSV a user downloads: date, description, debit, credit[, balance][, category][, sub-category].
 
+    ledger=True instead writes the stored row shape (date, description, amount, type, category), used
+    for chat context and the trial CSV round-trip, not for downloads.
     The group column ("Sub-category") is added when any row has a group (grouped chat downloads).
     include_totals appends a blank line and a totals table: one row per category (count, money in,
     money out, net) and an "All categories" row. Grouped rows instead get the category rows without
     "All categories", then a per-sub-category table ending in a "Net total" row. Off by default: accounting imports expect rows only.
     """
-    fields = export_fields(include_categories, has_groups(transactions))
+    if ledger:
+        fields = FIELDS if include_categories else [f for f in FIELDS if f != "category"]
+        fields = fields + [GROUP_FIELD] if has_groups(transactions) else fields
+        rows = transactions
+    else:
+        fields = export_fields(include_categories, has_groups(transactions), has_balances(transactions))
+        rows = [statement_row(t) for t in transactions]
     out = io.StringIO()
     writer = csv.DictWriter(out, fieldnames=fields, extrasaction="ignore")
     writer.writerow({f: _HEADER_LABELS.get(f, f) for f in fields})
-    for row in transactions:
-        writer.writerow({f: row.get(f) or "" for f in fields})
+    for row in rows:
+        writer.writerow({f: _cell(row.get(f)) for f in fields})
     if include_totals and transactions:
         table = csv.writer(out)
         table.writerow([])
@@ -112,6 +162,12 @@ def transactions_to_csv(
             for name, n, money_in, money_out in group_totals(transactions) + [(NET_TOTAL, count, credit, debit)]:
                 table.writerow([name, n, f"{money_in:.2f}", f"{money_out:.2f}", f"{money_in - money_out:.2f}"])
     return out.getvalue()
+
+
+def _cell(value: Any) -> str:
+    if isinstance(value, float):
+        return f"{value:.2f}"
+    return "" if value is None else str(value)
 
 
 def summary_to_csv(summary: list[tuple[str, float]]) -> str:

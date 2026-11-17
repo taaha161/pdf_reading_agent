@@ -12,27 +12,32 @@ from xlsxwriter.utility import xl_col_to_name
 
 from services.csv_export import (
     ALL_CATEGORIES,
+    BALANCE,
+    CREDIT,
+    DEBIT,
     GROUP_FIELD,
     GROUP_TOTALS_HEADER,
     NET_TOTAL,
     NO_CATEGORY,
     NO_GROUP,
     TOTALS_HEADER,
-    amount_value,
     category_totals,
     export_fields,
     export_totals,
     group_totals,
+    has_balances,
     has_groups,
+    statement_row,
 )
 
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 _HEADERS = {
-    "date": "Date", "description": "Description", "amount": "Amount", "type": "Type", "category": "Category",
-    GROUP_FIELD: "Sub-category",
+    "date": "Date", "description": "Description", DEBIT: "Debit", CREDIT: "Credit", BALANCE: "Balance",
+    "category": "Category", GROUP_FIELD: "Sub-category",
 }
-_WIDTHS = {"date": 12, "description": 48, "amount": 14, "type": 10, "category": 20, GROUP_FIELD: 20}
+_WIDTHS = {"date": 12, "description": 48, DEBIT: 14, CREDIT: 14, BALANCE: 14, "category": 20, GROUP_FIELD: 20}
+_MONEY_FIELDS = (DEBIT, CREDIT, BALANCE)
 _MONEY_FORMAT = "#,##0.00"
 
 
@@ -63,7 +68,7 @@ def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str],
     Live formulas (they follow edits to the rows) with cached results, because phone viewers don't
     calculate formulas and would otherwise show 0 or nothing. SUMPRODUCT with "=" is used instead of
     SUMIFS so category names are matched exactly (no * ? ~ wildcards or ">"/"<" operators) and text
-    amounts count as 0.
+    amounts count as 0. Money in sums the Credit column, money out the Debit column.
     """
     first, last = 2, len(transactions) + 1  # Excel row numbers of the data
 
@@ -71,7 +76,7 @@ def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str],
         col = xl_col_to_name(fields.index(field))
         return f"{col}{first}:{col}{last}"
 
-    amounts, types = rng("amount"), rng("type")
+    credits, debits, dates = rng(CREDIT), rng(DEBIT), rng("date")
     money = wb.add_format({"num_format": _MONEY_FORMAT})
     bold = wb.add_format({"bold": True, "top": 1})
     bold_money = wb.add_format({"bold": True, "top": 1, "num_format": _MONEY_FORMAT})
@@ -87,16 +92,16 @@ def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str],
             match = f'--({rng(field)}="")' if name == blank else f"--({rng(field)}=A{r + 1})"
             ws.write_string(r, 0, name)
             ws.write_formula(r, 1, f"=SUMPRODUCT({match})", None, n)
-            ws.write_formula(r, 2, f'=SUMPRODUCT({match},--({types}="credit"),{amounts})', money, money_in)
-            ws.write_formula(r, 3, f'=SUMPRODUCT({match},--({types}="debit"),{amounts})', money, money_out)
+            ws.write_formula(r, 2, f"=SUMPRODUCT({match},{credits})", money, money_in)
+            ws.write_formula(r, 3, f"=SUMPRODUCT({match},{debits})", money, money_out)
             ws.write_formula(r, 4, f"=C{r + 1}-D{r + 1}", money, round(money_in - money_out, 2))
         r = top + 1 + len(rows)  # the overall total row
         if total_label is None:
             return r - 1
         ws.write_string(r, 0, total_label, bold)
-        ws.write_formula(r, 1, f"=COUNTA({types})", bold, count)
-        ws.write_formula(r, 2, f'=SUMPRODUCT(--({types}="credit"),{amounts})', bold_money, credit)
-        ws.write_formula(r, 3, f'=SUMPRODUCT(--({types}="debit"),{amounts})', bold_money, debit)
+        ws.write_formula(r, 1, f"=ROWS({dates})", bold, count)
+        ws.write_formula(r, 2, f"=SUM({credits})", bold_money, credit)
+        ws.write_formula(r, 3, f"=SUM({debits})", bold_money, debit)
         ws.write_formula(r, 4, f"=C{r + 1}-D{r + 1}", bold_money, round(credit - debit, 2))
         return r
 
@@ -115,18 +120,18 @@ def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str],
     # Column A holds dates above and category/group names here; widen it to fit both (capped).
     longest = max(len(x) for x in labels)
     ws.set_column(0, 0, max(_WIDTHS["date"], min(longest + 2, 32)))
-    ws.set_column(3, 3, max(_WIDTHS["type"], 14))  # money out lands in the narrow Type column
 
 
 def transactions_to_xlsx(
     transactions: list[dict[str, Any]], include_categories: bool = True, include_totals: bool = False
 ) -> bytes:
-    """Return .xlsx bytes: bold frozen header, numeric amounts, sized columns, autofilter.
+    """Return .xlsx bytes laid out like a statement: Date, Description, Debit, Credit[, Balance],
+    Category[, Sub-category], with a bold frozen header, numeric money cells, sized columns and an autofilter.
 
     include_totals adds a per-category totals table and an "All categories" row under the rows
     (off by default: accounting imports expect rows only).
     """
-    fields = export_fields(include_categories, has_groups(transactions))
+    fields = export_fields(include_categories, has_groups(transactions), has_balances(transactions))
     out, wb, ws, header, money = _new_workbook("Transactions")
 
     for col, field in enumerate(fields):
@@ -134,8 +139,9 @@ def transactions_to_xlsx(
         ws.set_column(col, col, _WIDTHS[field])
 
     for row, tx in enumerate(transactions, start=1):
+        cells = statement_row(tx)
         for col, field in enumerate(fields):
-            value = amount_value(tx.get(field)) if field == "amount" else str(tx.get(field) or "")
+            value = cells.get(field) if field in _MONEY_FIELDS else str(cells.get(field) or "")
             if isinstance(value, float):
                 ws.write_number(row, col, value, money)
             elif value:

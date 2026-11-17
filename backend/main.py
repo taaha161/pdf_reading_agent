@@ -820,7 +820,8 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
     logger.info("scan: [2/3] AI extraction + categorization done, transactions=%d, currency=%s (%.2f s this step, total %.2f s)", len(transactions), currency or "none", time.perf_counter() - t2, time.perf_counter() - t0)
 
     progress("finalizing")
-    csv_content = transactions_to_csv(transactions)
+    # Stored row shape: trial clients send it back for /api/email-spreadsheet (see _rows_from_trial_csv).
+    csv_content = transactions_to_csv(transactions, ledger=True)
     job_id = create_job_id()
     summary = _summary_by_category(transactions)
     is_trial = user_id is None
@@ -998,7 +999,8 @@ async def scan_status(
 
 # Each scan can be emailed in a few formats (CSV/Excel, with/without categories).
 MAX_SPREADSHEET_EMAILS_PER_JOB = 4
-_CSV_FIELDS = ["date", "description", "amount", "type", "category"]
+_CSV_FIELDS = ["date", "description", "amount", "type", "category", "balance"]
+_NUMERIC_FIELDS = ("amount", "balance")
 _AMOUNT_RE = re.compile(r"^-?[\d,]*\.?\d*$")
 
 
@@ -1013,7 +1015,7 @@ def _sanitize_rows(rows: list[dict]) -> list[dict]:
         clean = {}
         for field in _CSV_FIELDS:
             value = str(row.get(field) or "").strip()
-            if field == "amount" and _AMOUNT_RE.match(value):
+            if field in _NUMERIC_FIELDS and _AMOUNT_RE.match(value):
                 clean[field] = value
             elif value[:1] in ("=", "+", "-", "@", "\t", "\r"):
                 clean[field] = "'" + value
@@ -1024,9 +1026,10 @@ def _sanitize_rows(rows: list[dict]) -> list[dict]:
 
 
 def _rows_from_trial_csv(csv_content: str) -> list[dict] | None:
-    """Parse CSV sent by older clients; None if it doesn't have our header."""
+    """Parse CSV sent by older clients; None if it doesn't have our header (with or without balance)."""
     reader = csv.DictReader(io.StringIO(csv_content))
-    if [f.strip().lower() for f in (reader.fieldnames or [])] != _CSV_FIELDS:
+    header = [f.strip().lower() for f in (reader.fieldnames or [])]
+    if header not in (_CSV_FIELDS, _CSV_FIELDS[:-1]):
         return None
     return list(reader)
 

@@ -17,14 +17,16 @@ def test_csv_with_categories(client):
     r = _export(client, format="csv", include_categories=True)
     assert r.status_code == 200
     assert 'filename="statement.csv"' in r.headers["content-disposition"]
-    assert r.text.splitlines()[0] == "date,description,amount,type,category"
-    assert "Coffee,-4.50,debit,Food" in r.text
+    # Laid out like a statement: separate Debit and Credit columns, sizes only.
+    assert r.text.splitlines()[0] == "date,description,debit,credit,category"
+    assert "Coffee,4.50,,Food" in r.text
+    assert "=1+1,,1200.00," in r.text
 
 
 def test_csv_without_categories(client):
     r = _export(client, format="csv", include_categories=False)
     assert 'filename="statement-uncategorized.csv"' in r.headers["content-disposition"]
-    assert r.text.splitlines()[0] == "date,description,amount,type"
+    assert r.text.splitlines()[0] == "date,description,debit,credit"
     assert "Food" not in r.text
 
 
@@ -33,8 +35,9 @@ def test_xlsx_with_categories(client):
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/vnd.openxmlformats")
     ws = load_workbook(io.BytesIO(r.content)).active
-    assert [c.value for c in ws[1]] == ["Date", "Description", "Amount", "Type", "Category"]
-    assert ws["C2"].value == -4.5 and ws["C3"].value == 1200.0
+    assert [c.value for c in ws[1]] == ["Date", "Description", "Debit", "Credit", "Category"]
+    assert ws["C2"].value == 4.5 and ws["D2"].value is None
+    assert ws["C3"].value is None and ws["D3"].value == 1200.0
     assert ws["B3"].value == "=1+1" and ws["B3"].data_type == "s"  # text, not a formula
     assert ws["E3"].value in (None, "")
 
@@ -103,9 +106,9 @@ def test_xlsx_text_uses_shared_strings_for_phone_viewers():
         assert "inlineStr" not in z.read("xl/worksheets/sheet1.xml").decode()
 
     ws = load_workbook(io.BytesIO(transactions_to_xlsx(rows))).active
-    assert [c.value for c in ws[1]] == ["Date", "Description", "Amount", "Type", "Category"]
+    assert [c.value for c in ws[1]] == ["Date", "Description", "Debit", "Credit", "Category"]
     assert ws["B2"].value == "=HYPERLINK(\"x\")" and ws["B2"].data_type == "s"  # text, not a formula
-    assert ws["C2"].value == 1000.0 and ws["C2"].number_format == "#,##0.00"
+    assert ws["D2"].value == 1000.0 and ws["D2"].number_format == "#,##0.00"
     assert ws["C3"].value == "n/a" and ws["B3"].value == "http://example.com"
     assert ws.freeze_panes == "A2" and ws.auto_filter.ref == "A1:E3"
 
@@ -147,10 +150,11 @@ def test_xlsx_category_totals_table():
         "Income", "Housing", "Groceries", "(no category)", ">100*", "All categories",
     ]
     # Exact match on the category cell (no SUMIFS wildcards/operators), blank category matched as "".
-    assert ws["C12"].value == '=SUMPRODUCT(--(E2:E7=A12),--(D2:D7="credit"),C2:C7)'
-    assert ws["D13"].value == '=SUMPRODUCT(--(E2:E7=""),--(D2:D7="debit"),C2:C7)'
+    # Money in sums the Credit column (D), money out the Debit column (C).
+    assert ws["C12"].value == "=SUMPRODUCT(--(E2:E7=A12),D2:D7)"
+    assert ws["D13"].value == '=SUMPRODUCT(--(E2:E7=""),C2:C7)'
     assert ws["E12"].value == "=C12-D12"
-    assert ws["B15"].value == "=COUNTA(D2:D7)"
+    assert ws["B15"].value == "=ROWS(A2:A7)"
     # Cached results so phone viewers show numbers without calculating.
     cached = load_workbook(io.BytesIO(data), data_only=True).active
     assert [[cached.cell(r, c).value for c in range(2, 6)] for r in range(10, 16)] == [
@@ -164,7 +168,7 @@ def test_xlsx_category_totals_table():
     assert ws.auto_filter.ref == "A1:E7"  # filter covers the data only
     # Without a category column only the "All categories" row is written.
     ws2 = load_workbook(io.BytesIO(transactions_to_xlsx(TOTALS_ROWS, False, True))).active
-    assert ws2["A10"].value == "All categories" and ws2["C10"].value == '=SUMPRODUCT(--(D2:D7="credit"),C2:C7)'
+    assert ws2["A10"].value == "All categories" and ws2["C10"].value == "=SUM(D2:D7)"
     # Default stays rows-only for accounting imports.
     assert load_workbook(io.BytesIO(transactions_to_xlsx(TOTALS_ROWS))).active.max_row == 7
 
@@ -204,8 +208,8 @@ def test_csv_group_column_and_group_totals():
     from services.csv_export import transactions_to_csv
 
     lines = transactions_to_csv(GROUPED_ROWS, include_totals=True).splitlines()
-    assert lines[0] == "date,description,amount,type,category,sub-category"
-    assert lines[1] == "01 Jul,From John,100,credit,Income,John"
+    assert lines[0] == "date,description,debit,credit,category,sub-category"
+    assert lines[1] == "01 Jul,From John,,100.00,Income,John"
     assert "All categories" not in "\n".join(lines)
     assert lines[-9:] == [
         "",
@@ -225,13 +229,13 @@ def test_xlsx_group_column_and_group_totals():
 
     data = transactions_to_xlsx(GROUPED_ROWS, include_totals=True)
     ws = load_workbook(io.BytesIO(data)).active
-    assert [c.value for c in ws[1]] == ["Date", "Description", "Amount", "Type", "Category", "Sub-category"]
+    assert [c.value for c in ws[1]] == ["Date", "Description", "Debit", "Credit", "Category", "Sub-category"]
     assert ws["F4"].value == "Alice"
     # rows 2-4 data, 5 blank, 6 category header, 7-8 categories (no "All categories"), 9 blank, 10 sub-category header
     assert [ws[f"A{r}"].value for r in range(6, 10)] == ["Category", "Income", "Transfers", None]
     assert [c.value for c in ws[10]][:5] == ["Sub-category", "Transactions", "Money in", "Money out", "Net"]
     assert [ws[f"A{r}"].value for r in range(11, 14)] == ["John", "Alice", "Net total"]
-    assert ws["C11"].value == '=SUMPRODUCT(--(F2:F4=A11),--(D2:D4="credit"),C2:C4)'
+    assert ws["C11"].value == "=SUMPRODUCT(--(F2:F4=A11),D2:D4)"
     cached = load_workbook(io.BytesIO(data), data_only=True).active
     assert [[cached.cell(r, c).value for c in range(2, 6)] for r in range(11, 14)] == [
         [2, 100, 30, 70], [1, 0, 50.5, -50.5], [3, 100, 80.5, 19.5],
@@ -242,4 +246,35 @@ def test_export_endpoint_keeps_group_and_omits_it_when_blank(client):
     r = client.post("/api/export", json={"transactions": GROUPED_ROWS, "format": "csv", "include_totals": True})
     assert r.status_code == 200 and "Net total,3,100.00,80.50,19.50" in r.text
     r = client.post("/api/export", json={"transactions": TOTALS_ROWS, "format": "csv", "include_totals": True})
-    assert r.text.splitlines()[0] == "date,description,amount,type,category" and "Net total" not in r.text
+    assert r.text.splitlines()[0] == "date,description,debit,credit,category" and "Net total" not in r.text
+
+
+BALANCE_ROWS = [
+    {"date": "01 Jul", "description": "Salary", "amount": "1,000.00", "type": "credit", "category": "Income", "balance": "1500.00"},
+    {"date": "02 Jul", "description": "Overdrawn", "amount": "2000", "type": "debit", "category": "Other", "balance": "-500.00"},
+]
+
+
+def test_balance_column_when_statement_has_balances(client):
+    r = client.post("/api/export", json={"transactions": BALANCE_ROWS, "format": "csv"})
+    assert r.text.splitlines() == [
+        "date,description,debit,credit,balance,category",
+        "01 Jul,Salary,,1000.00,1500.00,Income",
+        "02 Jul,Overdrawn,2000.00,,-500.00,Other",
+    ]
+    r = client.post("/api/export", json={"transactions": BALANCE_ROWS, "format": "xlsx", "include_totals": True})
+    ws = load_workbook(io.BytesIO(r.content)).active
+    assert [c.value for c in ws[1]] == ["Date", "Description", "Debit", "Credit", "Balance", "Category"]
+    assert [ws["E2"].value, ws["E3"].value] == [1500.0, -500.0]
+    assert ws["E3"].number_format == "#,##0.00"
+    # Totals still read the Debit/Credit columns, with Category now in F.
+    assert ws["C6"].value == "=SUMPRODUCT(--(F2:F3=A6),D2:D3)"
+
+
+def test_ledger_csv_keeps_stored_shape():
+    from services.csv_export import transactions_to_csv
+
+    assert transactions_to_csv(BALANCE_ROWS, ledger=True).splitlines()[:2] == [
+        "date,description,amount,type,category",
+        "01 Jul,Salary,\"1,000.00\",credit,Income",
+    ]

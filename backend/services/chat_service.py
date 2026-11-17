@@ -341,7 +341,7 @@ def _fence(text: Any) -> str:
 
 def _numbered_csv(transactions: list[dict]) -> str:
     rows = [{**t, "description": re.sub(r"\s+", " ", str(t.get("description", ""))).strip()} for t in transactions]
-    lines = transactions_to_csv(rows).splitlines()
+    lines = transactions_to_csv(rows, ledger=True).splitlines()
     return "\n".join(["#," + lines[0]] + [f"{i},{line}" for i, line in enumerate(lines[1:], start=1)])
 
 

@@ -11,6 +11,9 @@ class Transaction(BaseModel):
     amount: str
     type: str  # credit or debit
     category: str
+    # Account balance after this row (printed on the statement or worked out from the nearest
+    # printed one); blank when the statement has no balances. Older jobs don't have it.
+    balance: Optional[str] = ""
 
 
 class CategorySummary(BaseModel):
@@ -178,6 +181,7 @@ class ExportTransaction(BaseModel):
     amount: Optional[str] = ""
     type: Optional[str] = ""
     category: Optional[str] = ""
+    balance: Optional[str] = ""
     # Chat downloads grouped by person/merchant ("John", "Alice"); adds a Group column and group totals.
     group: Optional[str] = Field("", max_length=200)
 

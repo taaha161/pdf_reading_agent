@@ -44,8 +44,8 @@ def test_sends_uncategorized_excel(client, deps):
     _, content, filename = deps["send"].call_args.args
     assert filename == "statement-uncategorized.xlsx"
     ws = load_workbook(io.BytesIO(content)).active
-    assert [c.value for c in ws[1]] == ["Date", "Description", "Amount", "Type"]
-    assert ws["C2"].value == -4.5
+    assert [c.value for c in ws[1]] == ["Date", "Description", "Debit", "Credit"]
+    assert ws["C2"].value == 4.5
 
 
 def test_legacy_csv_content_still_accepted(client, deps):
@@ -95,3 +95,9 @@ def test_sanitize_neutralizes_formulas_but_keeps_negative_amounts():
     assert out["description"].startswith("'=HYPERLINK")
     assert out["category"] == "'@SUM(1)"
     assert out["amount"] == "-12.00"
+
+
+def test_balance_survives_sanitizing():
+    rows = _sanitize_rows([{**ROWS[0], "balance": "-120.50"}])
+    assert rows[0]["balance"] == "-120.50"  # numeric, so not quoted as a would-be formula
+    assert _sanitize_rows([{**ROWS[0], "balance": "=cmd"}])[0]["balance"] == "'=cmd"

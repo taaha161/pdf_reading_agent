@@ -54,7 +54,7 @@ function escapeCsvValue(value) {
 }
 
 function transactionsToCsvBrowser(transactions) {
-  const header = "date,description,amount,type,category";
+  const header = "date,description,amount,type,category,balance";
   if (!transactions || transactions.length === 0) {
     return `${header}\n`;
   }
@@ -65,6 +65,7 @@ function transactionsToCsvBrowser(transactions) {
       t.amount ?? "",
       t.type ?? "",
       t.category ?? "",
+      t.balance ?? "",
     ]
       .map(escapeCsvValue)
       .join(","),

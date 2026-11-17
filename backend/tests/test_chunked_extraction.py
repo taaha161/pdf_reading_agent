@@ -17,7 +17,7 @@ def _statement(n_rows: int) -> str:
 
 def _rows_in(text: str) -> list[dict]:
     return [
-        {"date": m.group(1), "description": f"Row {int(m.group(1)[1:])} payee", "amount": f"{int(m.group(1)[1:])}.00", "type": "debit", "category": "Other"}
+        {"date": m.group(1), "description": f"Row {int(m.group(1)[1:])} payee", "amount": f"{int(m.group(1)[1:]) + 1}.00", "type": "debit", "category": "Other"}
         for m in re.finditer(r"^\| (D\d{4}) \|", text, re.M)
     ]
 

@@ -65,17 +65,21 @@ function getAmountClass(type, amount) {
   return "results-amount--neutral";
 }
 
-function formatAmountForDisplay(type, amount) {
-  const raw = String(amount ?? "").trim();
-  if (!raw || raw === "—") return "—";
-  const rawType = String(type || "").toLowerCase();
+function formatMoney(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
   const n = parseFloat(raw.replace(/[^0-9.-]/g, ""));
   if (!Number.isFinite(n)) return raw;
-  // Printed like a statement: explicit sign, thousands separators, two decimals.
-  const negative = rawType === "debit" || n < 0;
-  const positive = rawType === "credit" && n >= 0;
   const abs = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `${negative ? "\u2212" : positive ? "+" : ""}${abs}`;
+  return `${n < 0 ? "\u2212" : ""}${abs}`;
+}
+
+/** The amount as a size, for the Debit or Credit column (the column gives the direction). */
+function formatSize(amount) {
+  const raw = String(amount ?? "").trim();
+  if (!raw) return "";
+  const n = parseFloat(raw.replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(n) ? formatMoney(Math.abs(n)) : raw;
 }
 
 function validateTransactionDraft(draft) {
@@ -155,6 +159,9 @@ export default function ResultsTable({
     }
   };
 
+  // Statements without balances get no Balance column.
+  const showBalance = (transactions || []).some((t) => String(t.balance ?? "").trim());
+
   // Keep original indices so edits target the right row in the full list.
   const visibleRows = (transactions || [])
     .map((t, i) => ({ t, i }))
@@ -230,6 +237,8 @@ export default function ResultsTable({
             <col className="results-col-desc" />
             <col className="results-col-category" />
             <col className="results-col-amount" />
+            <col className="results-col-amount" />
+            {showBalance && <col className="results-col-amount" />}
             <col className="results-col-actions" />
           </colgroup>
           <thead role="rowgroup">
@@ -237,7 +246,9 @@ export default function ResultsTable({
               <th role="columnheader">Date</th>
               <th role="columnheader">Description</th>
               <th role="columnheader">Category</th>
-              <th role="columnheader">Amount</th>
+              <th role="columnheader" className="results-th-money">Debit</th>
+              <th role="columnheader" className="results-th-money">Credit</th>
+              {showBalance && <th role="columnheader" className="results-th-money">Balance</th>}
               <th role="columnheader" className="results-table-actions-col">Actions</th>
             </tr>
           </thead>
@@ -245,6 +256,15 @@ export default function ResultsTable({
             {visibleRows.map(({ t, i }) => {
               const chipClass = getChipClass(t);
               const amountClass = getAmountClass(t.type, t.amount);
+              const direction = getDirection(t);
+              const isCredit = direction === "credit";
+              // Unknown direction shows under Debit, matching the downloaded files.
+              const moneyCell = (
+                <span className={`results-amount ${amountClass}`}>
+                  <span className="results-amount-sign" aria-hidden="true">{isCredit ? "+" : direction === "debit" ? "\u2212" : ""}</span>
+                  {formatSize(t.amount) || "—"}
+                </span>
+              );
               return (
                 <tr key={i} className={`results-row${highlighted?.has(i) ? " results-row--hit" : ""}`} role="row">
                   <td className="results-cell-date" role="cell">
@@ -261,9 +281,18 @@ export default function ResultsTable({
                       <span className="results-chip results-chip--muted">Uncategorized</span>
                     )}
                   </td>
-                  <td className="results-cell-amount" role="cell">
-                    <span className={`results-amount ${amountClass}`}>{formatAmountForDisplay(t.type, t.amount)}</span>
-                  </td>
+                  <td className="results-cell-amount results-cell-debit" role="cell">{!isCredit && moneyCell}</td>
+                  <td className="results-cell-amount results-cell-credit" role="cell">{isCredit && moneyCell}</td>
+                  {showBalance && (
+                    <td className="results-cell-balance" role="cell">
+                      {String(t.balance ?? "").trim() && (
+                        <span className="results-balance">
+                          <span className="results-balance-label">Balance </span>
+                          {formatMoney(t.balance)}
+                        </span>
+                      )}
+                    </td>
+                  )}
                   <td className="results-cell-actions" role="cell">
                     <div className="results-cell-actions-inner">
                       <button
