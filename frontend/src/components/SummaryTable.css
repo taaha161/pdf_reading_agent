@@ -170,6 +170,11 @@
   background: var(--ink);
   color: #fff;
 }
+/* Direction cells set their own ink color; on the selected (inked) row they must follow the row. */
+.summary-table tbody tr.summary-row--active .summary-direction--credit,
+.summary-table tbody tr.summary-row--active .summary-direction--debit {
+  color: inherit;
+}
 
 .summary-section {
   width: fit-content;
