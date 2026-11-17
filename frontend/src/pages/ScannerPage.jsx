@@ -338,6 +338,7 @@ export default function ScannerPage() {
           onProgress: setScanProgress,
         },
       );
+      scrollToResultsRef.current = true;
       setJobId(data.job_id);
       setTransactions(data.transactions || []);
       setSummaryByCategory(data.summary_by_category || []);
@@ -449,6 +450,16 @@ export default function ScannerPage() {
     if (isSample) sampleBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [isSample]);
 
+  // Same for a fresh scan's results, which otherwise sit under the dropzone (easy to miss,
+  // especially after a landing-page handoff where the visitor never touched this page).
+  const resultsRef = useRef(null);
+  const scrollToResultsRef = useRef(false);
+  useEffect(() => {
+    if (!jobId || !scrollToResultsRef.current) return;
+    scrollToResultsRef.current = false;
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [jobId]);
+
   const handleTransactionChange = async (index, field, value) => {
     if (!Array.isArray(transactions) || index < 0 || index >= transactions.length) {
       return;
@@ -536,6 +547,9 @@ export default function ScannerPage() {
         )}
 
         <div className="scanner-main">
+        {/* While a scan runs, the loader takes the upload card's place. Otherwise a file handed
+            off from the landing page scans below the fold under an idle-looking dropzone. */}
+        {!loading && (
         <div className="scanner-upload-card">
           {isGuest && trialExhausted && (
             <p className="scanner-trial-note" role="status">
@@ -608,6 +622,7 @@ export default function ScannerPage() {
             />
           )}
         </div>
+        )}
 
         {loading && (
           <Loader
@@ -678,7 +693,7 @@ export default function ScannerPage() {
 
         {hasResults && (
           <>
-            <div className="scanner-results">
+            <div className="scanner-results" ref={resultsRef}>
               {canEmailSpreadsheet && !emailPopupOpen && (
                 <button type="button" className="email-sheet-reopen" onClick={() => setEmailPopupOpen(true)}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
