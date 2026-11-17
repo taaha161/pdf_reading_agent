@@ -464,3 +464,57 @@
   color: var(--color-text-muted);
   border-top: 1px solid var(--color-border);
 }
+
+/* Bubbles holding a rows table use the full width */
+.message-bubble--wide {
+  flex: 1;
+  max-width: 100%;
+}
+
+.reply-date-inline {
+  display: none;
+}
+
+/* Phones: give the table every pixel so it fits without sideways scrolling */
+@media (max-width: 640px) {
+  .chat-panel {
+    padding: 0.75rem;
+  }
+
+  .message.assistant .message-avatar {
+    display: none;
+  }
+
+  .message-bubble {
+    max-width: 92%;
+  }
+
+  .message-bubble--wide {
+    max-width: 100%;
+    padding: 0.55rem 0.6rem;
+  }
+
+  .reply-table {
+    font-size: 0.74rem;
+  }
+
+  .reply-table th,
+  .reply-table td {
+    padding: 0.3rem 0.35rem;
+  }
+
+  .reply-table .col-date {
+    display: none;
+  }
+
+  .reply-table .desc {
+    min-width: 0;
+  }
+
+  .reply-date-inline {
+    display: block;
+    margin-top: 0.1rem;
+    font-size: 0.68rem;
+    color: var(--color-text-muted);
+  }
+}
