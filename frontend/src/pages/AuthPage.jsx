@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import { sendTikTokSignupEvent } from "../lib/tiktokSignupEvent";
 import { trackSignup } from "../lib/trackSignup";
 import { useAuth } from "../contexts/AuthContext";
-import logo from "../assets/pdf_to_excel_logo.png";
+import LogoMark from "../components/LogoMark";
 import "./AuthPage.css";
 import PasswordInput from "../components/PasswordInput";
 import PasswordChecklist from "../components/PasswordChecklist";
@@ -407,7 +407,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
           <header className="auth-panel-header">
             <Link to="/" className="auth-logo">
               <span className="auth-logo-icon" aria-hidden>
-                <img src={logo} alt="" />
+                <LogoMark size={30} />
               </span>
               <span className="auth-logo-text">Bank Statement Scanner</span>
             </Link>
@@ -438,7 +438,6 @@ export default function AuthPage({ mode: initialMode = "login" }) {
                 className="auth-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
                 required
                 autoComplete="current-password"
               />
@@ -483,22 +482,20 @@ export default function AuthPage({ mode: initialMode = "login" }) {
           <footer className="auth-shell-footer auth-shell-footer--login">
             <Link to="/privacy-policy" className="auth-footer-link">Privacy Policy</Link>
             <Link to="/terms-of-service" className="auth-footer-link">Terms of Service</Link>
-            <button type="button" className="auth-footer-link">Security</button>
+            <a href="/security" className="auth-footer-link">Security</a>
             <Link to="/contact" className="auth-footer-link">Contact Support</Link>
           </footer>
         </section>
 
         <section className="auth-panel auth-panel-right auth-panel-right--login" aria-label="Why Bank Statement Scanner">
           <div className="auth-right-inner">
-            {/* Add your SVG to public/auth-illustration.svg to replace the placeholder */}
-            <div className="auth-illustration-icon" aria-hidden>
-              <img src="/auth-illustration.svg" alt="" className="auth-illustration-icon-img" />
-            </div>
-            <h2 className="auth-right-title">Automate your financial data entry today.</h2>
-            <p className="auth-right-body">
-              Upload a PDF statement, get every transaction categorized by AI, and download Excel or CSV ready to
-              import into QuickBooks, Xero or your own workbook.
-            </p>
+            <h2 className="auth-right-title">Your statements are where you left them.</h2>
+            <ul className="auth-right-list" role="list">
+              <li>Every statement you&rsquo;ve converted, ready to open</li>
+              <li>Ask any of them for the rows you need</li>
+              <li>Download Excel or CSV again, for QuickBooks, Xero or your workbook</li>
+            </ul>
+            <p className="auth-right-note">No bank login needed. We only read the PDFs you upload.</p>
           </div>
         </section>
       </main>

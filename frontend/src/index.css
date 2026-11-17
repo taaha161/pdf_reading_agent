@@ -1,38 +1,53 @@
-/* Design tokens – Figma Bank Statement Scanner theme (light-only, blue primary) */
+/* Design tokens: "The Marked-Up Statement". Mirrors marketing/src/styles/tokens.css.
+   Grey desk, white statement paper, black print, yellow highlighter for answers,
+   pink for questions, graphite pencil for notes. */
 :root {
-  --font-heading: "InterVariable", "Inter", system-ui, -apple-system, sans-serif;
-  --font-body: "InterVariable", "Inter", system-ui, -apple-system, sans-serif;
+  --font-heading: "Archivo Variable", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Public Sans Variable", "Helvetica Neue", Arial, sans-serif;
+  --font-hand: "Kalam", "Bradley Hand", cursive;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --desk: #e6e7e4;
+  --desk-deep: #d9dbd7;
+  --paper: #ffffff;
+  --ink: #141414;
+  --ink-soft: #4d4d4d;
+  --graphite: #555a5f;
+  --rule: #d4d5d1;
+  --rule-strong: #141414;
+  --hi: #ffe34d;
+  --hi-soft: #fff3a6;
+  --hi-pink: #ff9ccb;
+  --sheet-shadow: 0 1px 1px rgba(20, 20, 20, 0.06), 0 14px 32px -12px rgba(20, 20, 20, 0.28);
 
-  /* Primary: blue (Figma accent) */
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-muted: rgba(37, 99, 235, 0.35);
-  --color-primary-subtle: rgba(37, 99, 235, 0.1);
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+
+  /* Legacy names, remapped into the world */
+  --color-primary: var(--ink);
+  --color-primary-hover: #000000;
+  --color-primary-muted: rgba(20, 20, 20, 0.35);
+  --color-primary-subtle: #f1f1ee; /* neutral tint; yellow is reserved for answers */
   --color-on-primary: #ffffff;
 
-  /* Light theme default – white/slate */
-  --color-bg: #f8fafc;
-  --color-surface: #ffffff;
-  --color-text: #0f172a;
-  --color-text-muted: #64748b;
-  --color-border: #e2e8f0;
+  --color-bg: var(--desk);
+  --color-surface: var(--paper);
+  --color-text: var(--ink);
+  --color-text-muted: var(--ink-soft);
+  --color-border: var(--rule);
 
-  --color-success: #22c55e;
-  --color-success-muted: rgba(34, 197, 94, 0.15);
+  --color-success: #1f7a3a;
+  --color-success-muted: rgba(31, 122, 58, 0.12);
 
-  --color-error: #dc2626;
-  --color-error-border: rgba(220, 38, 38, 0.35);
-  --color-error-bg: rgba(220, 38, 38, 0.06);
+  --color-error: #b3261e;
+  --color-error-border: rgba(179, 38, 30, 0.45);
+  --color-error-bg: rgba(179, 38, 30, 0.07);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 2px rgba(20, 20, 20, 0.06);
+  --shadow-md: var(--sheet-shadow);
+  --shadow-lg: var(--sheet-shadow);
 
-  --landing-bg: linear-gradient(160deg, #f1f5f9 0%, #ffffff 50%, rgba(37, 99, 235, 0.04) 100%);
+  --landing-bg: var(--desk);
 }
 
 :root {
@@ -78,8 +93,10 @@ body {
   box-sizing: border-box;
 }
 
-h1 {
+h1, h2, h3 {
   font-family: var(--font-heading);
+  font-stretch: 112%;
+  letter-spacing: -0.02em;
   font-size: 3.2em;
   line-height: 1.1;
 }
@@ -105,3 +122,38 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+
+::selection {
+  background: var(--hi);
+  color: var(--ink);
+}
+
+body {
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: var(--ink);
+  text-decoration: none;
+}
+a:hover {
+  color: #000;
+}
+/* Links inside running text are underlined like print */
+p a,
+li a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+/* Links styled as buttons or pills never carry a text underline */
+a[class*="btn"],
+a[class*="cta"],
+a[class*="-button"],
+a.app-layout-guest-signup,
+a.dashboard-btn,
+a.dashboard-empty-cta,
+a.dashboard-table-category-btn {
+  text-decoration: none;
+}

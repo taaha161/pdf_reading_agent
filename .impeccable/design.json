@@ -1,0 +1,433 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-16T21:18:37.453581+00:00",
+  "title": "Design System: Bank Statement Scanner",
+  "extensions": {
+    "colorMeta": {
+      "desk": {
+        "role": "neutral",
+        "displayName": "Desk Grey",
+        "canonical": "#e6e7e4",
+        "tonalRamp": [
+          "#272825",
+          "#464842",
+          "#65695e",
+          "#84897b",
+          "#a2a59c",
+          "#c0c2bd",
+          "#dcdcda",
+          "#f2f3f2"
+        ]
+      },
+      "desk-deep": {
+        "role": "neutral",
+        "displayName": "Desk Shadow",
+        "canonical": "#d9dbd7",
+        "tonalRamp": [
+          "#262725",
+          "#454742",
+          "#63685f",
+          "#82897c",
+          "#a1a59c",
+          "#bfc2bd",
+          "#dbdcda",
+          "#f2f3f2"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#262626",
+          "#454545",
+          "#636363",
+          "#828282",
+          "#a1a1a1",
+          "#bfbfbf",
+          "#dbdbdb",
+          "#f2f2f2"
+        ]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Statement Ink",
+        "canonical": "#141414",
+        "tonalRamp": [
+          "#262626",
+          "#454545",
+          "#636363",
+          "#828282",
+          "#a1a1a1",
+          "#bfbfbf",
+          "#dbdbdb",
+          "#f2f2f2"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Secondary Print",
+        "canonical": "#4d4d4d",
+        "tonalRamp": [
+          "#262626",
+          "#454545",
+          "#636363",
+          "#828282",
+          "#a1a1a1",
+          "#bfbfbf",
+          "#dbdbdb",
+          "#f2f2f2"
+        ]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "#555a5f",
+        "tonalRamp": [
+          "#252627",
+          "#424548",
+          "#5f6368",
+          "#7b8289",
+          "#9ca1a5",
+          "#bdbfc2",
+          "#dadbdc",
+          "#f2f2f3"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Statement Rule",
+        "canonical": "#d4d5d1",
+        "tonalRamp": [
+          "#272725",
+          "#464743",
+          "#656760",
+          "#85887c",
+          "#a2a49d",
+          "#c0c1bd",
+          "#dcdcda",
+          "#f2f3f2"
+        ]
+      },
+      "hi": {
+        "role": "secondary",
+        "displayName": "Answer Highlighter Yellow",
+        "canonical": "#ffe34d",
+        "tonalRamp": [
+          "#3c3510",
+          "#776713",
+          "#ba9f0d",
+          "#fed707",
+          "#f0d751",
+          "#ecde93",
+          "#f0e9c7",
+          "#f8f6ec"
+        ]
+      },
+      "hi-soft": {
+        "role": "secondary",
+        "displayName": "Soft Highlighter",
+        "canonical": "#fff3a6",
+        "tonalRamp": [
+          "#3c3610",
+          "#776913",
+          "#baa20d",
+          "#fedc07",
+          "#f0db51",
+          "#ece093",
+          "#f0eac7",
+          "#f8f7ec"
+        ]
+      },
+      "hi-pink": {
+        "role": "tertiary",
+        "displayName": "Question Pink",
+        "canonical": "#ff9ccb",
+        "tonalRamp": [
+          "#3c1025",
+          "#771342",
+          "#ba0d5f",
+          "#fe077c",
+          "#f0519d",
+          "#ec93bd",
+          "#f0c7da",
+          "#f8ecf2"
+        ]
+      },
+      "neutral-tint": {
+        "role": "neutral",
+        "displayName": "Neutral Tint",
+        "canonical": "#f1f1ee",
+        "tonalRamp": [
+          "#282824",
+          "#4a4a40",
+          "#6c6c5b",
+          "#8e8e76",
+          "#a8a899",
+          "#c4c4bb",
+          "#ddddd9",
+          "#f3f3f2"
+        ]
+      },
+      "success": {
+        "role": "status",
+        "displayName": "Success Green",
+        "canonical": "#1f7a3a",
+        "tonalRamp": [
+          "#193321",
+          "#276239",
+          "#30974f",
+          "#39cb64",
+          "#71d08d",
+          "#a5dab4",
+          "#cfe7d6",
+          "#eff6f1"
+        ]
+      },
+      "error": {
+        "role": "status",
+        "displayName": "Error Red",
+        "canonical": "#b3261e",
+        "tonalRamp": [
+          "#361816",
+          "#682521",
+          "#a12d26",
+          "#da332a",
+          "#d96e68",
+          "#dfa39f",
+          "#eacecd",
+          "#f6efee"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headline beside the hero sheet; one phrase carries the yellow highlighter."
+      },
+      "display-close": {
+        "displayName": "Display (close)",
+        "purpose": "The closing call to action on paper."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Homepage section heads."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Sheet heads, bank names, step and audience heads."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running copy and table cells, tabular figures."
+      },
+      "body-lead": {
+        "displayName": "Lead",
+        "purpose": "Supporting copy beside a section head."
+      },
+      "label": {
+        "displayName": "Column label",
+        "purpose": "Statement column heads and balance labels, uppercase."
+      },
+      "pencil": {
+        "displayName": "Pencil",
+        "purpose": "Graphite margin totals, ticks and short notes, turned a few degrees."
+      }
+    },
+    "shadows": [
+      {
+        "name": "sheet-lift",
+        "value": "0 1px 1px rgba(20, 20, 20, 0.06), 0 14px 32px -12px rgba(20, 20, 20, 0.28)",
+        "purpose": "Every sheet, the drop zone, app result panels. Legacy --shadow-md and --shadow-lg."
+      },
+      {
+        "name": "hairline",
+        "value": "0 1px 2px rgba(20, 20, 20, 0.06)",
+        "purpose": "Legacy --shadow-sm for small app controls."
+      },
+      {
+        "name": "focus-halo",
+        "value": "outline: 2px solid #141414; outline-offset: 3px; box-shadow: 0 0 0 6px #ffe34d",
+        "purpose": "Global :focus-visible treatment."
+      }
+    ],
+    "motion": [
+      {
+        "name": "highlighter-swipe",
+        "value": "background-size 0% to 100%, 420ms cubic-bezier(0.22, 1, 0.36, 1); amount cell delayed 180ms; tick fades in 200ms after 380ms",
+        "purpose": "The one motion: marks answer rows. Static under prefers-reduced-motion."
+      },
+      {
+        "name": "surface-fade",
+        "value": "background-color 150ms ease",
+        "purpose": "Drop-zone hover wash."
+      },
+      {
+        "name": "sticky-cta",
+        "value": "transform 0.2s ease",
+        "purpose": "Mobile sticky CTA slides up; none under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "600px"
+      },
+      {
+        "name": "sheet-flat",
+        "value": "860px"
+      },
+      {
+        "name": "menu",
+        "value": "1000px"
+      },
+      {
+        "name": "stack",
+        "value": "1080px"
+      }
+    ],
+    "rotations": [
+      {
+        "name": "hero-sheet",
+        "value": "-0.8deg"
+      },
+      {
+        "name": "lower-sheets",
+        "value": "-0.3deg to 0.35deg"
+      },
+      {
+        "name": "pencil",
+        "value": "-1.5deg to -4deg"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Ink Button",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "The one primary action: a black ink block whose label turns highlighter yellow on hover.",
+      "html": "<button class=\"ds-btn-ink\">Convert a statement free</button>",
+      "css": ".ds-btn-ink{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 22px;background:var(--ink,#141414);color:#fff;font:700 17px/1.2 var(--font-heading,'Archivo Variable',Arial,sans-serif);font-stretch:112%;letter-spacing:-0.01em;border:2px solid var(--ink,#141414);border-radius:2px;cursor:pointer;}.ds-btn-ink:hover{background:#000;color:var(--hi,#ffe34d);}.ds-btn-ink:focus-visible{outline:2px solid var(--ink,#141414);outline-offset:3px;box-shadow:0 0 0 6px var(--hi,#ffe34d);}"
+    },
+    {
+      "name": "Line Button",
+      "kind": "button",
+      "refersTo": "button-line",
+      "description": "Secondary action outlined in ink; hover fills highlighter yellow.",
+      "html": "<button class=\"ds-btn-line\">See a sample result</button>",
+      "css": ".ds-btn-line{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 20px;background:transparent;color:var(--ink,#141414);font:700 16px/1.2 var(--font-heading,'Archivo Variable',Arial,sans-serif);border:2px solid var(--ink,#141414);border-radius:2px;cursor:pointer;}.ds-btn-line:hover{background:var(--hi,#ffe34d);}.ds-btn-line:focus-visible{outline:2px solid var(--ink,#141414);outline-offset:3px;box-shadow:0 0 0 6px var(--hi,#ffe34d);}"
+    },
+    {
+      "name": "Question Chip",
+      "kind": "chip",
+      "refersTo": "question-chip",
+      "description": "A hand-circled question; pressed fills question pink.",
+      "html": "<div style=\"display:flex;gap:8px\"><button class=\"ds-chip\" aria-pressed=\"true\">all money received</button><button class=\"ds-chip\" aria-pressed=\"false\">travel this month</button></div>",
+      "css": ".ds-chip{min-height:36px;padding:4px 12px;background:var(--paper,#fff);border:2px solid var(--ink,#141414);border-radius:999px;color:var(--ink,#141414);font:600 15px/1.2 var(--font-body,'Public Sans Variable',Arial,sans-serif);cursor:pointer;}.ds-chip:hover{background:var(--hi-soft,#fff3a6);}.ds-chip[aria-pressed='true']{background:var(--hi-pink,#ff9ccb);}.ds-chip:focus-visible{outline:2px solid var(--ink,#141414);outline-offset:3px;box-shadow:0 0 0 6px var(--hi,#ffe34d);}"
+    },
+    {
+      "name": "Drop Zone",
+      "kind": "input",
+      "refersTo": "drop-zone",
+      "description": "Working upload target: paper, dashed ink border, sheet lift, soft yellow on hover.",
+      "html": "<label class=\"ds-drop\"><span class=\"ds-drop-title\">Drop a statement PDF here</span><span class=\"ds-drop-hint\">Supports Chase, Wells Fargo, Amex, and more.</span><span class=\"ds-drop-btn\">Convert a statement free</span></label>",
+      "css": ".ds-drop{display:flex;flex-direction:column;gap:10px;padding:24px;background:var(--paper,#fff);border:2px dashed var(--ink,#141414);border-radius:2px;box-shadow:0 1px 1px rgba(20,20,20,.06),0 14px 32px -12px rgba(20,20,20,.28);cursor:pointer;transition:background-color 150ms ease;}.ds-drop:hover{background:var(--hi-soft,#fff3a6);}.ds-drop-title{font:800 22px/1.15 var(--font-heading,'Archivo Variable',Arial,sans-serif);font-stretch:112%;letter-spacing:-0.02em;color:var(--ink,#141414);}.ds-drop-hint{font-size:15px;color:var(--ink-soft,#4d4d4d);}.ds-drop-btn{display:flex;justify-content:center;min-height:48px;align-items:center;background:var(--ink,#141414);color:#fff;font:700 17px var(--font-heading,'Archivo Variable',Arial,sans-serif);border-radius:2px;}.ds-drop:hover .ds-drop-btn{background:#000;color:var(--hi,#ffe34d);}"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "refersTo": "nav-bar",
+      "description": "Sticky desk-grey bar with a 2px ink rule, wordmark left, ink CTA right.",
+      "html": "<nav class=\"ds-nav\"><strong class=\"ds-nav-brand\">Bank Statement Scanner</strong><a href=\"#\" class=\"ds-nav-link\">How it works</a><a href=\"#\" class=\"ds-nav-link\">Pricing</a><a href=\"#\" class=\"ds-nav-cta\">Convert a statement free</a></nav>",
+      "css": ".ds-nav{display:flex;align-items:center;gap:26px;min-height:68px;padding:0 24px;background:var(--desk,#e6e7e4);border-bottom:2px solid var(--ink,#141414);}.ds-nav-brand{margin-right:auto;font:800 19px var(--font-heading,'Archivo Variable',Arial,sans-serif);font-stretch:112%;letter-spacing:-0.02em;color:var(--ink,#141414);}.ds-nav-link{color:var(--ink,#141414);font:600 15px var(--font-body,'Public Sans Variable',Arial,sans-serif);text-decoration:none;}.ds-nav-link:hover{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;}.ds-nav-cta{min-height:42px;display:inline-flex;align-items:center;padding:8px 16px;background:var(--ink,#141414);color:#fff;font:700 15px var(--font-heading,'Archivo Variable',Arial,sans-serif);border-radius:2px;text-decoration:none;}.ds-nav-cta:hover{background:#000;color:var(--hi,#ffe34d);}.ds-nav-link:focus-visible{outline:2px solid var(--ink,#141414);outline-offset:3px;box-shadow:0 0 0 6px var(--hi,#ffe34d);}.ds-nav-cta:focus-visible{outline:2px solid var(--ink,#141414);outline-offset:3px;box-shadow:0 0 0 6px var(--hi,#ffe34d);}"
+    },
+    {
+      "name": "Statement Sheet",
+      "kind": "card",
+      "refersTo": "sheet",
+      "description": "A turned paper sheet: head above a 2px ink rule, then ruled rows.",
+      "html": "<section class=\"ds-sheet\"><div class=\"ds-sheet-head\"><h3>Fee schedule</h3><p>Pay per page. No contract.</p></div><div class=\"ds-sheet-row\"><span>Free</span><span>100 pages</span></div><div class=\"ds-sheet-row\"><span>Monthly</span><span>$10</span></div></section>",
+      "css": ".ds-sheet{padding:44px 48px;background:var(--paper,#fff);box-shadow:0 1px 1px rgba(20,20,20,.06),0 14px 32px -12px rgba(20,20,20,.28);transform:rotate(-0.3deg);color:var(--ink,#141414);}.ds-sheet-head{padding-bottom:22px;border-bottom:2px solid var(--ink,#141414);}.ds-sheet-head h3{margin:0;font:800 28px/1.08 var(--font-heading,'Archivo Variable',Arial,sans-serif);font-stretch:112%;letter-spacing:-0.02em;}.ds-sheet-head p{margin:6px 0 0;color:var(--ink-soft,#4d4d4d);font-size:17px;}.ds-sheet-row{display:flex;justify-content:space-between;padding:18px 0;border-bottom:1px solid var(--rule,#d4d5d1);font-variant-numeric:tabular-nums;}"
+    },
+    {
+      "name": "Highlighted Statement Rows",
+      "kind": "custom",
+      "refersTo": "sheet",
+      "description": "Signature: answer rows get a left-to-right yellow swipe, a pencil tick, and a pencil total in the margin.",
+      "html": "<div class=\"ds-stmt\"><p class=\"ds-pencil\">2 rows = +$6,050.00</p><table class=\"ds-stmt-table\"><thead><tr><th></th><th>Date</th><th>Description</th><th class=\"ds-r\">Amount</th></tr></thead><tbody><tr><td></td><td>03/01</td><td>ADOBE *CREATIVE CLOUD</td><td class=\"ds-r\">-54.99</td></tr><tr class=\"ds-hit\"><td class=\"ds-tick\"><svg width=\"16\" height=\"13\" viewBox=\"0 0 20 16\" aria-hidden=\"true\"><path d=\"M2 9.5c2 1.4 3.4 3 4.6 4.6C9.4 8.6 13 4.2 18 1.6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\"/></svg></td><td>03/02</td><td><span class=\"ds-swipe\">ACH DEPOSIT ACME CO</span></td><td class=\"ds-r\"><span class=\"ds-swipe\">+4,200.00</span></td></tr></tbody></table></div>",
+      "css": ".ds-stmt{padding:26px 34px;background:var(--paper,#fff);box-shadow:0 1px 1px rgba(20,20,20,.06),0 14px 32px -12px rgba(20,20,20,.28);transform:rotate(-0.8deg);}.ds-pencil{margin:0 0 10px;text-align:right;font:400 22px/1.15 var(--font-hand,Kalam,cursive);color:var(--graphite,#555a5f);transform:rotate(-2.5deg);}.ds-stmt-table{width:100%;border-collapse:collapse;font:15px var(--font-body,'Public Sans Variable',Arial,sans-serif);font-variant-numeric:tabular-nums;}.ds-stmt-table th{text-align:left;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft,#4d4d4d);padding:10px 6px 8px;border-bottom:1px solid var(--ink,#141414);}.ds-stmt-table td{height:33px;padding:0 6px;border-bottom:1px solid var(--rule,#d4d5d1);}.ds-r{text-align:right!important;font-weight:600;}.ds-tick{color:var(--graphite,#555a5f);width:24px;}.ds-swipe{background:linear-gradient(var(--hi,#ffe34d),var(--hi,#ffe34d)) no-repeat 0 55%/100% 78%;padding:1px 3px;margin:0 -3px;}.ds-hit td:nth-child(3){font-weight:600;}@keyframes ds-swipe{from{background-size:0% 78%}}.ds-swipe{animation:ds-swipe 420ms cubic-bezier(0.22,1,0.36,1) both;}@media (prefers-reduced-motion:reduce){.ds-swipe{animation:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Marked-Up Statement",
+    "overview": "Every surface is a printed bank statement lying on a bookkeeper's desk, mid-review. The page ground is a neutral grey desk; content sits on white laser-printed sheets that lift off it with a soft shadow; type is black print with tabular figures. Review marks are the only colour: a yellow highlighter swipes the rows and words that answer, a pink highlighter marks the question, and a graphite pencil writes ticks and running totals in the margin. The product's core promise, ask a question and the rows that answer it light up, is the visual system itself, not an illustration of it.\n\nDensity is that of a real statement: identical ruled rows, right-aligned amounts, small uppercase column heads, headings set like statement letterhead in an expanded heavy grotesque. Nothing glows, floats in gradient space, or sits in a tinted feature card. Sheets are slightly turned, never perfectly square to the viewport, because paper on a desk never is.\n\nThis world replaced the earlier blue SaaS look across the marketing site and the app; legacy `--color-*` names are remapped into it so older templates inherit the world rather than fight it.",
+    "keyCharacteristics": [
+      "Grey desk ground, white sheets, black ink. Colour comes only from highlighter and pencil.",
+      "Yellow means \"this is the answer\"; pink means \"this is the question\".",
+      "Expanded heavy grotesque headings (Archivo at 112% width) over a tabular sans (Public Sans).",
+      "Statement anatomy everywhere: ruled rows, a 2px ink rule under every sheet head, uppercase column labels.",
+      "One motion: a left-to-right highlighter swipe, static under reduced motion."
+    ],
+    "rules": [
+      {
+        "name": "The Highlighter Means Answer Rule",
+        "body": "Yellow is applied only to answers and the one emphasised phrase of a headline. If nothing on the screen answers a question, nothing on the screen is yellow except hover and focus feedback.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pink Asks Rule",
+        "body": "Pink marks the question, and only the question. Never use pink for status, decoration, or a second accent.",
+        "section": "colors"
+      },
+      {
+        "name": "The No-Blue Rule",
+        "body": "No blue, no purple, no glow, and no decorative gradient fills. (The highlighter is drawn with a hard-stopped `linear-gradient` to fake a marker band; that is the only sanctioned use of a gradient.)",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Everything Rule",
+        "body": "`tabular-nums` is set on the root; amounts are right-aligned under right-aligned heads, so a column reads in one sweep.",
+        "section": "typography"
+      },
+      {
+        "name": "The Pencil Writes Numbers Rule",
+        "body": "Kalam is for handwritten annotations about the data (totals, counts, \"new\", a nudge to try it). It never sets a heading, a button, or body copy.",
+        "section": "typography"
+      },
+      {
+        "name": "The Rows Line Up Rule",
+        "body": "Every repeating list of facts (summary, fees, FAQ, steps, results) is a ruled list on paper, not a grid of cards.",
+        "section": "layout"
+      },
+      {
+        "name": "The One Lift Rule",
+        "body": "A surface either lies on the desk with the sheet lift or is printed on a sheet with no shadow at all. No intermediate elevations.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Turned Sheet Rule",
+        "body": "Sheets on the desk are turned slightly: the hero sheet about -0.8deg, lower sheets between -0.3deg and +0.35deg. Rotation is removed below 1080px (hero below 860px) so mobile reads square.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** put content on paper sheets with the sheet lift over the grey desk, and turn desktop sheets by under one degree.",
+      "**Do** reserve highlighter yellow for answers and the single emphasised phrase of a headline; pink for the question.",
+      "**Do** set headings in Archivo at 112% width, weight 800, with tight negative tracking.",
+      "**Do** keep figures tabular and right-aligned, rows equal-height and ruled.",
+      "**Do** make the primary action a black ink block whose hover turns its label yellow.",
+      "**Do** write numbers and nudges in graphite Kalam in the margin, turned a few degrees.",
+      "**Do** keep the highlighter swipe the only motion, and static under `prefers-reduced-motion`."
+    ],
+    "donts": [
+      "**Don't** use blue, purple, glow, or decorative gradient fills anywhere.",
+      "**Don't** use yellow as a generic accent, badge, or tinted panel background; quiet panels use the neutral tint.",
+      "**Don't** build grids of tinted feature cards or nest cards inside sheets; use ruled lists on paper.",
+      "**Don't** set the pencil face on headings, buttons, or body copy.",
+      "**Don't** put an uppercase eyebrow line above headings; uppercase labels belong to statement column heads and tier names only.",
+      "**Don't** use check-mark or cross glyphs as icons; draw ticks as pencil strokes and icons as SVG. (The FAQ's printed plus and minus toggle signs are type, not icons.)",
+      "**Don't** round sheets, or round controls beyond 4px; the pill is reserved for question chips."
+    ]
+  }
+}

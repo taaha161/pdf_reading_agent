@@ -1,35 +1,53 @@
-/* Design tokens ported from the live site (frontend/src/index.css) to keep
-   visual parity between the Astro marketing surface and the React app. */
+/* Design tokens: "The Marked-Up Statement".
+   A printed bank statement on a bookkeeper's desk. Grey desk, white paper, black print,
+   yellow highlighter for answers and emphasis, pink for questions, graphite pencil for notes.
+   Mirrored in frontend/src/index.css so the marketing site and the app read as one product. */
 :root {
-  --font-heading: "InterVariable", "Inter", system-ui, -apple-system, sans-serif;
-  --font-body: "InterVariable", "Inter", system-ui, -apple-system, sans-serif;
+  --font-heading: "Archivo Variable", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Public Sans Variable", "Helvetica Neue", Arial, sans-serif;
+  --font-hand: "Kalam", "Bradley Hand", cursive;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  /* World */
+  --desk: #e6e7e4;
+  --desk-deep: #d9dbd7;
+  --paper: #ffffff;
+  --ink: #141414;
+  --ink-soft: #4d4d4d;      /* secondary print, 8.6:1 on paper */
+  --graphite: #555a5f;      /* pencil, 6.9:1 on paper */
+  --rule: #d4d5d1;          /* statement rules */
+  --rule-strong: #141414;
+  --hi: #ffe34d;            /* yellow highlighter: answers, emphasis */
+  --hi-soft: #fff3a6;
+  --hi-pink: #ff9ccb;       /* pink highlighter: the question */
+  --sheet-shadow: 0 1px 1px rgba(20, 20, 20, 0.06), 0 14px 32px -12px rgba(20, 20, 20, 0.28);
 
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-muted: rgba(37, 99, 235, 0.35);
-  --color-primary-subtle: rgba(37, 99, 235, 0.1);
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+
+  /* Legacy names, remapped into the world so older templates inherit it */
+  --color-primary: var(--ink);
+  --color-primary-hover: #000000;
+  --color-primary-muted: rgba(20, 20, 20, 0.35);
+  --color-primary-subtle: #f1f1ee; /* neutral tint; yellow is reserved for answers */
   --color-on-primary: #ffffff;
 
-  --color-bg: #f8fafc;
-  --color-surface: #ffffff;
-  --color-text: #0f172a;
-  --color-text-muted: #64748b;
-  --color-border: #e2e8f0;
+  --color-bg: var(--desk);
+  --color-surface: var(--paper);
+  --color-text: var(--ink);
+  --color-text-muted: var(--ink-soft);
+  --color-border: var(--rule);
 
-  --color-success: #22c55e;
-  --color-error: #dc2626;
+  --color-success: #1f7a3a;
+  --color-error: #b3261e;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 2px rgba(20, 20, 20, 0.06);
+  --shadow-md: var(--sheet-shadow);
+  --shadow-lg: var(--sheet-shadow);
 
-  --landing-bg: linear-gradient(160deg, #f1f5f9 0%, #ffffff 50%, rgba(37, 99, 235, 0.04) 100%);
+  --landing-bg: var(--desk);
 
-  --maxw: 1120px;
+  --maxw: 1200px;
 }
 
 *,
@@ -45,7 +63,8 @@ html {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   /* Keep #anchor targets clear of the sticky header */
-  scroll-padding-top: 64px;
+  scroll-padding-top: 72px;
+  font-variant-numeric: tabular-nums;
 }
 
 body {
@@ -55,16 +74,30 @@ body {
 
 h1, h2, h3, h4 {
   font-family: var(--font-heading);
-  line-height: 1.15;
+  font-stretch: 112%;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
   text-wrap: balance;
 }
 
+p, li {
+  text-wrap: pretty;
+}
+
 a {
-  color: var(--color-primary);
-  text-decoration: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 a:hover {
-  color: var(--color-primary-hover);
+  color: #000;
+  text-decoration-thickness: 2px;
+}
+
+::selection {
+  background: var(--hi);
+  color: var(--ink);
 }
 
 img {
@@ -73,8 +106,9 @@ img {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px var(--hi);
 }
 
 .container {
@@ -82,4 +116,113 @@ img {
   max-width: var(--maxw);
   margin-inline: auto;
   padding-inline: 24px;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding-inline: 16px;
+  }
+}
+
+/* Shared world pieces */
+
+/* A sheet of statement paper lying on the desk */
+.sheet {
+  background: var(--paper);
+  box-shadow: var(--sheet-shadow);
+}
+
+/* Black ink button: the one primary action */
+.ink-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 22px;
+  background: var(--ink);
+  color: #fff;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.ink-btn:hover {
+  background: #000;
+  color: var(--hi);
+  text-decoration: none;
+}
+
+/* Secondary action: outlined in ink */
+.line-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 20px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+}
+.line-btn:hover {
+  background: var(--hi);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* Highlighter swipe behind inline text */
+.hl {
+  background: linear-gradient(transparent 14%, var(--hi) 14%, var(--hi) 88%, transparent 88%);
+  padding-inline: 0.12em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.hl-pink {
+  background: linear-gradient(transparent 14%, var(--hi-pink) 14%, var(--hi-pink) 88%, transparent 88%);
+  padding-inline: 0.12em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Pencil note */
+.pencil {
+  font-family: var(--font-hand);
+  color: var(--graphite);
+  font-weight: 400;
+}
+
+/* Pencil tick, drawn (used as a list marker) */
+.tick-list {
+  list-style: none;
+  padding: 0;
+}
+.tick-list > li {
+  position: relative;
+  padding-left: 26px;
+}
+.tick-list > li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.45em;
+  width: 16px;
+  height: 13px;
+  background: var(--graphite);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 16'%3E%3Cpath d='M2 9.5c2 1.4 3.4 3 4.6 4.6C9.4 8.6 13 4.2 18 1.6' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 16'%3E%3Cpath d='M2 9.5c2 1.4 3.4 3 4.6 4.6C9.4 8.6 13 4.2 18 1.6' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* Links styled as buttons never carry a text underline */
+a[class*="btn"],
+a[class*="cta"] {
+  text-decoration: none;
 }

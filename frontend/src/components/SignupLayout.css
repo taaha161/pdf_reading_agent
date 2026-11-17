@@ -683,3 +683,202 @@
   font-size: 0.8rem;
   opacity: 0.85;
 }
+
+/* ---------------------------------------------------------------------------
+   Statement world: the form and the value panel are two sheets on the desk.
+   Form on the left, the panel on the right (same order as login).
+   --------------------------------------------------------------------------- */
+.su-page {
+  background: var(--desk);
+}
+.su-header {
+  border-bottom: 2px solid var(--ink);
+}
+.su-logo span {
+  font-family: var(--font-heading);
+  font-stretch: 112%;
+  font-weight: 800;
+}
+@media (min-width: 960px) {
+  .su-main {
+    grid-template-columns: 1fr minmax(380px, 44%);
+    grid-template-areas: "form aside";
+    gap: 2rem;
+    padding: 2rem 2.5rem 2.5rem;
+  }
+  .su-form-col {
+    padding: 0;
+    align-items: flex-start;
+    justify-content: flex-end;
+  }
+  .su-aside {
+    align-self: start;
+    transform: rotate(0.6deg);
+  }
+}
+.su-main {
+  padding-top: 1.5rem;
+}
+
+.su-card {
+  max-width: 460px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: var(--sheet-shadow);
+}
+.su-title {
+  font-family: var(--font-heading);
+  font-stretch: 112%;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.su-sub {
+  color: var(--ink-soft);
+}
+
+.su-btn {
+  border-radius: var(--radius-sm);
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+.su-btn-primary {
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  color: #fff;
+  box-shadow: none;
+}
+.su-btn-primary:hover:not(:disabled) {
+  background: #000;
+  color: var(--hi);
+  filter: none;
+}
+.su-btn-google,
+.su-btn-secondary {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  color: var(--ink);
+}
+.su-btn-google:hover:not(:disabled),
+.su-btn-secondary:hover:not(:disabled) {
+  background: var(--hi);
+  border-color: var(--ink);
+}
+
+.su-input {
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-sm);
+}
+.su-input::placeholder {
+  color: #6b6b6b;
+}
+.su-input:focus {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 4px var(--hi);
+}
+.su-input.is-applied {
+  border-color: var(--ink);
+  background: var(--hi-soft);
+}
+.su-chip-btn {
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+}
+.su-alert {
+  border-radius: 0;
+}
+.su-spinner {
+  border-color: var(--rule);
+  border-top-color: var(--ink);
+}
+
+/* The value panel: a sheet, not a blue poster */
+.su-aside {
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--sheet-shadow);
+}
+.su-aside-inner {
+  gap: 1.2rem;
+}
+@media (min-width: 960px) {
+  .su-aside-inner {
+    justify-content: flex-start;
+    max-width: none;
+    margin: 0;
+    padding: 2.5rem 2.75rem;
+  }
+}
+.su-aside-title {
+  font-family: var(--font-heading);
+  font-stretch: 112%;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--ink);
+}
+/* The old eyebrow pill is now a pencil note under the headline */
+.su-eyebrow {
+  align-self: auto;
+  margin: -0.6rem 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--graphite);
+}
+.su-aside-lead {
+  margin: 0;
+  color: var(--ink-soft);
+}
+.su-benefits li {
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--rule);
+}
+.su-benefit-icon {
+  width: auto;
+  height: auto;
+  margin-top: 3px;
+  border-radius: 0;
+  background: none;
+  color: var(--graphite);
+}
+.su-security {
+  border-top: 0;
+  padding-top: 0.25rem;
+  color: var(--ink-soft);
+}
+.su-security svg {
+  color: var(--graphite);
+}
+.su-plan {
+  border-radius: 0;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+}
+.su-plan-row,
+.su-plan-row--head,
+.su-plan-row strong {
+  color: var(--ink);
+}
+.su-plan-note {
+  color: var(--ink-soft);
+}
+.su-meter li {
+  border-radius: 0;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+}
+.su-meter li.is-free {
+  background: var(--hi-soft);
+  border-color: var(--ink);
+  color: var(--ink);
+}

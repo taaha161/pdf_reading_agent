@@ -3,10 +3,9 @@ import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import BankLogoMarquee from '../components/BankLogoMarquee.astro';
 import HeroDropzone from '../components/HeroDropzone.astro';
-import ConvertDemo from '../components/ConvertDemo.astro';
 import ProductVideo from '../components/ProductVideo.astro';
 import SecurityStrip from '../components/SecurityStrip.astro';
-import AskStatement from '../components/AskStatement.astro';
+import StatementSheet from '../components/StatementSheet.astro';
 import SampleExport from '../components/SampleExport.astro';
 import FounderBlock from '../components/FounderBlock.astro';
 import StickyCta from '../components/StickyCta.astro';
@@ -97,11 +96,9 @@ const jsonLd = [
   },
 ];
 
-// Headline A/B test (home_h1). Variant B is the outcome-led line from the LinkedIn LP.
-const H1_VARIANTS = {
-  a: 'Turn bank statement PDFs into <span class="accent">clean, categorized data</span> in seconds.',
-  b: 'Never type a bank statement into <span class="accent">Excel</span> again.',
-};
+// Both headline texts from the retired home_h1 test stay: one opens the page, one closes it.
+const HEADLINE = 'Turn bank statement PDFs into <span class="hl">clean, categorized data</span> in seconds.';
+const CLOSING_HEADLINE = 'Never type a bank statement into Excel again.';
 
 const steps = [
   { title: 'Drop in the PDF', body: 'Any bank or credit card statement: digital, scanned, or password-protected.' },
@@ -109,52 +106,42 @@ const steps = [
   { title: 'Review and export', body: 'Look over the rows, then download Excel or CSV for QuickBooks, Xero or your workbook.' },
 ];
 
+const features = [
+  { title: 'Ask your statement', body: 'Ask for “all transactions from John” or “every ATM withdrawal” and download just those rows as Excel or CSV.', isNew: true },
+  { title: 'AI-powered extraction', body: 'Instantly pull line-item data from any computer-generated or scanned PDF with high accuracy.' },
+  { title: 'Smart categorization', body: 'Automatically group transactions by merchant, type, and description using custom rules and AI categorization.' },
+  { title: 'Secure & private', body: 'Encrypted over HTTPS. Use incognito mode to process statements without saving them.', link: { href: '/security', label: 'Read about security' } },
+  { title: 'Export to any format', body: 'Download your structured, categorized data as CSV or Excel, ready for QuickBooks, Xero, or a spreadsheet.' },
+];
 ---
 
 <Base title={`${SITE_NAME} — ${SITE_TAGLINE}`} path="/" jsonLd={jsonLd}>
-  <!-- Hero -->
+  <!-- Hero: the statement on the desk, and the upload beside it -->
   <section class="hero" data-sticky-after>
-    <div class="container hero-inner">
+    <div class="container hero-grid">
       <div class="hero-copy">
-        <p class="pill">New: ask your statement for any transactions</p>
-        <h1 class="hero-title" id="home-h1" set:html={H1_VARIANTS.a} />
-        <script is:inline define:vars={{ H1_VARIANTS }}>
-          // Sticky 50/50 split by cookie; reported to GTM so conversions can be compared per variant.
-          (function () {
-            try {
-              var m = document.cookie.match(/(?:^|; )bss_h1=([ab])/);
-              var v = m ? m[1] : (Math.random() < 0.5 ? 'a' : 'b');
-              if (!m) document.cookie = 'bss_h1=' + v + '; path=/; max-age=' + 60 * 60 * 24 * 60 + '; samesite=lax';
-              if (v === 'b') document.getElementById('home-h1').innerHTML = H1_VARIANTS.b;
-              (window.dataLayer = window.dataLayer || []).push({ event: 'experiment_view', experiment: 'home_h1', variant: v });
-              if (window.clarity) window.clarity('set', 'home_h1', v);
-            } catch (e) {}
-          })();
-        </script>
+        <h1 class="hero-title" set:html={HEADLINE} />
         <p class="hero-sub">
           Upload a bank, credit card, or scanned statement. Get every transaction back in clean,
           categorized columns, ready for Excel, CSV,
           QuickBooks, or Xero. Then ask for exactly what you need, like every payment from John, and
           download just those rows.
         </p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="/scanner" data-cta="hero_primary">Get started free</a>
-          <a class="btn btn-ghost" href="#sample" data-open-sample="hero" data-cta="hero_sample">View sample export</a>
+        <div class="hero-upload">
+          <HeroDropzone />
         </div>
-        <p class="hero-meta">
-          <span>No credit card required</span>
-          <span class="dot" aria-hidden="true"></span>
-          <span>{FREE_LABEL}</span>
-          <span class="dot" aria-hidden="true"></span>
-          <span>No annual contract</span>
+        <p class="hero-sample">
+          No statement handy? <a href="/scanner?sample=1" data-cta="hero_try_sample">Open the sample statement</a>
+          or <a href="#sample" data-open-sample="hero" data-cta="hero_sample">see the exported files</a>.
         </p>
+        <ul class="hero-meta tick-list" role="list">
+          <li>No credit card required</li>
+          <li>{FREE_LABEL}</li>
+          <li>No annual contract</li>
+        </ul>
       </div>
-
-      <div class="hero-mock">
-        <HeroDropzone />
-        <p class="hero-sample-link">
-          Not ready to upload your own? <a href="/scanner?sample=1" data-cta="hero_try_sample">Try it with a sample statement →</a>
-        </p>
+      <div class="hero-sheet">
+        <StatementSheet />
       </div>
     </div>
   </section>
@@ -163,165 +150,121 @@ const steps = [
 
   <BankLogoMarquee />
 
-  <!-- Results / stats -->
-  <section class="results" id="results" aria-label="Free pages and pricing">
-    <div class="container stats">
-      <div><div class="stat-value">{FREE_ANON_PAGES} pages</div><div class="stat-label">Free without an account</div></div>
-      <div><div class="stat-value">{FREE_SIGNUP_PAGES} pages</div><div class="stat-label">Free your first month</div></div>
-      <div><div class="stat-value">${PLAN_PRICE}/mo</div><div class="stat-label">For {PLAN_PAGES} pages after that</div></div>
-    </div>
-  </section>
-
-  <!-- Product video -->
-  <section class="watch" id="demo" aria-labelledby="watch-h">
-    <div class="container watch-inner">
-      <div class="section-head">
-        <h2 id="watch-h">See it work in 22 seconds</h2>
-        <p>Drop in a PDF. Every transaction comes back categorized, ready for Excel or CSV.</p>
-      </div>
-      <ProductVideo />
-      <div class="watch-actions">
-        <a class="btn btn-primary" href="/scanner" data-cta="video_primary">Try it free with your statement</a>
-        <a class="btn btn-ghost" href="/scanner?sample=1" data-cta="video_sample">Try it with a sample</a>
-      </div>
-      <p class="watch-credit">Music: “Happy Beats / Business Moves Vol. 11” by Sascha Ende (ende.app), CC BY 4.0.</p>
-    </div>
-  </section>
-
-  <!-- How it works: show the output, then the three steps -->
-  <section class="how" id="how-it-works" aria-label="How it works">
-    <div class="container how-inner">
-      <div class="how-demo">
-        <ConvertDemo video />
-      </div>
+  <!-- How it works: the real product, then the three steps -->
+  <section class="how" id="how-it-works" aria-labelledby="how-h">
+    <div class="container how-grid">
       <div class="how-copy">
-        <h2>From PDF to spreadsheet in three steps</h2>
+        <h2 id="how-h">From PDF to spreadsheet in three steps</h2>
         <ol class="how-steps" role="list">
           {steps.map((st, i) => (
             <li>
-              <span class="how-n">{i + 1}</span>
+              <span class="how-n" aria-hidden="true">{i + 1}</span>
               <div><h3>{st.title}</h3><p>{st.body}</p></div>
             </li>
           ))}
         </ol>
-        <div class="how-actions">
-          <a class="btn btn-primary" href="/scanner" data-cta="how_primary">Convert a statement free</a>
-          <a class="btn btn-ghost" href="#sample" data-open-sample="how" data-cta="how_sample">See a real export</a>
+        <div class="actions">
+          <a class="ink-btn" href="/scanner" data-cta="how_primary">Convert a statement free</a>
+          <a class="line-btn" href="#sample" data-open-sample="how" data-cta="how_sample">See the exported files</a>
         </div>
+      </div>
+      <div class="how-video" id="demo">
+        <p class="how-video-note pencil" aria-hidden="true">See it work in 22 seconds</p>
+        <ProductVideo />
       </div>
     </div>
   </section>
 
-  <AskStatement cta="home_ask" tone="tint" />
-
-  <!-- Features -->
-  <section class="features" aria-label="Features">
+  <!-- What you get: set like a statement's account summary -->
+  <section class="summary" aria-labelledby="summary-h">
     <div class="container">
-      <header class="section-head">
-        <h2>Convert it, ask it, export it</h2>
-        <p>Our AI does the heavy lifting so you can focus on making informed financial decisions.</p>
-      </header>
-      <div class="feature-grid">
-        <article class="feature-card feature-card--new">
-          <span class="feature-new">New</span>
-          <h3>Ask your statement</h3>
-          <p>Ask for “all transactions from John” or “every ATM withdrawal” and download just those rows as Excel or CSV.</p>
-        </article>
-        <article class="feature-card">
-          <h3>AI-powered extraction</h3>
-          <p>Instantly pull line-item data from any computer-generated or scanned PDF with high accuracy.</p>
-        </article>
-        <article class="feature-card">
-          <h3>Smart categorization</h3>
-          <p>Automatically group transactions by merchant, type, and description using custom rules and AI categorization.</p>
-        </article>
-        <article class="feature-card">
-          <h3>Secure &amp; private</h3>
-          <p>Encrypted over HTTPS. Use incognito mode to process statements without saving them. <a href="/security">Read about security →</a></p>
-        </article>
-        <article class="feature-card">
-          <h3>Export to any format</h3>
-          <p>Download your structured, categorized data as CSV or Excel—ready for QuickBooks, Xero, or a spreadsheet.</p>
-        </article>
+      <div class="sheet summary-sheet">
+        <header class="summary-head">
+          <h2 id="summary-h">Convert it, ask it, export it</h2>
+          <p>One upload gets you the rows, the categories and the answers, in a file you can open in Excel.</p>
+        </header>
+        <dl class="summary-list">
+          {features.map((f) => (
+            <div class="summary-row">
+              <dt>{f.isNew ? <span class="hl">{f.title}</span> : f.title}{f.isNew && <span class="pencil summary-new">new</span>}</dt>
+              <dd>
+                {f.body}
+                {f.link && <> <a href={f.link.href}>{f.link.label}</a></>}
+              </dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </div>
   </section>
 
   <!-- Who it's for -->
-  <section class="usecases-wrap" aria-label="Who it's for">
-    <div class="container">
-      <header class="section-head">
-        <h2>Built for whoever is typing statements today</h2>
-      </header>
-      <div class="usecases">
-        {
-          useCases.map((u) => (
-            <article class="usecard">
-              <a class="usecard-media" href={`/blog/${u.slug}`}>
-                <img src={u.post.data.image} alt="" loading="lazy" width="480" height="270" />
-              </a>
-              <div class="usecard-body">
-                <h3>{u.label}</h3>
-                <p>{u.post.data.excerpt}</p>
-                <a class="usecard-link" href={u.persona ?? `/blog/${u.slug}`}>{u.persona ? `See how it works for ${u.label.replace(/^For /, '')}` : `Read the ${u.label.replace(/^For /, '')} guide`} →</a>
-              </div>
-            </article>
-          ))
-        }
-      </div>
+  <section class="who" aria-labelledby="who-h">
+    <div class="container who-grid">
+      <h2 id="who-h">Built for whoever is typing statements today</h2>
+      <ul class="who-list" role="list">
+        {useCases.map((u) => (
+          <li>
+            <h3>{u.label}</h3>
+            <p>{u.post.data.excerpt}</p>
+            <a href={u.persona ?? `/blog/${u.slug}`}>{u.persona ? `See how it works for ${u.label.replace(/^For /, '')}` : `Read the ${u.label.replace(/^For /, '')} guide`}</a>
+          </li>
+        ))}
+      </ul>
     </div>
   </section>
 
-  <!-- Pricing -->
-  <section class="pricing" id="pricing" aria-label="Pricing">
+  <!-- Pricing: a fee schedule -->
+  <section class="pricing" id="pricing" aria-labelledby="pricing-h">
     <div class="container">
-      <header class="section-head">
-        <h2>Simple pricing, by the page</h2>
-        <p>Try {FREE_ANON_PAGES} pages free without an account. Your first month includes {FREE_SIGNUP_PAGES} pages free. Then ${PLAN_PRICE} a month, no annual contract. Cancel anytime.</p>
-      </header>
-      <div class="price-grid">
-        <article class="price-card">
-          <div class="price-label">Free</div>
-          <div class="price-value">$0<span>/first month</span></div>
-          <p class="price-tagline">{FREE_SIGNUP_PAGES} pages free for your first {FREE_SIGNUP_DAYS} days. No credit card.</p>
-          <ul class="price-list">
-            <li>{FREE_SIGNUP_PAGES} statement pages in your first month</li>
-            <li>{FREE_ANON_PAGES} pages free even without an account</li>
-            <li>CSV &amp; Excel export, AI categorization</li>
-            <li>Ask your statements questions</li>
-          </ul>
-          <a class="btn btn-outline price-btn" href="/signup" data-cta="pricing_free">Start free</a>
-        </article>
-        <article class="price-card price-card--highlight">
-          <div class="price-pill">Most popular</div>
-          <div class="price-label">Monthly</div>
-          <div class="price-value">${PLAN_PRICE}<span>/mo</span></div>
-          <p class="price-tagline">{PLAN_PAGES} pages every month. What that gets you:</p>
-          <ul class="price-examples" role="list">
-            <li><strong>~16</strong><span>six-page statements</span></li>
-            <li><strong>~8</strong><span>six-page statements on High accuracy</span></li>
-            <li><strong>$0.10</strong><span>per page</span></li>
-          </ul>
-          <ul class="price-list">
-            <li>{PLAN_PAGES} pages each billing cycle</li>
-            <li>Add page packs whenever you need more</li>
-            <li>Larger uploads, up to 50 MB</li>
-            <li>Monthly billing, cancel anytime</li>
-          </ul>
-          <a class="btn btn-primary price-btn" href="/subscribe" data-cta="pricing_sub">Get Monthly</a>
-          <p class="price-fineprint">Pay securely with Stripe, then set your password.</p>
-        </article>
-        <article class="price-card">
-          <div class="price-label">Page packs</div>
-          <div class="price-value">from ${PAGE_PACKS[0].price}</div>
-          <p class="price-tagline">Busy month? Add pages anytime, with or without the plan.</p>
-          <ul class="price-list">
-            {PAGE_PACKS.map((p) => <li>{p.pages} pages for ${p.price}</li>)}
-            <li>Pack pages never expire</li>
-            <li>High accuracy mode uses {ACCURATE_MULTIPLIER} pages per PDF page</li>
-          </ul>
-          <a class="btn btn-outline price-btn" href="/scanner" data-cta="pricing_topup">Try it free first</a>
-        </article>
+      <div class="sheet fees">
+        <header class="fees-head">
+          <h2 id="pricing-h">Simple pricing, by the page</h2>
+          <p>Try {FREE_ANON_PAGES} pages free without an account. Your first month includes {FREE_SIGNUP_PAGES} pages free. Then ${PLAN_PRICE} a month, no annual contract. Cancel anytime.</p>
+        </header>
+        <div class="fees-grid">
+          <article class="fee">
+            <h3 class="fee-label">Free</h3>
+            <p class="fee-value">$0<span>/first month</span></p>
+            <p class="fee-tagline">{FREE_SIGNUP_PAGES} pages free for your first {FREE_SIGNUP_DAYS} days. No credit card.</p>
+            <ul class="fee-list tick-list" role="list">
+              <li>{FREE_SIGNUP_PAGES} statement pages in your first month</li>
+              <li>{FREE_ANON_PAGES} pages free even without an account</li>
+              <li>CSV &amp; Excel export, AI categorization</li>
+              <li>Ask your statements questions</li>
+            </ul>
+            <a class="line-btn fee-btn" href="/signup" data-cta="pricing_free">Create a free account</a>
+          </article>
+          <article class="fee fee--plan">
+            <h3 class="fee-label">Monthly</h3>
+            <p class="fee-value"><span class="hl">${PLAN_PRICE}</span><span>/mo</span><span class="fee-pencil pencil" aria-hidden="true">= $0.10 a page</span></p>
+            <p class="fee-tagline">{PLAN_PAGES} pages every month. What that gets you:</p>
+            <dl class="fee-examples">
+              <div><dt>~16</dt><dd>six-page statements</dd></div>
+              <div><dt>~8</dt><dd>six-page statements on High accuracy</dd></div>
+              <div><dt>$0.10</dt><dd>per page</dd></div>
+            </dl>
+            <ul class="fee-list tick-list" role="list">
+              <li>{PLAN_PAGES} pages each billing cycle</li>
+              <li>Add page packs whenever you need more</li>
+              <li>Larger uploads, up to 50 MB</li>
+              <li>Monthly billing, cancel anytime</li>
+            </ul>
+            <a class="ink-btn fee-btn" href="/subscribe" data-cta="pricing_sub">Get Monthly</a>
+            <p class="fee-fine">Pay securely with Stripe, then set your password.</p>
+          </article>
+          <article class="fee">
+            <h3 class="fee-label">Page packs</h3>
+            <p class="fee-value">from ${PAGE_PACKS[0].price}</p>
+            <p class="fee-tagline">Busy month? Add pages anytime, with or without the plan.</p>
+            <ul class="fee-list tick-list" role="list">
+              {PAGE_PACKS.map((p) => <li>{p.pages} pages for ${p.price}</li>)}
+              <li>Pack pages never expire</li>
+              <li>High accuracy mode uses {ACCURATE_MULTIPLIER} pages per PDF page</li>
+            </ul>
+            <a class="line-btn fee-btn" href="/scanner" data-cta="pricing_topup">Convert a statement free</a>
+          </article>
+        </div>
       </div>
     </div>
   </section>
@@ -329,13 +272,13 @@ const steps = [
   <FounderBlock />
 
   <!-- FAQ -->
-  <section class="faq" id="faq" aria-label="Frequently asked questions">
-    <div class="container faq-inner">
-      <header class="section-head">
-        <h2>Frequently asked questions</h2>
+  <section class="faq" id="faq" aria-labelledby="faq-h">
+    <div class="container faq-grid">
+      <header class="faq-head">
+        <h2 id="faq-h">Frequently asked questions</h2>
         <p>Everything you need to know before your first upload. Still stuck? <a href="/contact">Contact support</a>.</p>
       </header>
-      <div class="faq-list">
+      <div class="sheet faq-list">
         {
           faqs.map((f) => (
             <details class="faq-item">
@@ -348,14 +291,14 @@ const steps = [
     </div>
   </section>
 
-  <!-- CTA band -->
-  <section class="cta-band" aria-label="Call to action">
-    <div class="container cta-band-inner">
-      <h2>Ready to stop manual data entry?</h2>
+  <!-- Close -->
+  <section class="close" aria-labelledby="close-h">
+    <div class="container close-inner">
+      <h2 id="close-h">{CLOSING_HEADLINE}</h2>
       <p>Turn messy statements into clean, structured data. Try your first {FREE_ANON_PAGES} pages without an account.</p>
-      <div class="cta-band-actions">
-        <a class="btn btn-invert" href="/scanner" data-cta="band">Start scanning now</a>
-        <span class="cta-band-note">{FREE_LABEL} · No credit card required.</span>
+      <div class="actions">
+        <a class="ink-btn close-btn" href="/scanner" data-cta="band">Convert a statement free</a>
+        <span class="close-note">{FREE_LABEL} · No credit card required.</span>
       </div>
     </div>
   </section>
@@ -367,14 +310,14 @@ const steps = [
         <h2>Guides for your bank</h2>
         <ul role="list">
           {banks.map((b) => <li><a href={`/convert/${b.data.slug}`}>{b.data.name}</a></li>)}
-          <li><a href="/convert">All supported banks →</a></li>
+          <li><a href="/convert">All supported banks</a></li>
         </ul>
       </div>
       <div>
         <h2>How we compare</h2>
         <ul role="list">
           {comparePages.filter((c) => c.featured).map((c) => <li><a href={c.href}>{c.title}</a></li>)}
-          <li><a href="/compare">All comparisons →</a></li>
+          <li><a href="/compare">All comparisons</a></li>
         </ul>
       </div>
       <div>
@@ -393,165 +336,160 @@ const steps = [
 </Base>
 
 <style>
-  .btn {
-    display: inline-block; font-weight: 600; font-size: 16px;
-    padding: 12px 22px; border-radius: var(--radius-md); cursor: pointer;
-    border: 1px solid transparent; text-align: center;
-  }
-  .btn-primary { background: var(--color-primary); color: var(--color-on-primary); }
-  .btn-primary:hover { background: var(--color-primary-hover); color: var(--color-on-primary); }
-  .btn-ghost { background: transparent; color: var(--color-text); border-color: var(--color-border); }
-  .btn-ghost:hover { border-color: var(--color-primary); color: var(--color-primary); }
-  .btn-outline { background: transparent; color: var(--color-primary); border-color: var(--color-primary-muted); }
-  .btn-outline:hover { background: var(--color-primary-subtle); color: var(--color-primary); }
-  .btn-invert { background: #fff; color: var(--color-primary); }
-  .btn-invert:hover { color: var(--color-primary-hover); }
-
-  .section-head { max-width: 640px; margin: 0 auto 40px; text-align: center; }
-  .section-head h2 { font-size: clamp(26px, 4vw, 36px); margin: 0; }
-  .section-head p { color: var(--color-text-muted); font-size: 17px; margin-top: 12px; }
+  h2 { font-size: clamp(30px, 3.6vw, 44px); margin: 0; font-weight: 800; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-top: 28px; }
 
   /* Hero */
-  .hero { background: var(--landing-bg); padding-block: 64px 40px; }
-  .hero-inner { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; }
-  .pill {
-    display: inline-block; background: var(--color-primary-subtle); color: var(--color-primary);
-    font-weight: 600; font-size: 13px; padding: 6px 14px; border-radius: 999px; margin: 0 0 18px;
+  .hero { padding-block: 36px 72px; overflow: hidden; }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    grid-template-areas: "sheet copy";
+    gap: 48px;
+    align-items: start;
   }
-  .hero-title { font-size: clamp(34px, 5.4vw, 52px); margin: 0; line-height: 1.08; }
-  .accent { color: var(--color-primary); }
-  .hero-sub { font-size: 18px; color: var(--color-text-muted); margin-top: 20px; max-width: 54ch; }
-  .hero-actions { display: flex; gap: 14px; margin-top: 28px; flex-wrap: wrap; }
-  .hero-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; color: var(--color-text-muted); font-size: 14px; margin-top: 22px; }
-  .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--color-border); display: inline-block; }
-
-  .hero-sample-link { margin: 14px 0 0; text-align: center; font-size: 14px; color: var(--color-text-muted); }
-  .hero-sample-link a { font-weight: 600; }
-
-  /* Results */
-  .results { padding-block: 36px; border-bottom: 1px solid var(--color-border); }
-  .stats { display: flex; gap: 48px; justify-content: center; flex-wrap: wrap; text-align: center; }
-  .stat-value { font-family: var(--font-heading); font-size: 34px; color: var(--color-primary); }
-  .stat-label { color: var(--color-text-muted); font-size: 14px; margin-top: 4px; }
-
-  /* Product video */
-  .watch { padding-block: 72px 0; }
-  .watch-inner { max-width: 1000px; }
-  .watch .section-head { margin-bottom: 28px; }
-  .watch-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
-  .watch-credit { margin: 14px 0 0; text-align: center; font-size: 12px; color: var(--color-text-muted); }
+  .hero-copy { grid-area: copy; padding-top: 4px; }
+  .hero-sheet { grid-area: sheet; }
+  .hero-title {
+    margin: 0;
+    font-size: clamp(34px, 3vw, 44px);
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+  }
+  .hero-sub { margin: 14px 0 0; font-size: 16px; line-height: 1.5; color: var(--ink-soft); max-width: 46ch; }
+  .hero-upload { margin-top: 22px; }
+  .hero-sample { margin: 16px 0 0; font-size: 15px; color: var(--ink-soft); }
+  .hero-meta {
+    display: flex; flex-wrap: wrap; gap: 6px 22px;
+    margin: 14px 0 0;
+    font-size: 14px; color: var(--ink-soft);
+  }
 
   /* How it works */
-  .how { padding-block: 80px 24px; }
-  .how-inner { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 56px; align-items: center; }
-  .how-copy h2 { font-size: clamp(26px, 4vw, 36px); margin: 0 0 24px; }
-  .how-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
-  .how-steps li { display: flex; gap: 16px; align-items: flex-start; }
-  .how-n {
-    flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
-    background: var(--color-primary); color: #fff; font-weight: 700;
+  .how { padding-block: 104px 96px; }
+  .how-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 64px;
+    align-items: center;
   }
-  .how-steps h3 { margin: 4px 0 4px; font-size: 18px; }
-  .how-steps p { margin: 0; color: var(--color-text-muted); font-size: 15px; }
-  .how-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+  .how-steps { list-style: none; margin: 32px 0 0; padding: 0; border-top: 2px solid var(--ink); }
+  .how-steps li {
+    display: grid; grid-template-columns: 56px 1fr; gap: 8px;
+    padding: 18px 0; border-bottom: 1px solid var(--rule-strong);
+  }
+  .how-n { font-family: var(--font-heading); font-size: 34px; font-weight: 800; line-height: 1; }
+  .how-steps h3 { margin: 0 0 4px; font-size: 20px; font-weight: 800; }
+  .how-steps p { margin: 0; color: var(--ink-soft); font-size: 16px; }
+  .how-video { position: relative; }
+  .how-video-note { margin: 0 0 8px 6px; font-size: 22px; transform: rotate(-1.5deg); transform-origin: left; }
 
-  /* Features */
-  .features { padding-block: 72px; }
-  .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px; }
-  .feature-card {
-    background: var(--color-surface); border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);
-  }
-  .feature-card h3 { font-size: 19px; margin: 0 0 8px; }
-  .feature-card--new { position: relative; border-color: var(--color-primary-muted); box-shadow: var(--shadow-md); }
-  .feature-new {
-    position: absolute; top: -10px; right: 18px; padding: 3px 10px; border-radius: 999px;
-    background: linear-gradient(135deg, var(--color-primary), #7c3aed); color: #fff;
-    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-  }
-  .feature-card p { color: var(--color-text-muted); font-size: 15px; margin: 0; }
+  /* Account summary */
+  .summary { padding-block: 24px 104px; }
+  .summary-sheet { padding: 44px 48px 30px; }
+  .summary-head { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 48px; align-items: end; padding-bottom: 22px; border-bottom: 2px solid var(--ink); }
+  .summary-head p { margin: 0; color: var(--ink-soft); font-size: 17px; max-width: 46ch; }
+  .summary-list { margin: 0; }
+  .summary-row { display: grid; grid-template-columns: minmax(200px, 0.8fr) 2fr; gap: 8px 48px; padding: 18px 0; border-bottom: 1px solid var(--rule); }
+  .summary-row:last-child { border-bottom: 0; }
+  .summary-row dt { font-family: var(--font-heading); font-weight: 800; font-size: 20px; letter-spacing: -0.01em; }
+  .summary-row dd { margin: 0; color: var(--ink-soft); font-size: 17px; max-width: 62ch; }
+  .summary-new { margin-left: 10px; font-size: 19px; }
 
-  /* Use cases */
-  .usecases-wrap { padding-bottom: 8px; }
-  .usecases { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; padding-bottom: 8px; }
-  .usecard {
-    background: var(--color-surface); border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm);
-  }
-  .usecard-media { display: block; aspect-ratio: 16 / 9; background: var(--color-primary-subtle); }
-  .usecard-media img { width: 100%; height: 100%; object-fit: cover; }
-  .usecard-body { padding: 20px 22px; }
-  .usecard-body h3 { margin: 0 0 8px; font-size: 20px; }
-  .usecard-body p { color: var(--color-text-muted); font-size: 15px; margin: 0 0 14px; }
-  .usecard-link { font-weight: 600; }
+  /* Who it's for */
+  .who { padding-block: 0 104px; }
+  .who-grid { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 2fr); gap: 48px; align-items: start; }
+  .who-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; border-top: 2px solid var(--ink); }
+  .who-list li { padding-top: 18px; }
+  .who-list h3 { margin: 0 0 8px; font-size: 20px; font-weight: 800; }
+  .who-list p { margin: 0 0 12px; color: var(--ink-soft); font-size: 16px; }
+  .who-list a { font-weight: 600; }
 
-  /* Resources */
-  .resources { padding-block: 56px; background: var(--color-bg); border-top: 1px solid var(--color-border); }
-  .res-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
-  .res-grid h2 { font-size: 16px; margin: 0 0 12px; }
-  .res-grid ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 15px; }
-  .res-grid a { color: var(--color-text-muted); }
-  .res-grid a:hover { color: var(--color-primary); }
-
-  /* CTA band */
-  .cta-band { background: var(--color-primary); color: #fff; padding-block: 56px; }
-  .cta-band-inner { text-align: center; }
-  .cta-band h2 { font-size: clamp(26px, 4vw, 36px); margin: 0; color: #fff; }
-  .cta-band p { margin: 12px auto 0; max-width: 52ch; color: rgba(255,255,255,0.9); }
-  .cta-band-actions { display: flex; gap: 16px; align-items: center; justify-content: center; margin-top: 26px; flex-wrap: wrap; }
-  .cta-band-note { font-size: 14px; color: rgba(255,255,255,0.85); }
-
-  /* Pricing */
-  .pricing { padding-block: 72px; }
-  .price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; max-width: 1080px; margin-inline: auto; }
-  .price-card {
-    position: relative; background: var(--color-surface); border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg); padding: 28px; box-shadow: var(--shadow-sm);
-    display: flex; flex-direction: column;
-  }
-  .price-card--highlight { border-color: var(--color-primary); box-shadow: var(--shadow-md); }
-  .price-pill {
-    position: absolute; top: -12px; left: 28px; background: var(--color-primary); color: #fff;
-    font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px;
-  }
-  .price-label { color: var(--color-text-muted); font-size: 14px; }
-  .price-value { font-family: var(--font-heading); font-size: 40px; margin: 6px 0 4px; }
-  .price-value span { font-size: 17px; color: var(--color-text-muted); }
-  .price-value--custom { font-size: 28px; }
-  .price-tagline { color: var(--color-text-muted); font-size: 15px; margin: 0 0 14px; }
-  .price-list { list-style: none; padding: 0; margin: 0 0 22px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
-  .price-list li { font-size: 15px; padding-left: 24px; position: relative; }
-  .price-list li::before { content: "✓"; position: absolute; left: 0; color: var(--color-primary); font-weight: 700; }
-  .price-btn { width: 100%; }
-  .price-fineprint { margin: 0.6rem 0 0; font-size: 0.8rem; color: var(--color-text-muted); text-align: center; }
-  .price-examples { list-style: none; margin: 0 0 18px; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .price-examples li {
-    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px;
-    padding: 10px 6px; border-radius: var(--radius-md); background: var(--color-primary-subtle);
-  }
-  .price-examples strong { font-family: var(--font-heading); font-size: 22px; color: var(--color-primary); }
-  .price-examples span { font-size: 12px; color: var(--color-text-muted); line-height: 1.3; }
+  /* Fee schedule */
+  .pricing { padding-block: 0 104px; }
+  .fees { padding: 44px 48px 48px; }
+  .fees-head { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 48px; align-items: end; padding-bottom: 22px; border-bottom: 2px solid var(--ink); }
+  .fees-head p { margin: 0; color: var(--ink-soft); font-size: 17px; max-width: 50ch; }
+  .fees-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fee { display: flex; flex-direction: column; padding: 28px 28px 0; border-right: 1px solid var(--rule); }
+  .fee:first-child { padding-left: 0; }
+  .fee:last-child { border-right: 0; padding-right: 0; }
+  .fee-label { margin: 0; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-family: var(--font-body); }
+  .fee-value { margin: 8px 0 6px; font-family: var(--font-heading); font-size: 48px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; }
+  .fee-value span:not(.hl):not(.fee-pencil) { font-size: 18px; font-weight: 600; color: var(--ink-soft); letter-spacing: 0; }
+  .fee-tagline { margin: 0 0 16px; color: var(--ink-soft); font-size: 16px; }
+  .fee-examples { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0 0 18px; border-block: 1px solid var(--rule); }
+  .fee-examples div { padding: 10px 8px 10px 0; }
+  .fee-examples dt { font-family: var(--font-heading); font-size: 24px; font-weight: 800; }
+  .fee-examples dd { margin: 0; font-size: 13px; color: var(--ink-soft); line-height: 1.3; }
+  .fee-list { list-style: none; margin: 0 0 24px; padding: 0; flex: 1; }
+  .fee-list li { padding-block: 7px; font-size: 16px; border-bottom: 1px solid var(--rule); }
+  .fee-list li::before { top: 0.85em; }
+  .fee-btn { width: 100%; }
+  .fee-fine { margin: 10px 0 0; font-size: 14px; color: var(--ink-soft); }
+  .fee-value { position: relative; }
+  .fee-pencil { display: inline-block; margin-left: 12px; font-size: 20px; letter-spacing: 0; vertical-align: middle; transform: rotate(-4deg); }
+  /* Lower sheets lie on the desk too: slightly turned, never flat cards */
+  .summary-sheet { transform: rotate(0.35deg); }
+  .fees { transform: rotate(-0.3deg); }
+  .faq-list { transform: rotate(0.25deg); }
 
   /* FAQ */
-  .faq { padding-block: 24px 72px; }
-  .faq-inner { max-width: 760px; }
-  .faq-list { display: flex; flex-direction: column; gap: 12px; }
-  .faq-item {
-    background: var(--color-surface); border: 1px solid var(--color-border);
-    border-radius: var(--radius-md); padding: 4px 20px;
-  }
+  .faq { padding-block: 0 104px; }
+  .faq-grid { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr); gap: 48px; align-items: start; }
+  .faq-head p { margin: 16px 0 0; color: var(--ink-soft); font-size: 17px; }
+  .faq-list { padding: 8px 32px; }
+  .faq-item { border-bottom: 1px solid var(--rule); }
+  .faq-item:last-child { border-bottom: 0; }
   .faq-item summary {
-    cursor: pointer; font-weight: 600; font-size: 17px; padding: 16px 0; list-style: none;
+    cursor: pointer; list-style: none; padding: 18px 0;
     display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    font-family: var(--font-heading); font-weight: 700; font-size: 18px;
   }
   .faq-item summary::-webkit-details-marker { display: none; }
-  .faq-item summary::after { content: "+"; color: var(--color-primary); font-size: 22px; font-weight: 400; }
+  .faq-item summary::after { content: "+"; font-family: var(--font-body); font-size: 24px; font-weight: 400; line-height: 1; }
   .faq-item[open] summary::after { content: "−"; }
-  .faq-item p { margin: 0 0 18px; color: var(--color-text-muted); font-size: 16px; line-height: 1.65; }
+  .faq-item summary:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+  .faq-item p { margin: 0 0 20px; color: var(--ink-soft); font-size: 17px; line-height: 1.65; max-width: 68ch; }
 
+  /* Close */
+  .close { padding-block: 96px; border-top: 2px solid var(--ink); background: var(--paper); }
+  .close-inner { max-width: 880px; }
+  .close h2 { font-size: clamp(38px, 5vw, 68px); letter-spacing: -0.035em; line-height: 1.02; }
+  .close p { margin: 18px 0 0; font-size: 19px; color: var(--ink-soft); max-width: 52ch; }
+  .close-btn { min-height: 56px; font-size: 19px; padding-inline: 28px; }
+  .close-note { font-size: 15px; color: var(--ink-soft); }
+
+  /* Resources */
+  .resources { padding-block: 56px; border-top: 1px solid var(--rule-strong); }
+  .res-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
+  .res-grid h2 { font-size: 15px; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); font-weight: 700; }
+  .res-grid ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 15px; }
+  .res-grid a { color: var(--ink-soft); text-decoration: none; }
+  .res-grid a:hover { color: var(--ink); text-decoration: underline; }
+
+  @media (max-width: 1080px) {
+    .hero-grid { grid-template-columns: 1fr; grid-template-areas: "copy" "sheet"; gap: 40px; }
+    .summary-sheet, .fees, .faq-list { transform: none; }
+    .hero-copy { max-width: 620px; }
+    .how-grid, .who-grid, .faq-grid { grid-template-columns: 1fr; gap: 32px; }
+  }
   @media (max-width: 860px) {
-    .hero-inner, .how-inner { grid-template-columns: 1fr; }
-    .how-inner { gap: 32px; }
+    .summary-head, .fees-head { grid-template-columns: 1fr; }
+    .summary-row { grid-template-columns: 1fr; }
+    .who-list { grid-template-columns: 1fr; gap: 0; }
+    .fees-grid { grid-template-columns: 1fr; }
+    .fee { padding: 24px 0; border-right: 0; border-bottom: 1px solid var(--ink); }
+    .fee:last-child { border-bottom: 0; }
     .res-grid { grid-template-columns: 1fr; gap: 24px; }
+  }
+  @media (max-width: 600px) {
+    .hero { padding-block: 28px 56px; }
+    .hero-sub { font-size: 17px; }
+    .how, .close { padding-block: 72px; }
+    .summary-sheet, .fees { padding: 28px 18px; }
+    .faq-list { padding: 4px 16px; }
+    .summary, .who, .pricing, .faq { padding-bottom: 72px; }
   }
 </style>

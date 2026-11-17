@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import logo from "../assets/pdf_to_excel_logo.png";
+import LogoMark from "./LogoMark";
 import "./SignupLayout.css";
 
 const Check = () => (
@@ -23,7 +23,7 @@ export default function SignupLayout({ aside, children, headerAction }) {
     <div className="su-page">
       <header className="su-header">
         <Link to="/" className="su-logo">
-          <img src={logo} alt="" width="28" height="28" />
+          <LogoMark size={28} />
           <span>Bank Statement Scanner</span>
         </Link>
         {headerAction !== undefined ? headerAction : (
@@ -44,12 +44,12 @@ export default function SignupLayout({ aside, children, headerAction }) {
   );
 }
 
-/** Left-panel content: eyebrow, headline, lead, then anything else. */
+/** Value-panel content: headline, a pencil note (eyebrow), lead, then anything else. */
 export function ValuePanel({ eyebrow, title, lead, children }) {
   return (
     <>
-      {eyebrow && <p className="su-eyebrow">{eyebrow}</p>}
       <h1 className="su-aside-title">{title}</h1>
+      {eyebrow && <p className="su-eyebrow">{eyebrow}</p>}
       {lead && <p className="su-aside-lead">{lead}</p>}
       {children}
     </>

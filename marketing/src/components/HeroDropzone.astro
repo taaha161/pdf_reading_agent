@@ -23,21 +23,16 @@ const {
 ---
 
 <div class="upload-card" data-dropzone data-cta-name={cta} data-params={params} data-max-mb={MAX_UPLOAD_MB_PAID}>
-  <span class="upload-badge">Drag &amp; drop bank statements</span>
-  <span class="upload-sub">Digital or scanned PDFs</span>
-  <div class="upload-drop" role="button" tabindex="0" aria-describedby="dz-hint" aria-label="Upload a bank statement">
-    <span class="upload-icon" aria-hidden="true">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-        <path d="M12 14V4m0 0l-3.5 3.5M12 4l3.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M4 14.5v3A2.5 2.5 0 006.5 20h11A2.5 2.5 0 0020 17.5v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+  <div class="upload-drop" role="button" tabindex="0" aria-describedby="dz-hint dz-limits" aria-label="Choose a bank statement PDF to convert">
+    <span class="upload-title" data-dz-title>
+      <span class="upload-title-pointer">Drop a statement PDF here</span>
+      <span class="upload-title-touch">Choose a statement PDF</span>
     </span>
-    <span class="upload-title" data-dz-title>Drop a statement here</span>
     <span class="upload-hint" id="dz-hint">{hint}</span>
-    <span class="btn btn-primary upload-btn">Upload PDF for free</span>
-    <span class="upload-limits"><span>PDF only</span> · <span>Up to {MAX_UPLOAD_MB_GUEST} MB free, {MAX_UPLOAD_MB_PAID} MB on Monthly</span></span>
-    <span class="upload-error" data-dz-error role="alert" hidden></span>
+    <span class="ink-btn upload-btn">Convert a statement free</span>
+    <span class="upload-limits" id="dz-limits">PDF only, digital or scanned · Up to {MAX_UPLOAD_MB_GUEST} MB free, {MAX_UPLOAD_MB_PAID} MB on Monthly</span>
   </div>
+  <p class="upload-error" data-dz-error role="alert" hidden></p>
   <input type="file" accept="application/pdf,.pdf" data-dz-input hidden />
 </div>
 
@@ -112,31 +107,68 @@ const {
 
 <style>
   .upload-card {
-    display: flex; flex-direction: column; gap: 4px; background: var(--color-surface);
-    border: 1px solid var(--color-border); border-radius: var(--radius-lg);
-    padding: 20px; box-shadow: var(--shadow-lg); color: inherit;
-    transition: box-shadow 0.15s ease, transform 0.15s ease;
+    display: block;
+    color: inherit;
   }
-  .upload-badge { font-weight: 600; }
-  .upload-sub { font-size: 13px; color: var(--color-text-muted); }
   .upload-drop {
-    display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
-    border: 2px dashed var(--color-primary-muted); border-radius: var(--radius-md);
-    padding: 28px 20px; margin-top: 12px; background: var(--color-primary-subtle);
-    cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 24px 24px 22px;
+    background: var(--paper);
+    border: 2px dashed var(--ink);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--sheet-shadow);
+    cursor: pointer;
+    transition: background-color 150ms ease;
   }
-  .upload-drop:hover { border-color: var(--color-primary); }
-  .upload-card.is-over { transform: scale(1.015); box-shadow: 0 0 0 4px var(--color-primary-muted), var(--shadow-lg); }
-  .upload-card.is-over .upload-drop { border-color: var(--color-primary); background: rgba(37, 99, 235, 0.16); }
-  .upload-card.is-busy .upload-drop { cursor: progress; opacity: 0.8; }
-  .upload-icon { color: var(--color-primary); }
-  .upload-title { font-weight: 600; }
-  .upload-hint { font-size: 13px; color: var(--color-text-muted); max-width: 34ch; }
+  .upload-drop:hover,
+  .upload-card.is-over .upload-drop {
+    background: var(--hi-soft);
+  }
+  .upload-card.is-over .upload-drop {
+    border-style: solid;
+  }
+  .upload-card.is-busy .upload-drop {
+    cursor: progress;
+  }
+  .upload-title {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 22px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+  .upload-title-touch { display: none; }
+  @media (hover: none) and (pointer: coarse) {
+    .upload-title-pointer { display: none; }
+    .upload-title-touch { display: inline; }
+  }
+  .upload-hint {
+    font-size: 15px;
+    color: var(--ink-soft);
+  }
   .upload-btn {
-    display: inline-block; margin-top: 6px; font-weight: 600; font-size: 16px; padding: 12px 22px;
-    border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-on-primary);
+    margin-top: 6px;
+    width: 100%;
   }
-  .upload-drop:hover .upload-btn { background: var(--color-primary-hover); }
-  .upload-limits { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
-  .upload-error { font-size: 13px; color: var(--color-error); font-weight: 600; }
+  .upload-drop:hover .upload-btn {
+    background: #000;
+    color: var(--hi);
+  }
+  .upload-limits {
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .upload-error {
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    background: var(--paper);
+    border: 1px solid var(--color-error);
+    color: var(--color-error);
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .upload-error[hidden] { display: none; }
 </style>

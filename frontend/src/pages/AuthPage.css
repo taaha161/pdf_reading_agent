@@ -28,11 +28,6 @@
 }
 
 .auth-logo-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: var(--color-primary-subtle);
-  border: 1px solid var(--color-primary-muted);
   display: grid;
   place-items: center;
 }
@@ -882,4 +877,130 @@
 
 .auth-referral-btn.is-remove:hover {
   background: var(--color-bg);
+}
+
+/* ---------------------------------------------------------------------------
+   Statement world: login is the same desk as signup. Form sheet on the left,
+   a statement-style sheet on the right; black ink actions; no blue panels.
+   --------------------------------------------------------------------------- */
+.auth-page {
+  background: var(--desk);
+}
+.auth-logo-text {
+  font-family: var(--font-heading);
+  font-stretch: 112%;
+  font-weight: 800;
+}
+.auth-card {
+  border: 0;
+  border-radius: 0;
+  box-shadow: var(--sheet-shadow);
+}
+.auth-title {
+  font-family: var(--font-heading);
+  font-stretch: 112%;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.auth-description {
+  color: var(--ink-soft);
+}
+.auth-input {
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-sm);
+}
+.auth-input::placeholder {
+  color: #6b6b6b;
+}
+.auth-input:focus {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 4px var(--hi);
+  outline: none;
+}
+.auth-btn {
+  border-radius: var(--radius-sm);
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+.auth-btn-primary {
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  color: #fff;
+  box-shadow: none;
+}
+.auth-btn-primary:hover:not(:disabled) {
+  background: #000;
+  color: var(--hi);
+  filter: none;
+}
+.auth-btn-provider,
+.auth-btn-google,
+.auth-btn-secondary {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  color: var(--ink);
+}
+.auth-btn-provider:hover:not(:disabled),
+.auth-btn-google:hover:not(:disabled),
+.auth-btn-secondary:hover:not(:disabled) {
+  background: var(--hi);
+  border-color: var(--ink);
+}
+.auth-message {
+  border-radius: 0;
+}
+
+.auth-panel-right--login {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 0;
+  box-shadow: var(--sheet-shadow);
+  transform: rotate(0.6deg);
+}
+.auth-right-inner {
+  max-width: 420px;
+}
+.auth-right-title {
+  font-stretch: 112%;
+  font-weight: 800;
+  font-size: 2rem;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  padding-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid var(--ink);
+}
+.auth-right-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.auth-right-list li {
+  position: relative;
+  padding: 0.7rem 0 0.7rem 1.75rem;
+  border-bottom: 1px solid var(--rule);
+  font-size: 1rem;
+}
+.auth-right-list li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 1.05rem;
+  width: 16px;
+  height: 13px;
+  background: var(--graphite);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 16'%3E%3Cpath d='M2 9.5c2 1.4 3.4 3 4.6 4.6C9.4 8.6 13 4.2 18 1.6' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 16'%3E%3Cpath d='M2 9.5c2 1.4 3.4 3 4.6 4.6C9.4 8.6 13 4.2 18 1.6' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.auth-right-note {
+  margin: 1.1rem 0 0;
+  font-family: var(--font-hand);
+  font-size: 1.1rem;
+  color: var(--graphite);
+}
+.auth-panel-right--login {
+  align-self: start;
+  align-items: flex-start;
+  margin-top: 2.5rem;
 }

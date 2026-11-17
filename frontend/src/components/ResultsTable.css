@@ -852,3 +852,189 @@
 .results-filter-clear:focus-visible {
   background: var(--color-primary-muted);
 }
+
+/* ---------------------------------------------------------------------------
+   Statement world: the results read as a printed statement page.
+   Rows are identical in height and ruling; yellow highlighter marks the rows
+   that answer the user's question in chat; nothing else is yellow.
+   --------------------------------------------------------------------------- */
+.results-section {
+  padding: 1.75rem 2rem 2rem;
+  border: 0;
+  border-radius: 0;
+  box-shadow: var(--sheet-shadow);
+}
+
+.results-header {
+  padding-bottom: 0.85rem;
+  margin-bottom: 0;
+  border-bottom: 2px solid var(--ink);
+}
+
+.results-header h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.results-section .table-wrap {
+  border: 0;
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: none;
+}
+
+.results-table {
+  font-size: 0.95rem;
+}
+
+.results-table th {
+  background: var(--paper);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--ink);
+}
+
+.results-table td {
+  height: 2.6rem;
+  padding-block: 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.results-table tbody tr:nth-child(even),
+.results-table tbody tr:hover {
+  background: transparent;
+}
+
+.results-table tbody tr:hover td {
+  background: var(--color-primary-subtle);
+}
+
+.results-chip,
+.results-chip--default,
+.results-chip--income,
+.results-chip--food,
+.results-chip--housing,
+.results-chip--travel,
+.results-chip--entertainment,
+.results-chip--subscriptions,
+.results-chip--shopping,
+.results-chip--utilities,
+.results-chip--healthcare,
+.results-chip--software,
+.results-chip--teal,
+.results-chip--amber,
+.results-chip--rose,
+.results-chip--credit,
+.results-chip--debit {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.results-chip--muted {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  font-style: italic;
+}
+
+.results-amount,
+.results-amount--debit,
+.results-amount--neutral {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.results-amount--credit {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* Rows that answer the latest chat question */
+.results-row--hit .results-desc-main,
+.results-row--hit .results-amount {
+  background-image: linear-gradient(var(--hi), var(--hi));
+  background-repeat: no-repeat;
+  background-position: 0 55%;
+  background-size: 100% 80%;
+  padding: 1px 4px;
+  margin-inline: -4px;
+  animation: results-swipe 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.results-row--hit .results-desc-main {
+  display: inline;
+  font-weight: 700;
+}
+
+.results-hit-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@keyframes results-swipe {
+  from { background-size: 0% 80%; }
+  to { background-size: 100% 80%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .results-row--hit .results-desc-main,
+  .results-row--hit .results-amount {
+    animation: none;
+  }
+}
+
+.results-highlight-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  margin: 0.9rem 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.results-highlight-note .pencil-note {
+  font-family: var(--font-hand);
+  color: var(--graphite);
+  font-size: 1.15rem;
+}
+
+.results-highlight-clear {
+  padding: 0.3rem 0.75rem;
+  background: transparent;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.results-highlight-clear:hover {
+  background: var(--color-primary-subtle);
+  border-color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .results-section {
+    padding: 1.1rem 1rem 1.25rem;
+  }
+}
+
+/* Amounts print right-aligned under a right-aligned header */
+.results-table th:nth-child(4),
+.results-table .results-cell-amount {
+  text-align: right;
+}
+.results-table .results-cell-amount {
+  padding-right: 1.75rem;
+}

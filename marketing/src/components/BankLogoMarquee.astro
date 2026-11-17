@@ -55,7 +55,7 @@ const sized = logos.map((l: { file: string; name: string; ratio: number; bank?: 
   </p>
   <div class="banks-strip-viewport">
     {
-      [0, 1].map((copy) => (
+      [0].map((copy) => (
         <ul class="banks-strip-track" role="list" aria-hidden={copy === 1 ? 'true' : undefined}>
           {sized.map((l) => {
             const img = (
@@ -91,40 +91,27 @@ const sized = logos.map((l: { file: string; name: string; ratio: number; bank?: 
 </section>
 
 <style>
-  .banks-strip { padding-block: 28px 8px; }
-  .banks-strip-title {
-    text-align: center; margin: 0 0 18px; font-size: 15px; color: var(--color-text-muted);
-  }
-  .banks-strip-title a { color: var(--color-text); font-weight: 600; }
-  .banks-strip-viewport {
-    display: flex; overflow: hidden;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  }
+  /* A static row of bank marks, like the issuer list on a statement's back page. No marquee. */
+  .banks-strip { padding-block: 40px 24px; }
+  .banks-strip-title { text-align: center; margin: 0 0 22px; font-size: 16px; color: var(--ink-soft); }
+  .banks-strip-title a { color: var(--ink); font-weight: 700; }
+  .banks-strip-viewport { max-width: var(--maxw); margin-inline: auto; padding-inline: 24px; }
   .banks-strip-track {
-    list-style: none; margin: 0; padding: 0 56px 0 0; display: flex; align-items: center;
-    gap: 56px; flex: none; animation: banks-scroll 60s linear infinite; will-change: transform;
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: 18px 40px;
   }
-  .banks-strip-viewport:hover .banks-strip-track,
-  .banks-strip-viewport:focus-within .banks-strip-track { animation-play-state: paused; }
-  .banks-strip-track li { flex: none; display: flex; align-items: center; min-height: 48px; }
-  .banks-strip-track a { display: flex; border-radius: var(--radius-sm); }
+  .banks-strip-track li { flex: none; display: flex; align-items: center; min-height: 44px; }
+  .banks-strip-track a { display: flex; }
   .banks-strip-track img {
-    display: block; max-width: none; filter: grayscale(1); opacity: 0.6;
-    transition: filter 0.2s, opacity 0.2s;
+    display: block; max-width: none; filter: grayscale(1) contrast(1.2); opacity: 0.7;
+    mix-blend-mode: multiply;
   }
   .banks-strip-track a:hover img,
-  .banks-strip-track a:focus-visible img { filter: none; opacity: 1; }
-  .banks-strip-note {
-    text-align: center; margin: 14px 0 0; font-size: 12px; color: var(--color-text-muted); opacity: 0.8;
-  }
-
-  @keyframes banks-scroll {
-    to { transform: translateX(-100%); }
-  }
-
-  /* Reduced motion: keep the loop but slow it right down; hover/focus still pauses it. */
-  @media (prefers-reduced-motion: reduce) {
-    .banks-strip-track { animation-duration: 180s; }
+  .banks-strip-track a:focus-visible img { opacity: 1; }
+  .banks-strip-note { text-align: center; margin: 18px 0 0; font-size: 13px; color: var(--ink-soft); }
+  @media (max-width: 600px) {
+    .banks-strip-track { gap: 14px 26px; }
+    .banks-strip-track img { transform: scale(0.85); }
   }
 </style>

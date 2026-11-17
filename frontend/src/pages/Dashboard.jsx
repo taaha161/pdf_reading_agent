@@ -22,14 +22,14 @@ function formatMoney(value, currency) {
   const symbol = code === "USD" ? "$" : code === "EUR" ? "€" : code === "GBP" ? "£" : code === "PKR" ? "Rs " : `${code} `;
   const abs = Math.abs(value);
   const formatted = abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return value < 0 ? `-${symbol}${formatted}` : `+${symbol}${formatted}`;
+  return value < 0 ? `\u2212${symbol}${formatted}` : `+${symbol}${formatted}`;
 }
 
 function formatSurplus(value, currency) {
   if (value == null || Number.isNaN(value)) return "—";
   const code = (currency || "USD").toUpperCase();
   const symbol = code === "USD" ? "$" : code === "EUR" ? "€" : code === "GBP" ? "£" : code === "PKR" ? "Rs " : `${code} `;
-  return `${value >= 0 ? "" : "-"}${symbol}${Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `${value >= 0 ? "+" : "\u2212"}${symbol}${Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export default function Dashboard() {
@@ -130,18 +130,15 @@ export default function Dashboard() {
         <div className="dashboard-page-header">
           <div className="dashboard-page-header-text">
             <h1 className="dashboard-title">
-              {displayName ? `Hi, ${displayName}` : "Dashboard"}
+              {displayName ? `Hi, ${displayName}` : "Your statements"}
             </h1>
             <p className="dashboard-subtitle">
-              Past statement processing runs. Open any job to view results and chat.
+              Your converted statements. Open one to see its rows, edit them, or ask it a question.
             </p>
           </div>
           <div className="dashboard-page-header-actions">
-            <Link to="/scanner" className="dashboard-btn dashboard-btn-secondary">
-              Upload
-            </Link>
             <Link to="/scanner" className="dashboard-btn dashboard-btn-primary">
-              Process new statement
+              Convert a statement
             </Link>
           </div>
         </div>
@@ -172,74 +169,74 @@ export default function Dashboard() {
         )}
 
         {!accessToken && !error && (
-          <div className="dashboard-loading">Checking authentication…</div>
+          <div className="dashboard-loading">Checking that you're signed in…</div>
         )}
 
         {accessToken && loading && !hasFetched ? (
-          <div className="dashboard-loading">Loading jobs…</div>
+          <div className="dashboard-loading">Loading your statements…</div>
         ) : (
-          <>
-            <div className="dashboard-stats">
-              <div className="dashboard-stat-card">
-                <div className="dashboard-stat-head">
-                  <span className="dashboard-stat-label">Total Income</span>
-                  <span className="dashboard-stat-badge" aria-hidden>↑</span>
+          <div className="dashboard-desk">
+            {/* Account summary: set like the summary box on a statement */}
+            <section className="dashboard-sheet dashboard-summary" aria-labelledby="dash-summary-h">
+              <h2 id="dash-summary-h" className="dashboard-sheet-title">Summary</h2>
+              <p className="dashboard-sheet-note">Across every saved statement</p>
+              <dl className="dashboard-summary-list">
+                <div>
+                  <dt>Money in</dt>
+                  <dd>{formatMoney(stats?.total_income, stats?.primary_currency)}</dd>
                 </div>
-                <div className="dashboard-stat-value dashboard-stat-value--positive">
-                  {formatMoney(stats?.total_income, stats?.primary_currency)}
+                <div>
+                  <dt>Money out</dt>
+                  <dd>{stats != null ? formatMoney(-stats.total_expenses, stats.primary_currency) : "—"}</dd>
                 </div>
-                <div className="dashboard-stat-meta">
-                  <span>Across all statements</span>
+                <div className="dashboard-summary-net">
+                  <dt>Net</dt>
+                  <dd>{formatSurplus(stats?.surplus ?? 0, stats?.primary_currency)}</dd>
                 </div>
-              </div>
-              <div className="dashboard-stat-card">
-                <div className="dashboard-stat-head">
-                  <span className="dashboard-stat-label">Total Expenses</span>
-                  <span className="dashboard-stat-badge" aria-hidden>↓</span>
+                <div>
+                  <dt>Statements with data</dt>
+                  <dd>{jobsWithPayload.length}</dd>
                 </div>
-                <div className="dashboard-stat-value dashboard-stat-value--negative">
-                  {stats != null ? formatMoney(-stats.total_expenses, stats.primary_currency) : "—"}
+              </dl>
+              {stats?.summary_by_category?.length > 0 && (
+                <div className="dashboard-cats">
+                  <h3 className="dashboard-cats-title">Spending by category</h3>
+                  {(() => {
+                    const total = stats.summary_by_category.reduce((s2, c) => s2 + c.total, 0);
+                    return (
+                      <ul className="dashboard-cats-list" role="list">
+                        {stats.summary_by_category.slice(0, 6).map(({ category, total: catTotal }) => {
+                          const pct = total > 0 ? Math.round((catTotal / total) * 100) : 0;
+                          return (
+                            <li key={category}>
+                              <span className="dashboard-cats-name">{category}</span>
+                              <span className="dashboard-cats-track" aria-hidden="true">
+                                <span className="dashboard-cats-fill" style={{ width: `${pct}%` }} />
+                              </span>
+                              <span className="dashboard-cats-pct">{pct}%</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    );
+                  })()}
                 </div>
-                <div className="dashboard-stat-meta">
-                  <span>Across all statements</span>
-                </div>
-              </div>
-              <div className="dashboard-stat-card">
-                <div className="dashboard-stat-head">
-                  <span className="dashboard-stat-label">Surplus</span>
-                  <span className="dashboard-stat-badge dashboard-stat-badge--neutral" aria-hidden>→</span>
-                </div>
-                <div className="dashboard-stat-value">
-                  {formatSurplus(stats?.surplus ?? 0, stats?.primary_currency)}
-                </div>
-                <div className="dashboard-stat-meta">Income − expenses</div>
-              </div>
-              <div className="dashboard-stat-card">
-                <div className="dashboard-stat-head">
-                  <span className="dashboard-stat-label">Statements</span>
-                  <span className="dashboard-stat-badge dashboard-stat-badge--accuracy" aria-hidden>✓</span>
-                </div>
-                <div className="dashboard-stat-value">
-                  {jobs.filter((j) => j.has_payload).length}
-                </div>
-                <div className="dashboard-stat-meta">With data</div>
-              </div>
-            </div>
+              )}
+            </section>
 
-            <div className="dashboard-table-section">
+            <section className="dashboard-sheet dashboard-statements" aria-labelledby="dash-statements-h">
               <div className="dashboard-table-header">
-                <h2 className="dashboard-table-title">Transactions</h2>
-                <div className="dashboard-table-search-wrap">
-                  <span className="dashboard-table-search-icon" aria-hidden>⌕</span>
+                <h2 id="dash-statements-h" className="dashboard-sheet-title">Statements</h2>
+                {jobs.length > 0 && (
                   <input
                     type="search"
                     className="dashboard-table-search"
-                    placeholder="Search transactions..."
+                    placeholder="Search by date or currency"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    aria-label="Search transactions"
+                    aria-label="Search statements"
                   />
-                </div>
+                )}
               </div>
 
               {deleteError && (
@@ -283,66 +280,69 @@ export default function Dashboard() {
 
               {jobs.length === 0 ? (
                 <div className="dashboard-empty">
-                  <p className="dashboard-empty-title">No jobs yet</p>
-                  <p className="dashboard-empty-text">Process your first bank statement to see it here.</p>
-                  <Link to="/scanner" className="dashboard-empty-cta">Process a statement</Link>
+                  <p className="dashboard-empty-title">No statements yet</p>
+                  <p className="dashboard-empty-text">Convert your first bank statement and it will be kept here, ready to open again.</p>
+                  <Link to="/scanner" className="dashboard-btn dashboard-btn-primary">Convert a statement</Link>
                 </div>
               ) : (
                 <>
                   <div className="dashboard-table-wrap">
-                    <table className="dashboard-table" role="table">
-                      <thead role="rowgroup">
-                        <tr role="row">
-                          <th role="columnheader" className="dashboard-table-cell-check">
-                            <label className="dashboard-table-selectall">
-                              <input type="checkbox" checked={allSelectableSelected} onChange={toggleSelectAll} disabled={deleting || jobsWithPayload.length === 0} aria-label="Select all" />
-                              <span className="dashboard-table-selectall-text" aria-hidden="true">Select all</span>
-                            </label>
+                    <table className="dashboard-table">
+                      <thead>
+                        <tr>
+                          <th scope="col" className="dashboard-table-cell-check">
+                            <input
+                              type="checkbox"
+                              checked={allSelectableSelected}
+                              onChange={toggleSelectAll}
+                              disabled={deleting || jobsWithPayload.length === 0}
+                              aria-label="Select all statements with saved data"
+                            />
                           </th>
-                          <th role="columnheader">Date</th>
-                          <th role="columnheader">Description</th>
-                          <th role="columnheader">Category</th>
-                          <th role="columnheader"><span className="dashboard-table-sr-only">Actions</span></th>
+                          <th scope="col">Converted</th>
+                          <th scope="col">Statement</th>
+                          <th scope="col" className="dashboard-table-num">Rows</th>
+                          <th scope="col"><span className="dashboard-table-sr-only">Actions</span></th>
                         </tr>
                       </thead>
-                      <tbody role="rowgroup">
+                      <tbody>
                         {filteredJobs.map((job) => (
-                          <tr key={job.id} className="dashboard-table-row" role="row">
-                            <td className="dashboard-table-cell-check" role="cell">
+                          <tr key={job.id} className={`dashboard-table-row${job.has_payload ? "" : " is-empty"}`}>
+                            <td className="dashboard-table-cell-check">
                               <input
                                 type="checkbox"
                                 checked={selectedIds.has(job.id)}
                                 onChange={() => toggleSelect(job.id)}
                                 disabled={deleting || !job.has_payload}
-                                aria-label={`Select job ${job.id}`}
+                                aria-label={`Select statement from ${formatDate(job.created_at)}`}
                               />
                             </td>
-                            <td className="dashboard-table-cell-date" role="cell" data-currency={` · ${job.currency || "Processed"}`}>{formatDate(job.created_at)}</td>
-                            <td className="dashboard-table-cell-desc" role="cell">
-                              <div className="dashboard-table-desc">
-                                <span className="dashboard-table-desc-main">Statement – {job.transaction_count} transaction{job.transaction_count !== 1 ? "s" : ""}</span>
-                                <span className="dashboard-table-desc-sub">{job.currency || "Processed"}</span>
-                              </div>
-                            </td>
-                            <td className="dashboard-table-cell-view" role="cell">
+                            <td className="dashboard-table-date">{formatDate(job.created_at)}</td>
+                            <td className="dashboard-table-desc">
                               {job.has_payload ? (
-                                <Link to={`/scanner/${job.id}`} className="dashboard-table-category-btn">
-                                  View
+                                <Link to={`/scanner/${job.id}`} className="dashboard-table-open">
+                                  {job.currency || "Statement"} statement
                                 </Link>
                               ) : (
-                                <span className="dashboard-table-category-muted">—</span>
+                                <span className="dashboard-table-gone">Data deleted or not saved (incognito)</span>
                               )}
                             </td>
-                            <td className="dashboard-table-cell-delete" role="cell">
-                              <button
-                                type="button"
-                                className="dashboard-table-action-btn"
-                                onClick={(e) => handleDeleteOne(job.id, e)}
-                                disabled={deleting || !job.has_payload}
-                                aria-label={`Delete saved data for statement from ${formatDate(job.created_at)}`}
-                              >
-                                <TrashIcon />
-                              </button>
+                            <td className="dashboard-table-num">{job.transaction_count}</td>
+                            <td className="dashboard-table-actions">
+                              {job.has_payload && (
+                                <>
+                                  <Link to={`/scanner/${job.id}`} className="dashboard-table-action">Open</Link>
+                                  <button
+                                    type="button"
+                                    className="dashboard-table-action-btn"
+                                    onClick={(e) => handleDeleteOne(job.id, e)}
+                                    disabled={deleting}
+                                    aria-label={`Delete saved data for statement from ${formatDate(job.created_at)}`}
+                                  >
+                                    <TrashIcon />
+                                  </button>
+                                </>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -350,69 +350,29 @@ export default function Dashboard() {
                     </table>
                   </div>
                   <div className="dashboard-table-footer">
-                    <p className="dashboard-table-pagination-info">
-                      Showing {filteredJobs.length} of {jobs.length} jobs
-                      {selectedIds.size > 0 && (
-                        <>
-                          {" · "}
-                          <button
-                            type="button"
-                            className="dashboard-delete-selected-inline"
-                            onClick={handleDeleteSelected}
-                            disabled={deleting}
-                          >
-                            {`Delete ${selectedIds.size} selected`}
-                          </button>
-                        </>
-                      )}
+                    <p className="dashboard-table-count">
+                      {filteredJobs.length === jobs.length
+                        ? `${jobs.length} ${jobs.length === 1 ? "statement" : "statements"}`
+                        : `${filteredJobs.length} of ${jobs.length} statements`}
                     </p>
-                    <div className="dashboard-table-pagination">
-                      <button type="button" className="dashboard-pagination-btn" disabled>Previous</button>
-                      <button type="button" className="dashboard-pagination-btn">1</button>
-                      <button type="button" className="dashboard-pagination-btn" disabled>Next</button>
-                    </div>
+                    {selectedIds.size > 0 && (
+                      <button
+                        type="button"
+                        className="dashboard-btn dashboard-btn-secondary"
+                        onClick={handleDeleteSelected}
+                        disabled={deleting}
+                      >
+                        {`Delete data for ${selectedIds.size} selected`}
+                      </button>
+                    )}
                   </div>
+                  {search && filteredJobs.length === 0 && (
+                    <p className="dashboard-empty-text">No statements match &ldquo;{search}&rdquo;.</p>
+                  )}
                 </>
               )}
-            </div>
-
-            <div className="dashboard-analysis">
-              <div className="dashboard-analysis-card">
-                <h3 className="dashboard-analysis-title">Spending by Category</h3>
-                <div className="dashboard-analysis-bars">
-                  {stats?.summary_by_category?.length > 0 ? (
-                    (() => {
-                      const total = stats.summary_by_category.reduce((s, i) => s + i.total, 0);
-                      const top = stats.summary_by_category.slice(0, 6);
-                      return top.map(({ category, total: catTotal }) => {
-                        const pct = total > 0 ? Math.round((catTotal / total) * 100) : 0;
-                        return (
-                          <div key={category} className="dashboard-analysis-bar-row">
-                            <div className="dashboard-analysis-bar-label">
-                              <span>{category}</span>
-                              <span>{pct}%</span>
-                            </div>
-                            <div className="dashboard-analysis-bar-track">
-                              <div className="dashboard-analysis-bar-fill" style={{ width: `${pct}%` }} />
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()
-                  ) : (
-                    <p className="dashboard-analysis-empty">Process statements to see spending by category.</p>
-                  )}
-                </div>
-              </div>
-              <div className="dashboard-analysis-card dashboard-analysis-card--cta">
-                <h3 className="dashboard-analysis-title">Ready for Tax Season?</h3>
-                <p className="dashboard-analysis-cta-text">
-                  Export categorized statements and summaries for your accountant. One click to CSV or direct sync to your tools.
-                </p>
-                <Link to="/scanner" className="dashboard-analysis-cta-btn">Export for taxes</Link>
-              </div>
-            </div>
-          </>
+            </section>
+          </div>
         )}
       </div>
     </AppLayout>

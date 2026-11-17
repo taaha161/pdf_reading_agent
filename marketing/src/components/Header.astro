@@ -1,149 +1,182 @@
 ---
-import logo from '../assets/pdf_to_excel_logo.png';
-import { Image } from 'astro:assets';
+import LogoMark from './LogoMark.astro';
 ---
 
 <header class="mkt-header">
   <nav class="mkt-nav container" aria-label="Primary">
     <a class="mkt-brand" href="/">
-      <span class="mkt-brand-icon" aria-hidden="true">
-        <Image src={logo} alt="" width={28} height={28} />
-      </span>
+      <LogoMark />
       <span class="mkt-brand-name">Bank Statement Scanner</span>
     </a>
 
-    <input type="checkbox" id="mkt-nav-toggle" class="mkt-nav-toggle" hidden />
-    <label class="mkt-hamburger" for="mkt-nav-toggle" aria-label="Toggle navigation">
-      <span></span><span></span><span></span>
-    </label>
+    <button
+      type="button"
+      class="mkt-menu-btn"
+      aria-expanded="false"
+      aria-controls="mkt-nav-body"
+      data-nav-toggle
+    >
+      <span class="mkt-menu-bars" aria-hidden="true"><span></span><span></span></span>
+      <span class="mkt-menu-label">Menu</span>
+    </button>
 
-    <div class="mkt-nav-body">
+    <div class="mkt-nav-body" id="mkt-nav-body" data-nav-body>
       <div class="mkt-nav-links">
         <a class="mkt-nav-link" href="/#how-it-works">How it works</a>
-        <a class="mkt-nav-link" href="/#results">Results</a>
         <a class="mkt-nav-link" href="/#pricing">Pricing</a>
         <a class="mkt-nav-link" href="/convert">Banks</a>
-        <a class="mkt-nav-link" href="/compare">Compare</a>
-        <a class="mkt-nav-link" href="/blog">Blog</a>
-        <a class="mkt-nav-link" href="/contact">Support</a>
+        <a class="mkt-nav-link" href="/security">Security</a>
       </div>
       <div class="mkt-nav-actions">
         <a class="mkt-nav-login" href="/login">Log in</a>
-        <a class="mkt-nav-cta" href="/scanner">Get started free</a>
+        <a class="ink-btn mkt-nav-cta" href="/scanner" data-cta="nav">Convert a statement free</a>
       </div>
     </div>
   </nav>
 </header>
+
+<script>
+  const btn = document.querySelector<HTMLButtonElement>('[data-nav-toggle]');
+  const body = document.querySelector<HTMLElement>('[data-nav-body]');
+  if (btn && body) {
+    const set = (open: boolean) => {
+      btn.setAttribute('aria-expanded', String(open));
+      body.classList.toggle('is-open', open);
+    };
+    btn.addEventListener('click', () => set(btn.getAttribute('aria-expanded') !== 'true'));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') {
+        set(false);
+        btn.focus();
+      }
+    });
+    body.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('a')) set(false);
+    });
+  }
+</script>
 
 <style>
   .mkt-header {
     position: sticky;
     top: 0;
     z-index: 50;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: saturate(180%) blur(10px);
-    border-bottom: 1px solid var(--color-border);
+    background: var(--desk);
+    border-bottom: 2px solid var(--ink);
   }
   .mkt-nav {
     display: flex;
     align-items: center;
     gap: 20px;
-    min-height: 64px;
+    min-height: 68px;
     flex-wrap: wrap;
   }
   .mkt-brand {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    color: var(--color-text);
-    font-weight: 700;
+    color: var(--ink);
+    text-decoration: none;
     margin-right: auto;
-  }
-  .mkt-brand-icon {
-    display: inline-flex;
-    width: 28px;
-    height: 28px;
   }
   .mkt-brand-name {
     font-family: var(--font-heading);
-    font-size: 17px;
+    font-weight: 800;
+    font-size: 19px;
+    letter-spacing: -0.02em;
   }
   .mkt-nav-body {
     display: flex;
     align-items: center;
-    gap: 28px;
+    gap: 32px;
   }
   .mkt-nav-links {
     display: flex;
     align-items: center;
-    gap: 22px;
+    gap: 26px;
   }
-  .mkt-nav-link {
-    color: var(--color-text-muted);
+  .mkt-nav-link,
+  .mkt-nav-login {
+    color: var(--ink);
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 600;
+    text-decoration: none;
   }
-  .mkt-nav-link:hover {
-    color: var(--color-text);
+  .mkt-nav-link:hover,
+  .mkt-nav-login:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
   }
   .mkt-nav-actions {
     display: flex;
     align-items: center;
-    gap: 14px;
-  }
-  .mkt-nav-login {
-    color: var(--color-text);
-    font-weight: 600;
-    font-size: 15px;
+    gap: 20px;
   }
   .mkt-nav-cta {
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-    font-weight: 600;
+    min-height: 42px;
+    padding: 8px 16px;
     font-size: 15px;
-    padding: 9px 16px;
-    border-radius: var(--radius-md);
   }
-  .mkt-nav-cta:hover {
-    background: var(--color-primary-hover);
-    color: var(--color-on-primary);
-  }
-  .mkt-hamburger {
+  .mkt-menu-btn {
     display: none;
   }
 
-  @media (max-width: 1080px) {
-    .mkt-hamburger {
+  @media (max-width: 1000px) {
+    .mkt-nav { gap: 12px; flex-wrap: wrap; }
+    .mkt-brand { min-width: 0; }
+    .mkt-menu-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 8px 12px;
+      background: transparent;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius-sm);
+      color: var(--ink);
+      font: 700 15px/1 var(--font-heading);
+      cursor: pointer;
+    }
+    .mkt-menu-bars {
       display: inline-flex;
       flex-direction: column;
-      gap: 5px;
-      cursor: pointer;
-      padding: 8px;
+      gap: 4px;
     }
-    .mkt-hamburger span {
-      width: 22px;
+    .mkt-menu-bars span {
+      width: 18px;
       height: 2px;
-      background: var(--color-text);
-      border-radius: 2px;
+      background: var(--ink);
     }
     .mkt-nav-body {
       display: none;
       flex-basis: 100%;
       flex-direction: column;
       align-items: stretch;
-      gap: 16px;
-      padding-bottom: 18px;
+      gap: 18px;
+      padding: 8px 0 20px;
     }
-    .mkt-nav-toggle:checked ~ .mkt-nav-body {
+    .mkt-nav-body.is-open {
       display: flex;
     }
     .mkt-nav-links {
       flex-direction: column;
       align-items: flex-start;
-      gap: 14px;
+      gap: 16px;
+    }
+    .mkt-nav-link {
+      font-size: 18px;
     }
     .mkt-nav-actions {
-      justify-content: flex-start;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 14px;
     }
+    .mkt-nav-cta {
+      min-height: 48px;
+    }
+  }
+  @media (max-width: 420px) {
+    .mkt-brand-name { font-size: 16px; }
+    .mkt-menu-btn { padding: 8px 10px; }
   }
 </style>
