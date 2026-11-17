@@ -38,7 +38,7 @@ def _from_addr() -> str:
     ).strip()
 
 
-def _send(subject: str, text: str) -> None:
+def _send(subject: str, text: str, reply_to: str | None = None) -> None:
     """Blocking send. Runs on a background thread via notify()."""
     key = _api_key()
     if not key:
@@ -53,6 +53,7 @@ def _send(subject: str, text: str) -> None:
                 "to": [_to_addr()],
                 "subject": subject,
                 "text": text,
+                **({"reply_to": reply_to} if reply_to else {}),
             },
             timeout=10.0,
         )
@@ -126,13 +127,35 @@ def notify_email_capture(email: str, marketing_opt_in: bool) -> None:
     )
 
 
-def notify_feedback(rating: int | None, comment: str | None, user_id: str | None, contact_ok: bool) -> None:
+def notify_feedback(
+    rating: int | None,
+    comment: str | None,
+    user_id: str | None,
+    contact_ok: bool,
+    *,
+    email: str | None = None,
+    name: str | None = None,
+    job_id: str | None = None,
+    via_job_link: bool = False,
+) -> None:
+    """Feedback lands in the team inbox; Reply goes straight to the customer when known."""
     score = f"{rating}/5" if rating else "no rating"
-    _notify(
-        f"Feedback: {score}",
-        f"A user left feedback after a scan.\n\nRating: {score}\nComment: {comment or 'n/a'}\n"
-        f"User ID: {user_id or 'anonymous'}\nOK to contact: {'yes' if contact_ok else 'no'}",
-    )
+    who = email or "anonymous"
+    if email and via_job_link:
+        who += " (matched via job link, not logged in)"
+    lines = [
+        f"Rating: {score}",
+        f"Comment: {comment or 'n/a'}",
+        "",
+        f"From: {(name + ' <' + email + '>') if (name and email) else who}",
+        f"User ID: {user_id or 'anonymous'}",
+        f"Job: {job_id or 'n/a'}",
+        f"OK to contact: {'yes' if contact_ok else 'no'}",
+    ]
+    if email:
+        lines += ["", "Reply to this email to answer them directly."]
+    subject = f"Feedback {score}" + (f" from {email}" if email else "")
+    threading.Thread(target=_send, args=(subject, "\n".join(lines), email), daemon=True).start()
 
 
 def _notify(subject: str, text: str) -> None:

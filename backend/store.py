@@ -635,6 +635,14 @@ def mark_free_grant_used(user_id: str) -> None:
         )
 
 
+def get_job_owner(job_id: str) -> str | None:
+    """user_id that owns a job, or None."""
+    with _cursor() as cur:
+        cur.execute("SELECT user_id FROM jobs WHERE id::text = %s", (job_id,))
+        row = cur.fetchone()
+    return row["user_id"] if row else None
+
+
 def get_user_created_at(user_id: str) -> datetime | None:
     """Supabase auth account creation time (backend connects as owner, so auth.users is readable)."""
     with _cursor() as cur:
