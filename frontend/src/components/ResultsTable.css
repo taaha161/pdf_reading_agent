@@ -88,7 +88,7 @@
   table-layout: fixed;
 }
 
-.results-col-date { width: 5.5rem; }
+.results-col-date { width: 8.5rem; }
 .results-col-desc { width: 16rem; }
 .results-col-category { width: 11rem; }
 .results-col-amount { width: 7.5rem; }
@@ -186,6 +186,9 @@
 .results-cell-date {
   font-size: 0.85rem;
   color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .results-date {
