@@ -247,6 +247,17 @@ def test_prompt_tells_model_to_recheck_other_group():
     assert 'whose "group" is "Other"' in cs.SYSTEM_INSTRUCTION
 
 
+def test_prompt_tells_model_not_to_split_subcategories_by_person():
+    assert "NOT by the sender/receiver name" in cs.SYSTEM_INSTRUCTION
+    assert "Never create a\n  sub-category per person" in cs.SYSTEM_INSTRUCTION
+    assert "explicitly asks for it" in cs.SYSTEM_INSTRUCTION
+
+
+def test_prompt_tells_model_to_keep_one_group_per_channel():
+    assert "The same channel is ONE sub-category" in cs.SYSTEM_INSTRUCTION
+    assert 'groups="Raast=raast|IBFT=ibft|Salary=salary"' in cs.SYSTEM_INSTRUCTION
+
+
 def test_single_filter_value_adds_no_group_column(monkeypatch):
     _fake_client(monkeypatch, lambda t: t["attach_transactions"](category_contains="wajid ali"))
     _, rows = cs.get_reply({"transactions": GROUP_TX}, "transactions from wajid ali")
