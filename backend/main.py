@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+import httpx
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
@@ -1217,9 +1218,20 @@ def chat(request: Request, body: ChatRequest, user_id: str = Depends(get_current
             body.job_id, len(reply), len(rows), time.perf_counter() - t0,
         )
     except Exception as e:
+        if _is_chat_timeout(e):
+            logger.warning("chat: job_id=%s timed out after %.2f s: %s", body.job_id, time.perf_counter() - t0, e)
+            raise HTTPException(504, CHAT_TIMEOUT_MESSAGE)
         logger.exception("Chat failed: %s", e)
         raise HTTPException(500, GENERIC_500_MESSAGE)
     return ChatResponse(reply=reply, transactions=rows)
+
+
+CHAT_TIMEOUT_MESSAGE = "The assistant took too long to answer. Please try again."
+
+
+def _is_chat_timeout(e: Exception) -> bool:
+    """True for a Gemini request that ran out of time: our client deadline (httpx) or Gemini's 504 DEADLINE_EXCEEDED."""
+    return isinstance(e, httpx.TimeoutException) or getattr(e, "code", None) == 504
 
 
 # --- Billing ---

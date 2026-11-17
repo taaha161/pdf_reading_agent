@@ -12,12 +12,15 @@ import re
 from typing import Any
 
 from google import genai
-from google.genai.types import AutomaticFunctionCallingConfig, GenerateContentConfig
+from google.genai.types import AutomaticFunctionCallingConfig, GenerateContentConfig, HttpOptions
 
 from services.csv_export import transactions_to_csv
 from services.summary import _parse_amount, _summary_by_category
 
 CHAT_MODEL = "gemini-2.5-flash"
+# Per-request cap on each Gemini call (a chat turn makes one call per tool round). Without it a stalled
+# request hangs the chat forever; Gemini answers a missed deadline with 504 DEADLINE_EXCEEDED.
+CHAT_REQUEST_TIMEOUT_MS = 60_000
 # Statement CSV sent in the prompt; ~1,100 rows is ~120k chars, far below the model's context.
 MAX_CSV_CHARS = 400_000
 QUERY_MAX_ROWS = 200
@@ -94,10 +97,20 @@ Ground rules:
   group has its own name or several search terms. Use the names the user used as group labels. The download then
   gets a Sub-category column and a totals table per sub-category plus the net total. Call the groups
   "sub-categories" when talking to the user; report each one's figures from "by_group" and the combined net.
-- When you create the sub-categories yourself ("group them into sub-categories by description"), use the shortest
-  word that identifies each group (e.g. "raast", not "raast p2p transfer from"). Before the final attach, read the
-  rows whose "group" is "Other": if any of them belongs to an existing sub-category (same keyword, merchant or
-  person), add a term for it to that sub-category and call the tool again, so Other holds only rows that fit no group.
+- When you create the sub-categories yourself ("group them into sub-categories by description"), group by the kind
+  of transaction (transfer channel, merchant, biller or source), NOT by the sender/receiver name. Never create a
+  sub-category per person: transfers of the same kind are ONE sub-category whoever sent or received them (e.g. one
+  "Raast", one "IBFT", one "Fund Transfer"; never "Raast - Faisal", "IBFT - Ali" or a group named after a person).
+  Only split or group by person when the user's message explicitly asks for it (e.g. "group by sender", "per
+  person", or names the people). The same channel is ONE sub-category even when its descriptions are written
+  differently or carry direction words ("RAAST P2P Fund transfer from X", "RAAST-P2P/IN X" and "Raast_P2P credit"
+  are all "Raast"): name it by the channel alone, without "In", "From", "Received", "Inward" or "P2P" suffixes, and
+  give it the one short term all its rows share, e.g. groups="Raast=raast|IBFT=ibft|Salary=salary". Matching ignores
+  case, spaces and punctuation, so "raast" already matches "RAAST-P2P/IN". Use the shortest word that identifies
+  each group (e.g. "raast", not "raast p2p transfer from").
+  Before the final attach, read the rows whose "group" is "Other": if any of them belongs to an existing
+  sub-category (same keyword or merchant), add a term for it to that sub-category and call the tool again, so Other
+  holds only rows that fit no group.
 - If the data cannot answer the question, say so plainly instead of guessing.
 - Use the statement currency when showing amounts. Format amounts with thousands separators and 2 decimals
   (e.g. "USD 2,419.49").
@@ -126,7 +139,7 @@ def _get_client() -> genai.Client:
         raise ValueError(
             "GOOGLE_GEMINI_API_KEY is not set. Set it in .env for chat and extraction."
         )
-    return genai.Client(api_key=api_key)
+    return genai.Client(api_key=api_key, http_options=HttpOptions(timeout=CHAT_REQUEST_TIMEOUT_MS))
 
 
 def _norm(s: Any) -> str:

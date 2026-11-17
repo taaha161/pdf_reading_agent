@@ -70,3 +70,31 @@ def test_process_pdf_rate_limit_returns_429_after_limit(client, mock_process_pdf
     assert r2.status_code == 200
     assert r3.status_code == 429
     assert "rate limit" in r3.json().get("error", "").lower() or "rate limit" in str(r3.json()).lower()
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        __import__("httpx").ReadTimeout("timed out"),
+        __import__("google.genai.errors", fromlist=["ServerError"]).ServerError(
+            504, {"error": {"code": 504, "message": "The request timed out.", "status": "DEADLINE_EXCEEDED"}}
+        ),
+    ],
+)
+def test_chat_timeout_returns_504_with_retry_message(client, error):
+    """A Gemini request that runs out of time gives a clear 504, not the generic 500."""
+    import main
+
+    main.limiter.reset()
+    job = {"id": TEST_JOB_ID, "transactions": [{"description": "x"}]}
+    with patch("main.get_job", return_value=job), patch("main.get_reply", side_effect=error):
+        r = client.post("/api/chat", json={"job_id": TEST_JOB_ID, "message": "Hello"})
+    assert r.status_code == 504
+    assert r.json()["detail"] == main.CHAT_TIMEOUT_MESSAGE
+
+
+def test_chat_client_has_request_timeout(monkeypatch):
+    from services import chat_service as cs
+
+    monkeypatch.setenv("GOOGLE_GEMINI_API_KEY", "test-key")
+    assert cs._get_client()._api_client._http_options.timeout == cs.CHAT_REQUEST_TIMEOUT_MS == 60_000
