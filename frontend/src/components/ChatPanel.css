@@ -373,3 +373,94 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* Assistant reply: paragraphs + bullets (see ChatReply.jsx) */
+.reply-text {
+  white-space: normal;
+}
+
+.reply-text p {
+  margin: 0 0 0.45rem;
+}
+
+.reply-text ul {
+  margin: 0 0 0.45rem;
+  padding-left: 1.1rem;
+}
+
+.reply-text li {
+  margin: 0.15rem 0;
+}
+
+.reply-text > :last-child {
+  margin-bottom: 0;
+}
+
+/* Rows matched by the answer */
+.reply-table-wrap {
+  margin-top: 0.6rem;
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.reply-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.reply-table th,
+.reply-table td {
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.reply-table th {
+  position: sticky;
+  top: 0;
+  background: var(--color-bg);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.reply-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.reply-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.reply-table .credit {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.reply-table .debit {
+  color: var(--color-text);
+}
+
+.reply-table .nowrap {
+  white-space: nowrap;
+}
+
+.reply-table .desc {
+  min-width: 140px;
+  word-break: break-word;
+}
+
+.reply-table-more {
+  margin: 0;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+}

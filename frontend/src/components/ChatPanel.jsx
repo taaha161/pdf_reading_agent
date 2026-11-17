@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { exportTransactions, sendChatMessage } from "../api/client";
 import { FREE_SIGNUP_PAGES } from "../lib/pricing";
+import { ReplyTable, ReplyText } from "./ChatReply";
 import "./ChatPanel.css";
 
 const SUGGESTIONS = [
@@ -146,8 +147,15 @@ export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogi
           <div key={i} className={`message ${msg.role}`}>
             {msg.role === "assistant" && <span className="message-avatar"><SparkIcon /></span>}
             <div className="message-bubble">
-              <div className="message-content">{msg.content}</div>
-              {msg.transactions?.length > 0 && <ChatDownload transactions={msg.transactions} />}
+              {msg.role === "assistant"
+                ? <ReplyText text={msg.content} />
+                : <div className="message-content">{msg.content}</div>}
+              {msg.transactions?.length > 0 && (
+                <>
+                  <ReplyTable transactions={msg.transactions} />
+                  <ChatDownload transactions={msg.transactions} />
+                </>
+              )}
             </div>
           </div>
         ))}
