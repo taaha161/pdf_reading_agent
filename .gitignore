@@ -55,3 +55,6 @@ brag-output*/
 
 # Claude Ads local state (profiles, runs)
 .claude-ads/
+
+# Impeccable design tool workspace
+.impeccable/
