@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { LANDING_URL } from "../lib/seo";
 import "./ContactPage.css";
 
 const SUBJECT_OPTIONS = [
@@ -102,16 +103,16 @@ export default function ContactPage() {
     return (
       <div className="contact-page">
         <header className="contact-page-header">
-          <Link to="/" className="contact-back">
+          <a href={LANDING_URL} className="contact-back">
             ← Back to home
-          </Link>
+          </a>
         </header>
         <main className="contact-main">
           <h1 className="contact-hero-title">Message sent</h1>
           <p className="contact-hero-subtitle">
             Thanks for reaching out—we&apos;ll reply to the email address you provided as soon as we can.
           </p>
-          <Link to="/">Return to home</Link>
+          <a href={LANDING_URL}>Return to home</a>
         </main>
       </div>
     );
@@ -120,9 +121,9 @@ export default function ContactPage() {
   return (
     <div className="contact-page">
       <header className="contact-page-header">
-        <Link to="/" className="contact-back">
+        <a href={LANDING_URL} className="contact-back">
           ← Back to home
-        </Link>
+        </a>
       </header>
       <main className="contact-main">
         <h1 className="contact-hero-title">Help Center</h1>

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { LANDING_URL } from "../lib/seo";
 import rawContent from "./privacy-policy-content.html?raw";
 import "./PrivacyPolicyPage.css";
 
@@ -6,9 +6,9 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="privacy-policy-page">
       <div className="privacy-policy-page-header">
-        <Link to="/" className="privacy-policy-back">
+        <a href={LANDING_URL} className="privacy-policy-back">
           ← Back to home
-        </Link>
+        </a>
       </div>
       <article
         className="privacy-policy-content"

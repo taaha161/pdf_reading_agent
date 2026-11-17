@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { LANDING_URL } from "../lib/seo";
 import { BLOG_POSTS } from "./blogPosts";
 import "./BlogPage.css";
 
@@ -8,9 +9,9 @@ export default function BlogPage() {
   return (
     <div className="blog-page">
       <header className="blog-header">
-        <Link to="/" className="blog-back">
+        <a href={LANDING_URL} className="blog-back">
           ← Back to home
-        </Link>
+        </a>
       </header>
       <main className="blog-main">
         <section className="blog-hero">
