@@ -69,10 +69,13 @@ function formatAmountForDisplay(type, amount) {
   const raw = String(amount ?? "").trim();
   if (!raw || raw === "—") return "—";
   const rawType = String(type || "").toLowerCase();
-  const isDebit = rawType === "debit";
-  const alreadyNegative = raw.startsWith("-");
-  if (isDebit && !alreadyNegative) return `-${raw}`;
-  return raw;
+  const n = parseFloat(raw.replace(/[^0-9.-]/g, ""));
+  if (!Number.isFinite(n)) return raw;
+  // Printed like a statement: explicit sign, thousands separators, two decimals.
+  const negative = rawType === "debit" || n < 0;
+  const positive = rawType === "credit" && n >= 0;
+  const abs = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${negative ? "\u2212" : positive ? "+" : ""}${abs}`;
 }
 
 function validateTransactionDraft(draft) {
@@ -113,6 +116,9 @@ export default function ResultsTable({
   onSaveTransaction,
   categoryFilter = null,
   onClearCategoryFilter,
+  highlighted = null,
+  highlightQuestion = "",
+  onClearHighlight,
 }) {
   const [editingIndex, setEditingIndex] = useState(null);
   const [draft, setDraft] = useState({ date: "", description: "", category: "", type: "", amount: "" });
@@ -205,6 +211,17 @@ export default function ResultsTable({
           )}
         </div>
       </div>
+      {highlighted?.size > 0 && (
+        <p className="results-highlight-note" role="status">
+          <span className="pencil-note">
+            {highlighted.size} {highlighted.size === 1 ? "row answers" : "rows answer"}
+            {highlightQuestion ? <> &ldquo;{highlightQuestion}&rdquo;</> : " your question"}
+          </span>
+          <button type="button" className="results-highlight-clear" onClick={onClearHighlight}>
+            Clear highlight
+          </button>
+        </p>
+      )}
       {transactions?.length > 0 ? (
       <div className="table-wrap">
         <table className="results-table" role="table">
@@ -229,12 +246,13 @@ export default function ResultsTable({
               const chipClass = getChipClass(t);
               const amountClass = getAmountClass(t.type, t.amount);
               return (
-                <tr key={i} className="results-row" role="row">
+                <tr key={i} className={`results-row${highlighted?.has(i) ? " results-row--hit" : ""}`} role="row">
                   <td className="results-cell-date" role="cell">
                     <span className="results-date">{t.date || "—"}</span>
                   </td>
                   <td className="results-cell-desc" role="cell">
                     <div className="results-desc-main">{t.description || "—"}</div>
+                    {highlighted?.has(i) && <span className="results-hit-sr"> (answers your question)</span>}
                   </td>
                   <td className="results-cell-category" role="cell">
                     {t.category ? (

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=1440">
+<title>The Return</title>
+<style>
+:root{--paper:#fff;--red:#d42a2f;--ink:#151515;--shade:#fbe7e5}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1440px;height:900px;background:var(--paper);color:var(--ink);font-family:"Helvetica Neue",Arial,sans-serif;overflow:hidden}
+.sheet{position:absolute;inset:24px 40px;border:3px solid var(--red)}
+.head{display:grid;grid-template-columns:200px 1fr 260px;border-bottom:3px solid var(--red);height:150px}
+.formno{border-right:2px solid var(--red);padding:14px 16px;color:var(--red)}
+.formno b{display:block;font-size:56px;line-height:1;font-weight:900;letter-spacing:-.02em}
+.formno small{font-size:13px;font-weight:700}
+.title{padding:18px 26px;color:var(--red)}
+.title h1{font-size:64px;line-height:.95;font-weight:900;letter-spacing:-.025em;color:var(--ink)}
+.title p{font-size:17px;margin-top:10px;font-weight:600}
+.year{border-left:2px solid var(--red);display:grid;grid-template-rows:1fr 1fr}
+.year div{padding:12px 16px;color:var(--red);font-size:13px;font-weight:700}
+.year div+div{border-top:2px solid var(--red)}
+.year strong{display:block;color:var(--ink);font-size:30px;font-family:"Courier New",monospace}
+nav{position:absolute;top:-22px;right:0;display:flex;gap:26px;font-size:14px;font-weight:700;color:var(--ink)}
+.body{display:grid;grid-template-columns:64px 1fr 1fr;height:calc(100% - 150px)}
+.gutter{border-right:2px solid var(--red);color:var(--red);font-weight:900;font-size:22px}
+.gutter span{display:block;height:140px;padding:14px 0 0 18px}
+.col{border-right:2px solid var(--red)}
+.line{border-bottom:2px solid var(--red);padding:12px 20px;height:140px;position:relative}
+.lab{color:var(--red);font-size:15px;font-weight:700}
+.attach{position:absolute;inset:40px 20px 14px;border:3px dashed var(--red);display:flex;align-items:center;justify-content:center;gap:22px}
+.attach em{font-style:normal;font-size:30px;font-weight:900;color:var(--ink)}
+.btn{background:var(--ink);color:#fff;font-weight:800;font-size:18px;padding:14px 24px}
+.val{font-family:"Courier New",monospace;font-size:34px;font-weight:700;margin-top:10px}
+.box{display:inline-block;width:22px;height:22px;border:2px solid var(--red);vertical-align:-4px;margin-right:8px;text-align:center;line-height:18px;font-weight:900}
+.chk{font-size:22px;font-weight:700;margin:14px 18px 0 0;display:inline-block}
+.shade{background:var(--shade)}
+.ask{font-family:"Courier New",monospace;font-size:20px;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-family:"Courier New",monospace;font-size:17px;margin-top:6px}
+td{border-bottom:1px solid var(--red);padding:5px 4px}
+td:last-child{text-align:right;font-weight:700}
+.total td{border-top:3px solid var(--ink);border-bottom:none;font-size:20px}
+.prep{display:grid;grid-template-columns:160px 1fr 200px;height:100%}
+.prep div{padding:12px 16px;color:var(--red);font-size:13px;font-weight:700}
+.prep div+div{border-left:2px solid var(--red)}
+.sig{font-family:"Brush Script MT",cursive;font-size:38px;color:var(--ink)}
+</style></head><body>
+<div class="sheet">
+<nav><span>Instructions</span><span>Pricing</span><span>Banks</span><span>Security</span><span>Log in</span></nav>
+<div class="head">
+<div class="formno"><small>Form</small><b>BSS-1</b><small>Statement conversion</small></div>
+<div class="title"><h1>Bank Statement Scanner</h1><p>Turn a bank statement PDF into categorized rows in Excel or CSV. Then ask it for any transactions.</p></div>
+<div class="year"><div>Pages free, no account<strong>10</strong></div><div>Contract<strong>NONE</strong></div></div>
+</div>
+<div class="body">
+<div class="gutter"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+<div class="col">
+<div class="line" style="height:280px"><div class="lab">Attach statement here (PDF, digital or scanned)</div>
+<div class="attach"><em>Drop a statement PDF</em><span class="btn">Convert it free</span></div></div>
+<div class="line"><div class="lab">Export as</div><span class="chk"><span class="box">✕</span>Excel (.xlsx)</span><span class="chk"><span class="box">✕</span>CSV</span><span class="chk"><span class="box"></span>Both</span></div>
+<div class="line shade"><div class="lab">Then: $10 a month for 100 pages, or a page pack. Cancel anytime.</div><div class="val">$0.10 / page</div></div>
+</div>
+<div class="col" style="border-right:none">
+<div class="line" style="height:420px"><div class="lab">Ask your statement</div>
+<div class="ask">&gt; every payment to John Ruiz</div>
+<table><tr><td>03/02</td><td>Zelle to John Ruiz</td><td>-250.00</td></tr><tr><td>03/09</td><td>Zelle to John Ruiz</td><td>-250.00</td></tr><tr><td>03/16</td><td>Zelle to John Ruiz</td><td>-180.00</td></tr><tr><td>03/30</td><td>Zelle to John Ruiz</td><td>-250.00</td></tr><tr class="total"><td></td><td>4 rows · Download Excel</td><td>-930.00</td></tr></table></div>
+<div class="line" style="height:140px;padding:0;border-bottom:none"><div class="prep"><div>Paid preparer</div><div><span class="sig">[Founder signature]</span><br>Built and answered by the founder</div><div>Sample data</div></div></div>
+</div>
+</div>
+</div>
+</body></html>

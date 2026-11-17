@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import logo from "../assets/pdf_to_excel_logo.png";
+import LogoMark from "./LogoMark";
 import settingsGear from "../assets/settings-gear.svg";
 import { useAuth } from "../contexts/AuthContext";
 import { useUsage } from "../contexts/UsageContext";
@@ -33,7 +33,7 @@ export default function AppLayout({ children }) {
         <div className="app-layout-brand">
           <Link to="/" className="app-layout-logo-wrap" aria-label="Home">
             <span className="app-layout-logo-bg">
-              <img src={logo} alt="" className="app-layout-logo" aria-hidden />
+              <LogoMark className="app-layout-logo" size={30} />
             </span>
           </Link>
           <span className="app-layout-brand-name">Bank Statement Scanner</span>

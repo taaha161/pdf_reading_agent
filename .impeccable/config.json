@@ -1,0 +1,29 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "archivo",
+        "createdAt": "2026-11-16T21:36:17.970Z",
+        "reason": "Claude: video composition loads the documented Archivo face via its own @font-face under the short family name; DESIGN.md names it 'Archivo Variable'"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "public sans",
+        "createdAt": "2026-11-16T21:36:17.986Z",
+        "reason": "Claude: same documented Public Sans face, loaded in the video under the short family name"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "brag-output/statement-demo/compositions/intro.html"
+        ],
+        "createdAt": "2026-11-16T21:36:18.003Z",
+        "reason": "Claude: spreadsheet grid rows and the file bar are ruled lines with text vertically centred in 64-72px cells; the flag reads the cell box, not the text"
+      }
+    ]
+  }
+}

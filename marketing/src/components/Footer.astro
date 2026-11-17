@@ -1,6 +1,5 @@
 ---
-import logo from '../assets/pdf_to_excel_logo.png';
-import { Image } from 'astro:assets';
+import LogoMark from './LogoMark.astro';
 import { SUPPORT_EMAIL } from '../consts';
 const year = new Date().getFullYear();
 ---
@@ -10,7 +9,7 @@ const year = new Date().getFullYear();
     <div class="mkt-footer-top">
       <div class="mkt-footer-brand">
         <span class="mkt-footer-icon" aria-hidden="true">
-          <Image src={logo} alt="" width={32} height={32} />
+          <LogoMark size={32} />
         </span>
         <div class="mkt-footer-brand-text">
           <span>Bank Statement Scanner</span>
@@ -21,7 +20,6 @@ const year = new Date().getFullYear();
         <div class="mkt-footer-col">
           <h3>Product</h3>
           <a href="/#how-it-works">How it works</a>
-          <a href="/#results">Results</a>
           <a href="/#pricing">Pricing</a>
           <a href="/blog">Blog</a>
           <a href="/convert">Supported banks</a>
@@ -48,9 +46,8 @@ const year = new Date().getFullYear();
 
 <style>
   .mkt-footer {
-    background: var(--color-surface);
-    border-top: 1px solid var(--color-border);
-    margin-top: 80px;
+    background: var(--desk);
+    border-top: 2px solid var(--ink);
   }
   .mkt-footer-inner {
     padding-block: 48px 32px;
@@ -74,7 +71,7 @@ const year = new Date().getFullYear();
   }
   .mkt-footer-brand-text span {
     font-family: var(--font-heading);
-    font-weight: 700;
+    font-weight: 800;
     display: block;
   }
   .mkt-footer-brand-text p {
@@ -101,17 +98,18 @@ const year = new Date().getFullYear();
     margin: 0 0 4px;
   }
   .mkt-footer-col a {
-    color: var(--color-text);
+    color: var(--ink);
     font-size: 15px;
+    text-decoration: none;
   }
   .mkt-footer-col a:hover {
-    color: var(--color-primary);
+    text-decoration: underline;
   }
   .mkt-footer-meta {
     margin-top: 40px;
     padding-top: 20px;
-    border-top: 1px solid var(--color-border);
-    color: var(--color-text-muted);
+    border-top: 1px solid var(--rule-strong);
+    color: var(--ink-soft);
     font-size: 14px;
   }
 </style>

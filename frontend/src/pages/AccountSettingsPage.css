@@ -165,3 +165,78 @@
   color: var(--color-text-muted, #64748b);
   font-weight: 400;
 }
+
+/* ---------------------------------------------------------------------------
+   Statement world: each settings group is its own sheet on the desk.
+   --------------------------------------------------------------------------- */
+.account-settings {
+  max-width: 640px;
+}
+.account-settings-title {
+  font-stretch: 112%;
+  font-size: clamp(1.9rem, 3vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.account-settings-description {
+  color: var(--ink-soft);
+}
+.account-settings-section,
+.account-settings-section:last-child {
+  margin-bottom: 1.5rem;
+  padding: 1.6rem 1.9rem 1.8rem;
+  border: 0;
+  background: var(--paper);
+  box-shadow: var(--sheet-shadow);
+}
+.account-settings-section-title {
+  font-family: var(--font-heading);
+  font-stretch: 112%;
+  font-size: 1.3rem;
+  font-weight: 800;
+  padding-bottom: 0.65rem;
+  border-bottom: 2px solid var(--ink);
+}
+.account-settings-danger .account-settings-section-title {
+  color: var(--color-error);
+  border-bottom-color: var(--color-error);
+}
+.account-settings-billing-balance {
+  font-family: var(--font-heading);
+  font-stretch: 112%;
+  font-weight: 800;
+}
+.account-settings-offer {
+  border-radius: 0;
+  background: var(--hi-soft);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+}
+.account-settings-pack {
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+}
+.account-settings-pack:hover:not(:disabled) {
+  background: var(--hi);
+  border-color: var(--ink);
+}
+.account-settings-pack-price {
+  color: var(--ink);
+}
+.account-settings-delete-btn {
+  border-radius: var(--radius-sm);
+  background: var(--color-error);
+}
+.account-settings-delete-btn:disabled {
+  background: var(--paper);
+  color: var(--color-error);
+  border: 2px solid var(--color-error-border);
+  opacity: 1;
+}
+@media (max-width: 640px) {
+  .account-settings-section,
+  .account-settings-section:last-child {
+    padding: 1.1rem 1rem 1.25rem;
+  }
+}

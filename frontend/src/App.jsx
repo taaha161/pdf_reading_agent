@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
-import Landing from "./pages/Landing";
 import ScannerPage from "./pages/ScannerPage";
 import Dashboard from "./pages/Dashboard";
 import AuthPage from "./pages/AuthPage";
@@ -32,7 +31,7 @@ function AppContent() {
       <ScrollToTop />
       <PageMeta />
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<Navigate to="/scanner" replace />} />
         <Route path="/login" element={<AuthPage mode="login" />} />
         <Route path="/signup" element={<AuthPage mode="signup" />} />
         <Route path="/subscribe" element={<SubscribePage />} />
@@ -48,7 +47,7 @@ function AppContent() {
         <Route path="/settings" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
         <Route path="/scanner" element={<ScannerPage />} />
         <Route path="/scanner/:jobId" element={<ScannerPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/scanner" replace />} />
       </Routes>
       <Analytics />
     </>

@@ -75,6 +75,33 @@ function transactionsToCsvBrowser(transactions) {
 /** Placeholder job id for the built-in sample statement (never sent to the API). */
 const SAMPLE_JOB_ID = "sample";
 
+/** Normalize a row for matching chat answers back to table rows. */
+const rowKey = (t) =>
+  [
+    String(t?.date ?? "").trim(),
+    String(t?.description ?? "").trim().toLowerCase().replace(/\s+/g, " "),
+    (() => {
+      const n = Math.abs(parseFloat(String(t?.amount ?? "").replace(/[^0-9.-]/g, "")));
+      return Number.isFinite(n) ? n.toFixed(2) : "";
+    })(),
+  ].join("|");
+
+/** Indices of `transactions` that the chat answer's rows refer to (each table row used once). */
+function matchRowIndices(transactions, rows) {
+  const byKey = new Map();
+  (transactions || []).forEach((t, i) => {
+    const k = rowKey(t);
+    if (!byKey.has(k)) byKey.set(k, []);
+    byKey.get(k).push(i);
+  });
+  const out = new Set();
+  for (const r of rows) {
+    const list = byKey.get(rowKey(r));
+    if (list?.length) out.add(list.shift());
+  }
+  return out;
+}
+
 const TRIAL_LIMIT_NOTICE = `You've used your ${FREE_ANON_PAGES} free pages. Create a free account to get ${FREE_SIGNUP_PAGES} free pages for your first month.`;
 const CHAT_NOTICE = `Create a free account to ask questions about your statement. Your first month includes ${FREE_SIGNUP_PAGES} pages free.`;
 const FILE_SIZE_NOTICE = `Free accounts can upload PDFs up to ${formatMB(MAX_FILE_BYTES_SIGNED_IN)}.`;
@@ -193,6 +220,16 @@ export default function ScannerPage() {
       }),
     [navigate]
   );
+  // Rows the latest chat answer returned, as indices into `transactions`, highlighted in the table.
+  const [answerHighlight, setAnswerHighlight] = useState(null); // { indices: Set<number>, question }
+  const handleAnswerRows = useCallback(
+    (rows, question) => {
+      setAnswerHighlight(rows.length ? { indices: matchRowIndices(transactions, rows), question } : null);
+    },
+    [transactions],
+  );
+  useEffect(() => setAnswerHighlight(null), [jobId]);
+
   // Guest wants chat: keep their statement in this browser so it reopens after signup
   // (login returns to /scanner?handoff=1; the dashboard offers it after email confirmation).
   const lastFileRef = useRef(null);
@@ -487,7 +524,7 @@ export default function ScannerPage() {
             <ul className="scanner-trust" aria-label="Why it's easy">
               <li>Free, no signup needed</li>
               <li>Encrypted upload</li>
-              <li>Download as CSV</li>
+              <li>Download Excel or CSV</li>
             </ul>
           </div>
         ) : (
@@ -667,6 +704,9 @@ export default function ScannerPage() {
                   onDownloadError={setDownloadError}
                   onTransactionChange={handleTransactionChange}
                   onSaveTransaction={handleSaveTransaction}
+                  highlighted={answerHighlight?.indices}
+                  highlightQuestion={answerHighlight?.question}
+                  onClearHighlight={() => setAnswerHighlight(null)}
                 />
               </div>
             </div>
@@ -714,6 +754,7 @@ export default function ScannerPage() {
                   disabled={!jobId}
                   requireLogin={!isLoggedIn}
                   onRequireLogin={goToSignupForChat}
+                  onAnswerRows={handleAnswerRows}
                   hideHeading
                 />
               </div>

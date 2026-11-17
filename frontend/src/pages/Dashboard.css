@@ -791,3 +791,353 @@
     height: 20px;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Statement world: the dashboard is the desk. A summary sheet and a statements
+   sheet lie on it; black ink actions; yellow only marks answers.
+   --------------------------------------------------------------------------- */
+.dashboard {
+  max-width: 1200px;
+}
+.dashboard-page-header {
+  align-items: flex-end;
+  margin-bottom: 1.75rem;
+}
+.dashboard-title {
+  font-size: clamp(1.9rem, 3vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+.dashboard-subtitle {
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  max-width: 56ch;
+}
+.dashboard-btn {
+  min-height: 44px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  box-shadow: none;
+}
+.dashboard-btn-primary {
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  box-shadow: none;
+}
+.dashboard-btn-primary:hover {
+  filter: none;
+  background: #000;
+  color: var(--hi);
+  box-shadow: none;
+}
+.dashboard-btn-secondary {
+  background: transparent;
+  border: 2px solid var(--ink);
+}
+.dashboard-btn-secondary:hover {
+  background: var(--hi);
+  border-color: var(--ink);
+}
+
+.dashboard-desk {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 2fr);
+  gap: 2rem;
+  align-items: start;
+}
+.dashboard-sheet {
+  background: var(--paper);
+  box-shadow: var(--sheet-shadow);
+  padding: 1.75rem 2rem 2rem;
+}
+.dashboard-summary {
+  transform: rotate(-0.4deg);
+}
+.dashboard-sheet-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-stretch: 112%;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.dashboard-sheet-note {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-hand);
+  font-size: 1.1rem;
+  color: var(--graphite);
+}
+.dashboard-summary-list {
+  margin: 1rem 0 0;
+  border-top: 2px solid var(--ink);
+}
+.dashboard-summary-list > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.dashboard-summary-list dt {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+.dashboard-summary-list dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.dashboard-summary-net {
+  border-bottom: 2px solid var(--ink) !important;
+}
+.dashboard-summary-net dt {
+  color: var(--ink);
+  font-weight: 700;
+}
+.dashboard-cats {
+  margin-top: 1.5rem;
+}
+.dashboard-cats-title {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+.dashboard-cats-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+.dashboard-cats-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 7.5rem) 1fr 2.75rem;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+.dashboard-cats-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard-cats-track {
+  height: 0.5rem;
+  background: var(--color-primary-subtle);
+}
+.dashboard-cats-fill {
+  display: block;
+  height: 100%;
+  background: var(--graphite);
+}
+.dashboard-cats-pct {
+  text-align: right;
+  font-weight: 600;
+}
+
+/* Statements sheet */
+.dashboard-statements .dashboard-table-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 0 0.85rem;
+  margin: 0;
+  border-bottom: 2px solid var(--ink);
+}
+.dashboard-statements .dashboard-table-search {
+  min-height: 40px;
+  width: min(100%, 17rem);
+  padding: 0.45rem 0.75rem;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.dashboard-statements .dashboard-table-search::placeholder {
+  color: #6b6b6b;
+}
+.dashboard-statements .dashboard-table-wrap {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--paper);
+  overflow-x: auto;
+}
+.dashboard-statements .dashboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.98rem;
+}
+.dashboard-statements .dashboard-table th {
+  background: var(--paper);
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  padding: 0.75rem 0.6rem 0.55rem;
+  border-bottom: 1px solid var(--ink);
+}
+.dashboard-statements .dashboard-table td {
+  height: 3rem;
+  padding: 0 0.6rem;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+}
+.dashboard-statements .dashboard-table tbody tr:hover td {
+  background: var(--color-primary-subtle);
+}
+.dashboard-statements .dashboard-table-cell-check {
+  width: 2.25rem;
+}
+.dashboard-statements .dashboard-table-date {
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.dashboard-statements .dashboard-table-num {
+  text-align: right;
+  font-weight: 600;
+  width: 5rem;
+}
+.dashboard-table-open {
+  font-weight: 700;
+  text-decoration: none;
+}
+.dashboard-table-open:hover {
+  text-decoration: underline;
+}
+.dashboard-table-gone {
+  font-style: italic;
+  color: var(--ink-soft);
+}
+.dashboard-table-row.is-empty .dashboard-table-num {
+  color: var(--ink-soft);
+}
+.dashboard-table-actions {
+  width: 7rem;
+  text-align: right;
+  white-space: nowrap;
+}
+.dashboard-table-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 0.7rem;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: none;
+  vertical-align: middle;
+}
+.dashboard-table-action:hover {
+  background: var(--hi);
+}
+.dashboard-statements .dashboard-table-action-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-left: 0.35rem;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--graphite);
+  vertical-align: middle;
+}
+.dashboard-statements .dashboard-table-action-btn:hover:not(:disabled) {
+  color: var(--color-error);
+  background: var(--color-error-bg);
+}
+.dashboard-statements .dashboard-table-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 0 0;
+  border: 0;
+  background: transparent;
+}
+.dashboard-table-count {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: 1.1rem;
+  color: var(--graphite);
+}
+.dashboard-statements .dashboard-empty {
+  padding: 2.5rem 0 0.5rem;
+  text-align: left;
+  border: 0;
+  background: transparent;
+}
+.dashboard-statements .dashboard-empty-title {
+  font-family: var(--font-heading);
+  font-stretch: 112%;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+.dashboard-alert {
+  border-radius: 0;
+}
+.dashboard-resume {
+  border-radius: 0;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+}
+
+@media (max-width: 960px) {
+  .dashboard-desk {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-summary {
+    transform: none;
+  }
+}
+@media (max-width: 640px) {
+  .dashboard-sheet {
+    padding: 1.1rem 1rem 1.25rem;
+  }
+  /* Keep a real table on phones (the older card layout below is retired) */
+  .dashboard-statements .dashboard-table { display: table; }
+  .dashboard-statements .dashboard-table thead { display: table-header-group; }
+  .dashboard-statements .dashboard-table tbody { display: table-row-group; }
+  .dashboard-statements .dashboard-table thead tr,
+  .dashboard-statements .dashboard-table-row { display: table-row; padding: 0; }
+  .dashboard-statements .dashboard-table thead th,
+  .dashboard-statements .dashboard-table td { display: table-cell; padding: 0 0.4rem; border-bottom: 1px solid var(--rule); }
+  .dashboard-statements .dashboard-table thead th { padding: 0.6rem 0.4rem 0.45rem; border-bottom: 1px solid var(--ink); }
+  .dashboard-statements .dashboard-table th:nth-child(4),
+  .dashboard-statements .dashboard-table td:nth-child(4) {
+    display: none;
+  }
+  .dashboard-statements .dashboard-table-actions { width: auto; }
+  .dashboard-statements .dashboard-table-action { padding: 0 0.55rem; }
+}
+.dashboard-statements td.dashboard-table-desc {
+  display: table-cell;
+  vertical-align: middle;
+}
+.dashboard-statements .dashboard-table td {
+  vertical-align: middle;
+}
+.dashboard-sheet {
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .dashboard-statements .dashboard-table-header {
+    align-items: flex-start;
+  }
+}

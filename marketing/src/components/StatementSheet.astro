@@ -1,0 +1,341 @@
+---
+/**
+ * The homepage's signature: the real sample statement as a printed sheet on the desk.
+ * Pick a question (pink) and the rows that answer it get a yellow highlighter swipe,
+ * a pencil tick and a pencil total. Same filters the product's chat would run; the data
+ * is the fictional sample statement the scanner also opens (labelled as a sample).
+ */
+import sample from '../sampleStatement.json';
+
+type Row = { date: string; description: string; amount: string; type: string; category: string };
+const rows = sample.transactions as Row[];
+
+const questions = [
+  { id: 'received', label: 'all money received', match: (r: Row) => r.type === 'credit' },
+  { id: 'software', label: 'every software subscription', match: (r: Row) => r.category === 'Software' },
+  { id: 'travel', label: 'travel this month', match: (r: Row) => r.category === 'Travel' },
+];
+
+const money = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const signed = (r: Row) => `${r.type === 'credit' ? '+' : '−'}${money(Number(r.amount))}`;
+
+// Precompute which questions each row answers, and each question's count and total.
+const hits = rows.map((r) => questions.filter((q) => q.match(r)).map((q) => q.id).join(' '));
+const answers = Object.fromEntries(
+  questions.map((q) => {
+    const matched = rows.filter(q.match);
+    const total = matched.reduce((s, r) => s + (r.type === 'credit' ? 1 : -1) * Number(r.amount), 0);
+    return [q.id, { count: matched.length, total: `${total < 0 ? '−' : '+'}$${money(Math.abs(total))}` }];
+  }),
+);
+const first = questions[0];
+---
+
+<figure class="stmt" data-stmt data-q={first.id} aria-labelledby="stmt-cap">
+  <div class="stmt-ask">
+    <span class="stmt-ask-label" id="stmt-ask-label">Ask the statement for</span>
+    <div class="stmt-chips" role="group" aria-labelledby="stmt-ask-label">
+      {questions.map((q) => (
+        <button
+          type="button"
+          class="stmt-chip"
+          data-q-btn={q.id}
+          data-count={answers[q.id].count}
+          data-total={answers[q.id].total}
+          aria-pressed={q.id === first.id ? 'true' : 'false'}
+        >
+          {q.label}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <div class="stmt-head">
+    <div>
+      <p class="stmt-bank">{sample.bank}</p>
+      <p class="stmt-meta">Business checking · {sample.period}</p>
+    </div>
+    <dl class="stmt-bal">
+      <div><dt>Opening</dt><dd>${money(sample.opening)}</dd></div>
+      <div><dt>Closing</dt><dd>${money(sample.closing)}</dd></div>
+    </dl>
+  </div>
+
+  <table class="stmt-table">
+    <caption id="stmt-cap" class="stmt-cap">Sample statement (fictional), {rows.length} transactions</caption>
+    <thead>
+      <tr>
+        <th scope="col" class="c-tick"><span class="sr">Matches question</span></th>
+        <th scope="col">Date</th>
+        <th scope="col">Description</th>
+        <th scope="col" class="c-cat">Category</th>
+        <th scope="col" class="c-amt">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((r, i) => (
+        <tr data-hits={hits[i]} class:list={{ 'is-hit': hits[i].split(' ').includes(first.id) }}>
+          <td class="c-tick">
+            <svg class="tick" viewBox="0 0 20 16" width="18" height="14" aria-hidden="true"><path d="M2 9.5c2 1.4 3.4 3 4.6 4.6C9.4 8.6 13 4.2 18 1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+            <span class="sr hit-sr">Matches</span>
+          </td>
+          <td class="c-date">{r.date}</td>
+          <td class="c-desc"><span class="swipe">{r.description}</span></td>
+          <td class="c-cat">{r.category}</td>
+          <td class:list={['c-amt', { 'is-credit': r.type === 'credit' }]}><span class="swipe">{signed(r)}</span></td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+
+  <p class="stmt-total pencil" aria-live="polite" data-stmt-total>
+    {answers[first.id].count} rows = {answers[first.id].total}, exported to Excel
+  </p>
+</figure>
+
+<script>
+  const fig = document.querySelector<HTMLElement>('[data-stmt]');
+  if (fig) {
+    const buttons = fig.querySelectorAll<HTMLButtonElement>('[data-q-btn]');
+    const rows = fig.querySelectorAll<HTMLTableRowElement>('tbody tr');
+    const total = fig.querySelector<HTMLElement>('[data-stmt-total]')!;
+    buttons.forEach((b) =>
+      b.addEventListener('click', () => {
+        const q = b.dataset.qBtn!;
+        if (fig.dataset.q === q) return;
+        fig.dataset.q = q;
+        buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        rows.forEach((tr) => {
+          tr.classList.remove('is-hit');
+          if ((tr.dataset.hits || '').split(' ').includes(q)) {
+            // Restart the swipe so it draws again for the new question.
+            void tr.offsetWidth;
+            tr.classList.add('is-hit');
+          }
+        });
+        total.textContent = `${b.dataset.count} rows = ${b.dataset.total}, exported to Excel`;
+        try {
+          ((window as any).dataLayer = (window as any).dataLayer || []).push({ event: 'home_ask_demo', question: q });
+        } catch {}
+      }),
+    );
+  }
+</script>
+
+<style>
+  .stmt {
+    position: relative;
+    margin: 0;
+    background: var(--paper);
+    box-shadow: var(--sheet-shadow);
+    padding: 26px 34px 30px;
+    transform: rotate(-0.8deg);
+    transform-origin: 30% 0;
+  }
+
+  /* The question, marked in pink */
+  .stmt-ask {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 12px;
+    margin-bottom: 18px;
+  }
+  .stmt-ask-label {
+    font-family: var(--font-hand);
+    color: var(--graphite);
+    font-size: 19px;
+  }
+  .stmt-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .stmt-chip {
+    min-height: 36px;
+    padding: 4px 12px;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    color: var(--ink);
+    font: 600 15px/1.2 var(--font-body);
+    cursor: pointer;
+  }
+  .stmt-chip:hover {
+    background: var(--hi-soft);
+  }
+  .stmt-chip[aria-pressed='true'] {
+    background: var(--hi-pink);
+  }
+
+  /* Statement header */
+  .stmt-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .stmt-bank {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 21px;
+    letter-spacing: -0.02em;
+  }
+  .stmt-meta {
+    margin: 2px 0 0;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+  .stmt-bal {
+    display: flex;
+    gap: 22px;
+    margin: 0;
+    text-align: right;
+  }
+  .stmt-bal dt {
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .stmt-bal dd {
+    margin: 0;
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  /* Rows: identical height and ruling so a column reads in one sweep */
+  .stmt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+    table-layout: fixed;
+  }
+  .stmt-cap {
+    caption-side: bottom;
+    text-align: left;
+    padding-top: 10px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .stmt-table th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    padding: 10px 6px 8px;
+    border-bottom: 1px solid var(--ink);
+  }
+  .stmt-table td {
+    height: 33px;
+    padding: 0 6px;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .c-tick { width: 30px; padding-inline: 0 !important; }
+  .stmt-table th:nth-child(2) { width: 62px; }
+  .c-cat { width: 132px; color: var(--ink-soft); }
+  .c-amt { width: 112px; text-align: right !important; font-weight: 600; }
+  .c-date { color: var(--ink-soft); }
+  .is-credit { color: var(--ink); }
+
+  /* The highlighter: one left-to-right swipe across description and amount */
+  .swipe {
+    background-image: linear-gradient(var(--hi), var(--hi));
+    background-repeat: no-repeat;
+    background-position: 0 55%;
+    background-size: 0% 78%;
+    padding: 1px 3px;
+    margin: 0 -3px;
+  }
+  .is-hit .swipe {
+    background-size: 100% 78%;
+    transition: background-size 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .is-hit .c-amt .swipe {
+    transition-delay: 180ms;
+  }
+  .is-hit .c-desc { font-weight: 600; color: var(--ink); }
+
+  .tick {
+    display: block;
+    color: var(--graphite);
+    opacity: 0;
+  }
+  .is-hit .tick {
+    opacity: 1;
+    transition: opacity 200ms 380ms;
+  }
+  .sr,
+  .hit-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  tr:not(.is-hit) .hit-sr {
+    display: none;
+  }
+
+  /* Pencil total in the sheet's top-right margin, so it sits beside the question */
+  .stmt-total {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    margin: 0;
+    white-space: nowrap;
+    font-size: 22px;
+    line-height: 1.15;
+    text-align: right;
+    transform: rotate(-2.5deg);
+    transform-origin: right;
+  }
+  .stmt-ask {
+    padding-right: 0;
+  }
+  .stmt-ask-label {
+    min-height: 28px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .is-hit .swipe,
+    .is-hit .tick {
+      transition: none;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .stmt {
+      transform: none;
+      padding: 18px 16px 20px;
+    }
+    .stmt-total {
+      position: static;
+      white-space: normal;
+      margin: 14px 0 0;
+      text-align: left;
+      transform: rotate(-1.5deg);
+      transform-origin: left;
+    }
+  }
+  @media (max-width: 560px) {
+    .c-cat,
+    .stmt-bal {
+      display: none;
+    }
+    .stmt-table { font-size: 14px; }
+    .c-amt { width: 96px; }
+    .stmt-table th:nth-child(2) { width: 54px; }
+    .c-tick { width: 22px; }
+    .stmt-table td { padding-inline: 4px; }
+  }
+</style>

@@ -76,7 +76,8 @@ function ChatDownload({ transactions }) {
   );
 }
 
-export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogin, hideHeading }) {
+/** onAnswerRows(rows): called with the rows the latest answer attached ([] when none), so the page can highlight them. */
+export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogin, hideHeading, onAnswerRows }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -105,6 +106,7 @@ export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogi
     try {
       const { reply, transactions } = await sendChatMessage(jobId, text, history);
       setMessages((m) => [...m, { role: "assistant", content: reply, transactions }]);
+      onAnswerRows?.(transactions || [], text);
     } catch (e) {
       setError(e.message || "Failed to get reply");
     } finally {
