@@ -412,6 +412,10 @@
     {
       "source": "/reset-password",
       "destination": "https://app.bankstatementscanner.com/reset-password"
+    },
+    {
+      "source": "/feedback",
+      "destination": "https://app.bankstatementscanner.com/feedback"
     }
   ]
 }

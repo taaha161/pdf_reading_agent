@@ -50,6 +50,10 @@ export const ROUTE_META = {
     description:
       "Contact Bank Statement Scanner for product questions, billing, technical help, or partnerships. Send a message or email team@bankstatementscanner.com.",
   },
+  "/feedback": {
+    title: `Share feedback — ${APP_NAME}`,
+    description: "Tell the Bank Statement Scanner team what's working and what isn't. Every response is read.",
+  },
   "/scanner": {
     title: `Process statement — ${APP_NAME}`,
     description: "Upload a PDF statement to itemize, categorize, and validate with AI—then export to CSV.",
