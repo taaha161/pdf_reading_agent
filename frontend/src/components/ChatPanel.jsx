@@ -146,7 +146,7 @@ export default function ChatPanel({ jobId, disabled, requireLogin, onRequireLogi
         {messages.map((msg, i) => (
           <div key={i} className={`message ${msg.role}`}>
             {msg.role === "assistant" && <span className="message-avatar"><SparkIcon /></span>}
-            <div className="message-bubble">
+            <div className={`message-bubble${msg.transactions?.length > 0 ? " message-bubble--wide" : ""}`}>
               {msg.role === "assistant"
                 ? <ReplyText text={msg.content} />
                 : <div className="message-content">{msg.content}</div>}

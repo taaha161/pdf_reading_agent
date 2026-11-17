@@ -64,7 +64,7 @@ export function ReplyTable({ transactions }) {
       <table className="reply-table">
         <thead>
           <tr>
-            <th>Date</th>
+            <th className="col-date">Date</th>
             <th>Description</th>
             <th className="num">Amount</th>
             <th>{hasGroup ? "Sub-category" : "Category"}</th>
@@ -75,8 +75,11 @@ export function ReplyTable({ transactions }) {
             const debit = String(t.type).toLowerCase() === "debit";
             return (
               <tr key={i}>
-                <td className="nowrap">{t.date}</td>
-                <td className="desc" title={t.description}>{t.description}</td>
+                <td className="nowrap col-date">{t.date}</td>
+                <td className="desc" title={t.description}>
+                  {t.description}
+                  <span className="reply-date-inline">{t.date}</span>
+                </td>
                 <td className={`num ${debit ? "debit" : "credit"}`}>
                   {debit ? "−" : "+"}{formatAmount(t.amount)}
                 </td>
