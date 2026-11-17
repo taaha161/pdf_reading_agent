@@ -96,6 +96,16 @@ export function getMetaForPath(pathname) {
 }
 
 /**
+ * Marketing landing page. The app's own "/" redirects to /scanner, so brand
+ * links must leave the SPA and load the Astro site instead.
+ */
+export const LANDING_URL =
+  (typeof import.meta.env.VITE_PUBLIC_SITE_URL === "string" &&
+  import.meta.env.VITE_PUBLIC_SITE_URL
+    ? import.meta.env.VITE_PUBLIC_SITE_URL.replace(/\/$/, "")
+    : "https://bankstatementscanner.com") + "/";
+
+/**
  * Build full canonical URL for the current path.
  */
 export function getCanonicalUrl(pathname) {

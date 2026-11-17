@@ -5,6 +5,7 @@ import { sendTikTokSignupEvent } from "../lib/tiktokSignupEvent";
 import { trackSignup } from "../lib/trackSignup";
 import { useAuth } from "../contexts/AuthContext";
 import LogoMark from "../components/LogoMark";
+import { LANDING_URL } from "../lib/seo";
 import "./AuthPage.css";
 import PasswordInput from "../components/PasswordInput";
 import PasswordChecklist from "../components/PasswordChecklist";
@@ -273,7 +274,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
           <p className="auth-footer">
             <Link to="/login" className="auth-link-inline">← Back to log in</Link>
           </p>
-          <Link to="/" className="auth-back">← Back to home</Link>
+          <a href={LANDING_URL} className="auth-back">← Back to home</a>
         </div>
       </div>
     );
@@ -405,12 +406,12 @@ export default function AuthPage({ mode: initialMode = "login" }) {
       <main className="auth-shell" aria-label="Sign in">
         <section className="auth-panel auth-panel-left auth-panel-left--login">
           <header className="auth-panel-header">
-            <Link to="/" className="auth-logo">
+            <a href={LANDING_URL} className="auth-logo">
               <span className="auth-logo-icon" aria-hidden>
                 <LogoMark size={30} />
               </span>
               <span className="auth-logo-text">Bank Statement Scanner</span>
-            </Link>
+            </a>
           </header>
 
           <div className="auth-card auth-card--form">

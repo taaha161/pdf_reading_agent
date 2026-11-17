@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { LANDING_URL } from "../lib/seo";
 import LogoMark from "./LogoMark";
 import "./SignupLayout.css";
 
@@ -22,10 +23,10 @@ export default function SignupLayout({ aside, children, headerAction }) {
   return (
     <div className="su-page">
       <header className="su-header">
-        <Link to="/" className="su-logo">
+        <a href={LANDING_URL} className="su-logo">
           <LogoMark size={28} />
           <span>Bank Statement Scanner</span>
-        </Link>
+        </a>
         {headerAction !== undefined ? headerAction : (
           <p className="su-header-action">
             <span className="su-hide-sm">Already have an account?</span> <Link to="/login">Log in</Link>

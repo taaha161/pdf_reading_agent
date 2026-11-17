@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { LANDING_URL } from "../lib/seo";
 import LogoMark from "./LogoMark";
 import settingsGear from "../assets/settings-gear.svg";
 import { useAuth } from "../contexts/AuthContext";
@@ -31,12 +32,12 @@ export default function AppLayout({ children }) {
     <div className={"app-layout" + (isGuest ? " app-layout--guest" : "")}>
       <header className="app-layout-header">
         <div className="app-layout-brand">
-          <Link to="/" className="app-layout-logo-wrap" aria-label="Home">
+          <a href={LANDING_URL} className="app-layout-logo-wrap">
             <span className="app-layout-logo-bg">
               <LogoMark className="app-layout-logo" size={30} />
             </span>
-          </Link>
-          <span className="app-layout-brand-name">Bank Statement Scanner</span>
+            <span className="app-layout-brand-name">Bank Statement Scanner</span>
+          </a>
         </div>
         {isGuest ? (
           <div className="app-layout-header-actions">

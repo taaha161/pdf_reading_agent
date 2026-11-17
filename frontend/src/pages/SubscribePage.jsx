@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { LANDING_URL } from "../lib/seo";
 import { useAuth } from "../contexts/AuthContext";
 import { createCheckoutSession, getBillingBalance, startPaidSignup } from "../api/client";
 import { getPendingReferral } from "../lib/referral";
@@ -59,7 +59,7 @@ export default function SubscribePage() {
           <p className="su-sub">{error}</p>
           <div className="su-state-actions">
             <button type="button" className="su-btn su-btn-primary" onClick={() => setAttempt((a) => a + 1)}>Try again</button>
-            <Link to="/" className="su-btn su-btn-secondary">Back to pricing</Link>
+            <a href={`${LANDING_URL}#pricing`} className="su-btn su-btn-secondary">Back to pricing</a>
           </div>
         </div>
       ) : (
