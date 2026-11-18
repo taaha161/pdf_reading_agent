@@ -28,6 +28,7 @@ from services.csv_export import (
     has_balances,
     has_groups,
     statement_row,
+    with_balance_rows,
 )
 
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -130,6 +131,8 @@ def transactions_to_xlsx(
 
     include_totals adds a per-category totals table and an "All categories" row under the rows
     (off by default: accounting imports expect rows only).
+    Without totals, statements whose balances chain get "Opening balance" / "Closing balance" rows
+    around the transactions (see with_balance_rows).
     """
     fields = export_fields(include_categories, has_groups(transactions), has_balances(transactions))
     out, wb, ws, header, money = _new_workbook("Transactions")
@@ -138,8 +141,10 @@ def transactions_to_xlsx(
         ws.write_string(0, col, _HEADERS[field], header)
         ws.set_column(col, col, _WIDTHS[field])
 
-    for row, tx in enumerate(transactions, start=1):
-        cells = statement_row(tx)
+    rows = [statement_row(t) for t in transactions]
+    if not include_totals:  # the totals formulas cover the data rows, so they keep transactions only
+        rows = with_balance_rows(rows, transactions)
+    for row, cells in enumerate(rows, start=1):
         for col, field in enumerate(fields):
             value = cells.get(field) if field in _MONEY_FIELDS else str(cells.get(field) or "")
             if isinstance(value, float):
@@ -148,7 +153,7 @@ def transactions_to_xlsx(
                 ws.write_string(row, col, value)
 
     ws.freeze_panes(1, 0)
-    ws.autofilter(0, 0, max(len(transactions), 1), len(fields) - 1)
+    ws.autofilter(0, 0, max(len(rows), 1), len(fields) - 1)
     if include_totals and transactions:
         _write_totals(wb, ws, transactions, fields, header)
     wb.close()

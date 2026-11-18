@@ -4,6 +4,8 @@ import io
 import re
 from typing import Any
 
+from services.balances import opening_closing
+
 # Stored/internal row shape (chat context, trial CSV round-trip).
 FIELDS = ["date", "description", "amount", "type", "category"]
 # Downloaded files are laid out like a statement: separate Debit and Credit columns, then Balance.
@@ -17,6 +19,8 @@ ALL_CATEGORIES = "All categories"
 NO_CATEGORY = "(no category)"
 NET_TOTAL = "Net total"
 NO_GROUP = "(no sub-category)"
+OPENING_BALANCE = "Opening balance"
+CLOSING_BALANCE = "Closing balance"
 # CSV header labels that differ from the field name (users know groups as sub-categories).
 _HEADER_LABELS = {GROUP_FIELD: "sub-category"}
 
@@ -52,6 +56,26 @@ def statement_row(t: dict[str, Any]) -> dict[str, Any]:
         row[DEBIT] = amount
     row[BALANCE] = amount_value(t.get(BALANCE)) if str(t.get(BALANCE) or "").strip() else ""
     return row
+
+
+def with_balance_rows(rows: list[dict[str, Any]], transactions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Download rows (statement_row shape) with an "Opening balance" row before the oldest transaction
+    and a "Closing balance" row after the newest, like a printed statement. Only the Balance cell is
+    filled (no Debit/Credit), dated like the transaction next to it. Rows are returned unchanged when
+    the balances don't describe a whole statement (see opening_closing)."""
+    found = opening_closing(transactions)
+    if not found:
+        return rows
+    newest_first, opening, closing = found
+    oldest, newest = (transactions[-1], transactions[0]) if newest_first else (transactions[0], transactions[-1])
+
+    def row(label: str, balance: float, t: dict[str, Any]) -> dict[str, Any]:
+        return {"date": t.get("date") or "", "description": label, DEBIT: "", CREDIT: "", BALANCE: balance}
+
+    first, last = row(OPENING_BALANCE, opening, oldest), row(CLOSING_BALANCE, closing, newest)
+    if newest_first:
+        first, last = row(CLOSING_BALANCE, closing, newest), row(OPENING_BALANCE, opening, oldest)
+    return [first, *rows, last]
 
 
 def export_totals(transactions: list[dict[str, Any]]) -> tuple[int, float, float]:
@@ -140,6 +164,8 @@ def transactions_to_csv(
     else:
         fields = export_fields(include_categories, has_groups(transactions), has_balances(transactions))
         rows = [statement_row(t) for t in transactions]
+        if not include_totals:  # totals tables count the data rows, so they keep transactions only
+            rows = with_balance_rows(rows, transactions)
     out = io.StringIO()
     writer = csv.DictWriter(out, fieldnames=fields, extrasaction="ignore")
     writer.writerow({f: _HEADER_LABELS.get(f, f) for f in fields})
