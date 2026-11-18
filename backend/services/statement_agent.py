@@ -11,6 +11,7 @@ from google import genai
 from google.genai.types import FinishReason, GenerateContentConfig, ThinkingConfig, ThinkingLevel
 
 from services.balances import fill_running_balances, parse_money
+from services.number_format import normalize_amounts
 
 logger = logging.getLogger("statement_agent")
 
@@ -388,6 +389,7 @@ def extract_and_categorize(
         + CATEGORY_GUIDANCE
         + ' For each data row: use Date for "date", Description for "description" (preserve exactly). '
         "If Credit column has a non-zero value use type \"credit\" and amount as that value; if Debit has non-zero use type \"debit\" and amount as absolute value. "
+        "Copy amounts digit for digit with the statement's own thousands and decimal separators (e.g. \"1.500.000\" or \"1,500,000.00\"); never drop or reformat digits. "
         "If the statement has a single Amount column instead, use its sign or Dr/Cr marker for type (negative, \"-\", \"Dr\" or brackets = debit) and output amount as the absolute value. "
         "For \"balance\" copy the Balance printed on that same row exactly as shown, including any Cr/Dr marker or minus sign (e.g. \"6,103.27 Cr\"); use \"\" when that row shows no balance. Never calculate a balance yourself. "
         "Rows that look identical (same date, description and amount) are separate transactions: output every one, never merge or skip repeats. "
@@ -534,6 +536,8 @@ def extract_and_categorize(
             "category": cat,
             "balance": str(t.get("balance") or "").strip(),
         })
+    # "1.500.000" (Indonesian/European grouping) -> "1500000" before anything reads the numbers.
+    normalized = normalize_amounts(normalized, currency)
     normalized = _drop_page_break_rows(normalized)
     # Printed balances kept; rows without one get a running balance worked out from them.
     transactions = fill_running_balances(normalized)
