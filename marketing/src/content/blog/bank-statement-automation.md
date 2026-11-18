@@ -181,3 +181,8 @@ Manual data entry has no place in a modern finance workflow. Retyping dates, pay
 Whether you need to parse a single year-end credit card statement or process thousands of pages across multiple business accounts, modern parsing tools eliminate data capture headaches entirely. 
 
 Ready to transform static PDFs into clean, analysis-ready spreadsheets in seconds? Use [Bank Statement Scanner](/) to automatically convert your bank and credit card statement PDFs into formatted CSV or Excel files today.
+
+## Sources
+
+- [Wikipedia: Bookkeeping](https://en.wikipedia.org/wiki/Bookkeeping)
+- [IRS: Recordkeeping for small businesses](https://www.irs.gov/businesses/small-businesses-self-employed/recordkeeping)

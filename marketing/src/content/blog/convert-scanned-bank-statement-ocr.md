@@ -164,3 +164,9 @@ When selecting a tool to scan bank statements, evaluate the options based on you
 * **Bank Statement Scanner:** Engineered specifically for financial institutions and statements. It extracts tables precisely, validates accounting mathematics, normalizes transaction columns, and outputs clean CSV or Excel files ready for immediate reconciliation.
 
 Stop wasting hours manually typing rows of transactions from paper copies and static PDF files. Upload your documents to [Bank Statement Scanner](/) today to convert your bank statements into accurate, editable spreadsheets within seconds.
+
+## Sources
+
+- [Wikipedia: Optical character recognition](https://en.wikipedia.org/wiki/Optical_character_recognition)
+- [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)
+- [Wikipedia: Comma-separated values](https://en.wikipedia.org/wiki/Comma-separated_values)

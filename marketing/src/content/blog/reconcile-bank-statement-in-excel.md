@@ -271,3 +271,9 @@ Transactions appearing only on the bank statement represent items your accountin
 Mastering how to reconcile a bank statement in Excel gives you total control over company cash, but the reconciliation process often stalls before you write your first formula—specifically during the manual extraction of statement data from locked PDF documents.
 
 Manually typing hundreds of transaction rows from bank statements introduces typos, transpositions, and broken date formats that undermine your formula models. [Bank Statement Scanner](/) solves this extraction bottleneck by converting digital, scanned, or password-protected PDF bank statements into clean Excel sheets with structured columns for Date, Description, Amount, and Type. With an optional Incognito mode that stores no financial transaction data, you get audit-ready rows ready for your reconciliation workbook in seconds.
+
+## Sources
+
+- [Wikipedia: Bank reconciliation](https://en.wikipedia.org/wiki/Bank_reconciliation)
+- [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)
+- [Wikipedia: Comma-separated values](https://en.wikipedia.org/wiki/Comma-separated_values)

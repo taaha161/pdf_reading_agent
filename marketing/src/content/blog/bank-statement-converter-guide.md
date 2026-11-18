@@ -147,3 +147,8 @@ If you deal with irregular file types or high monthly volumes, make sure your so
 Manual data entry from bank and credit card statements is slow, error-prone, and unnecessary. Whether you need to catch up on several months of bookkeeping, audit business expenses, or extract clean CSV files for accounting software imports, using a dedicated **bank statement converter** eliminates the manual grind.
 
 With **Bank Statement Scanner**, you can upload native or scanned PDF statements and extract clean, structured Excel or CSV files in seconds. Try [Bank Statement Scanner](/) today to automate your financial document workflows with speed, accuracy, and security.
+
+## Sources
+
+- [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)
+- [Wikipedia: Comma-separated values](https://en.wikipedia.org/wiki/Comma-separated_values)

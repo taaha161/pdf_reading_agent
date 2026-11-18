@@ -48,6 +48,13 @@ export const PRICING_SUMMARY =
   `${PLAN_PAGES} pages, and page packs top you up anytime: ${PACKS_TEXT}. Pack pages never expire. Cancel anytime.`;
 
 /**
+ * Official profiles of the site/company (LinkedIn page, X, Crunchbase, Product Hunt, Wikidata…).
+ * Emitted as schema.org `sameAs` on the Organization/WebApplication JSON-LD and linked on /about.
+ * Add only URLs that exist and that you control.
+ */
+export const SAME_AS: string[] = [];
+
+/**
  * Public review profile (Trustpilot/G2). Empty = review links stay hidden.
  * Fill in once the profile exists.
  */

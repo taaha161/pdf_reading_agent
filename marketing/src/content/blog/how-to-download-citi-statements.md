@@ -180,3 +180,8 @@ Downloading your official statements ensures you hold an authentic record of you
 Bank Statement Scanner converts one PDF bank or credit card statement at a time into clean CSV or Excel files. It automatically organizes dates, descriptions, amounts, credit or debit classifications, and AI-assisted categories. The tool handles digital PDFs, scanned documents, and password-protected files, and features an incognito mode that stores no transaction data on our servers.
 
 You can test the platform with 10 free pages without creating an account. If you sign up, you receive 100 free pages for your first month with no credit card required. Paid plans start at $10 per month for 100 pages, with non-expiring page packs available (10 pages for $2, 30 for $5, or 100 for $10). Accurate mode processes complex or degraded scans at a rate of 2 pages per PDF page. Download your statements today and convert them in seconds.
+
+## Sources
+
+- [Citi: Official site](https://www.citi.com/)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

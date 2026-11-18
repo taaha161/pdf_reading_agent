@@ -31,6 +31,8 @@ from google import genai
 from google.genai.types import GenerateContentConfig
 from pydantic import BaseModel, Field
 
+from services.blog_sources import ensure_sources
+
 logger = logging.getLogger("blog_generator")
 
 # --- Config ------------------------------------------------------------------
@@ -743,6 +745,7 @@ def generate_and_publish() -> dict:
         return {"status": "skipped", "reason": f"title too close to /blog/{clash}", "slug": slug}
 
     _ensure_bank_link(topic, data)
+    data["body_markdown"] = ensure_sources(data["body_markdown"], slug, topic["keyword"], data["title"])
     image_path = f"/blog/images/{slug}.jpg"
     img_bytes = _fetch_finance_image()
     md = _build_markdown(data, image_path, today, topic["keyword"])

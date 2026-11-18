@@ -127,3 +127,8 @@ During audits or forensic reviews, historical statements often arrive as massive
 Manual transcription of financial statements is an inefficient use of skilled accounting talent. Whether you are managing bookkeeping across dozens of client accounts, conducting detailed audit investigations, or reconciling messy credit card statements, relying on manual data entry introduces unnecessary risk and operational drag.
 
 [Bank Statement Scanner](/) provides high-accuracy financial data extraction designed specifically for the complexities of bank and credit card statements. By combining smart table detection, optical character recognition, and arithmetic validation, it transforms locked PDFs and images into structured, audit-ready spreadsheets in seconds. Upload your files today and eliminate manual data entry from your accounting pipeline.
+
+## Sources
+
+- [Wikipedia: Intelligent document processing](https://en.wikipedia.org/wiki/Intelligent_document_processing)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

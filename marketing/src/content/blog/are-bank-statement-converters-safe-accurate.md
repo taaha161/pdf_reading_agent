@@ -54,3 +54,8 @@ Good habits help regardless of the tool: download statements straight from your 
 ## How Bank Statement Scanner approaches both
 
 Bank Statement Scanner is built for the accuracy checks above: extraction rebuilds the transaction table so balances tie out, descriptions stay whole, and amounts carry the right signs—then you review before exporting to **CSV or Excel**. On security, uploads are encrypted in transit and you stay in control of your data through your account. The honest bottom line: always run the balance tie-out on your first export from *any* converter—it is the fastest proof that the numbers you are about to trust are right.
+
+## Sources
+
+- [NIST Privacy Framework](https://www.nist.gov/privacy-framework)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

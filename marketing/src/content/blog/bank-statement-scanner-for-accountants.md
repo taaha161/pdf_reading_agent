@@ -35,3 +35,9 @@ Transcription errors show up as mysterious GL differences, delayed closes, and a
 Ask for **full statement PDFs** for the period you are closing, not screenshots of single transactions. If they use multiple cards or accounts, one PDF per account keeps exports clean. When clients know what you need, you spend less time chasing files and more time advising—which is what they actually pay for.
 
 Ready to shrink statement grunt work on your next close? Upload a real client file to Bank Statement Scanner, walk through review and export, and compare the time to your old PDF workflow—you can be running in minutes.
+
+## Sources
+
+- [Wikipedia: Optical character recognition](https://en.wikipedia.org/wiki/Optical_character_recognition)
+- [Wikipedia: Bookkeeping](https://en.wikipedia.org/wiki/Bookkeeping)
+- [IRS: Recordkeeping for small businesses](https://www.irs.gov/businesses/small-businesses-self-employed/recordkeeping)

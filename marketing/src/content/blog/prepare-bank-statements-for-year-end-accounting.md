@@ -137,3 +137,9 @@ Preparing bank statements for year end accounting does not require endless hours
 Powered by advanced AI models built specifically for financial document structures, Bank Statement Scanner handles complex multi-column layouts, rotated scans, and low-contrast images with exceptional accuracy. By digitizing and standardizing your statement data automatically, you can spend less time wrangling paperwork and more time delivering insightful financial strategy for the year ahead.
 
 *This article is for informational purposes only and does not constitute professional tax, financial, or accounting advice.*
+
+## Sources
+
+- [IRS: How long should I keep records?](https://www.irs.gov/businesses/small-businesses-self-employed/how-long-should-i-keep-records)
+- [IRS: What kind of records should I keep?](https://www.irs.gov/businesses/small-businesses-self-employed/what-kind-of-records-should-i-keep)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

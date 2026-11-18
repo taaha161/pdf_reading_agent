@@ -129,3 +129,8 @@ Standard accounting software like QuickBooks Online, Xero, and Sage requires cle
 Manual data entry and fragile, template-based tools waste valuable professional hours and introduce unnecessary human error. What modern businesses need is an intelligent, high-speed engine that handles complex layouts, validates every calculation, and outputs pristine financial data on demand.
 
 [Bank Statement Scanner](/) was engineered from the ground up to solve the specific complexities of financial documents. Supporting hundreds of institutional formats worldwide, it handles scanned paperwork, rotated phone uploads, split debit/credit layouts, and complex multi-line descriptions effortlessly. Experience the difference by uploading your first PDF statement today, and turn locked documents into structured, reconciliation-ready spreadsheets in seconds.
+
+## Sources
+
+- [Wikipedia: Intelligent document processing](https://en.wikipedia.org/wiki/Intelligent_document_processing)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

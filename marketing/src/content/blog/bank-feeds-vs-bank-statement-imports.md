@@ -155,3 +155,8 @@ While online banking CSVs appear convenient, banks often truncate descriptions a
 
 ### Can I rely on bank feeds for tax audits?
 No, tax authorities typically reject raw bank feed logs as primary proof of expenses or revenue. Audits require official monthly bank statements, cancelled check images, and itemized receipts because bank statements represent permanent, unalterable institutional records.
+
+## Sources
+
+- [Wikipedia: Accounting software](https://en.wikipedia.org/wiki/Accounting_software)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

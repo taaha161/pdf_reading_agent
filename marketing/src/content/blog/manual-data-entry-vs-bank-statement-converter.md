@@ -150,3 +150,8 @@ Always verify three items: the total row count matches the number of transaction
 ## Making the Decision
 
 The choice between manual data entry vs bank statement converter tools is not all-or-nothing. Many accounting professionals maintain manual entry for accounts with only three transactions a month, while relying on automated conversion for multi-page accounts, backlogged reconciliations, and messy credit card statements. Identify where repetitive typing creates bottlenecks in your schedule, apply automated tools where transaction volume justifies it, and always maintain a disciplined reconciliation step to keep your books completely accurate.
+
+## Sources
+
+- [Wikipedia: Data entry](https://en.wikipedia.org/wiki/Data_entry)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

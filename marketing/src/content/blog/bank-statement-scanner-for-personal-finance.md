@@ -33,3 +33,8 @@ Institutions change layouts all the time; that should not break your workflow. O
 ## A simple habit that sticks
 
 After each statement cycle, download PDFs from your bank, run them through Bank Statement Scanner, and save one master spreadsheet (or folder of CSVs) by year. Small, repeatable beats heroic once-a-year budgeting. Start with last month's statement and see how fast you get a useful category breakdown—no blank spreadsheet required.
+
+## Sources
+
+- [Wikipedia: Optical character recognition](https://en.wikipedia.org/wiki/Optical_character_recognition)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

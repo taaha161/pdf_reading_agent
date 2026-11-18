@@ -155,3 +155,10 @@ Converting twelve individual monthly statements one by one and manually copy-pas
 Converting credit card statements should not be an arduous, error-prone manual task. Whether you are an accountant closing the books for dozens of business clients or an individual organizing your personal finances for tax prep, your time is better spent analyzing numbers rather than retyping them.
 
 [Bank Statement Scanner](/) is specifically engineered to handle complex financial documents, automatically converting messy credit card and bank statement PDFs into accurate, cleanly categorized Excel spreadsheets. Upload your statements today and turn hours of manual data entry into a 30-second task.
+
+## Sources
+
+- [CFPB: How do I read my credit card statement?](https://www.consumerfinance.gov/ask-cfpb/how-do-i-read-my-credit-card-statement-en-61/)
+- [Wikipedia: Credit card](https://en.wikipedia.org/wiki/Credit_card)
+- [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)
+- [Wikipedia: Comma-separated values](https://en.wikipedia.org/wiki/Comma-separated_values)

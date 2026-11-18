@@ -151,3 +151,8 @@ Most banks restrict online access immediately after an account is formally close
 ## Practical Record Keeping
 
 Maintaining a clean, unedited repository of official bank statement PDF files protects your personal finances and business operations. By downloading formal statement cycles directly from your institution's desktop portal, auditing the summary figures for accuracy, and utilizing dedicated extraction tools when preparing spreadsheets, you eliminate manual data entry while preserving the legal integrity of your financial records.
+
+## Sources
+
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)
+- [Wikipedia: Bank statement](https://en.wikipedia.org/wiki/Bank_statement)

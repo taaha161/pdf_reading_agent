@@ -49,3 +49,10 @@ The point of converting isn't just to get rows in—it is to reconcile without s
 Upload a bank or credit card statement PDF, review the extracted transactions and smart categories in the app, then export a clean **CSV** ready for QuickBooks, Xero, NetSuite, or any GL that accepts structured imports. Because the data starts structured—not scraped from a PDF zoomed to 200%—the checks above go fast and the import works the first time. Same tool for a single account or a firm's full client roster.
 
 Onboarding a client with months of history? See [how to convert multiple statements in bulk](/blog/convert-multiple-bank-statements-in-bulk) without losing accuracy.
+
+## Sources
+
+- [Wikipedia: Open Financial Exchange (OFX)](https://en.wikipedia.org/wiki/Open_Financial_Exchange)
+- [Wikipedia: QuickBooks](https://en.wikipedia.org/wiki/QuickBooks)
+- [Wikipedia: Accounting software](https://en.wikipedia.org/wiki/Accounting_software)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

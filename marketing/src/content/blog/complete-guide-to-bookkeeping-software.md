@@ -136,3 +136,10 @@ Furthermore, keep digital copies of original source documents linked directly to
 Choosing the right bookkeeping software is only half the battle; keeping it populated with clean, structured transaction data is what keeps your business financially sound. Broken bank feeds, closed accounts, and stacks of historical PDF statements do not have to grind your accounting processes to a halt.
 
 Using [Bank Statement Scanner](/) eliminates manual data entry by extracting transactions directly from locked bank and credit card PDF statements into clean, structured CSV or Excel spreadsheets. Whether you are catching up on months of backlogged records or importing monthly statements into QuickBooks or Xero, automated extraction ensures your bookkeeping software always has the accurate, timely data it needs.
+
+## Sources
+
+- [Wikipedia: Bookkeeping](https://en.wikipedia.org/wiki/Bookkeeping)
+- [IRS: Recordkeeping for small businesses](https://www.irs.gov/businesses/small-businesses-self-employed/recordkeeping)
+- [Wikipedia: Accounting software](https://en.wikipedia.org/wiki/Accounting_software)
+- [SBA: Manage your finances](https://www.sba.gov/business-guide/manage-your-business/manage-your-finances)

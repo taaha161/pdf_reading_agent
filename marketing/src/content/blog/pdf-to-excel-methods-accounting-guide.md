@@ -126,3 +126,8 @@ Automated extraction accelerates workflow throughput, but financial governance d
 While generic utilities and spreadsheet plug-ins provide temporary fixes for basic documents, manual adjustment of broken tables is not a scalable business model for growing accounting practices. Small accounting firms lose dozens of billable hours each month re-typing figures, un-merging cells, and fixing truncated vendor descriptions that failed during basic extraction routines.
 
 Purpose-built financial tools solve this structural issue by applying intelligent recognition models trained specifically on financial document structures. Platforms like Bank Statement Scanner automatically process digital and scanned PDF bank statements, isolate individual transactions, accurately separate debits and credits, and export clean, categorized CSV files. By leveraging specialized algorithms designed around accounting rules, practitioners eliminate manual data entry, avoid layout-induced conversion errors, and accelerate reconciliations with total operational confidence.
+
+## Sources
+
+- [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)
+- [Wikipedia: Comma-separated values](https://en.wikipedia.org/wiki/Comma-separated_values)
