@@ -33,3 +33,10 @@ Most friction with outside help is bad data: incomplete periods, missing card st
 Pick a recurring day after statements post: download PDFs, run them through the scanner, spot-check large items and transfers, export. Month-over-month gets easier because you are not reinventing the process—only reviewing what changed. That rhythm is how small businesses graduate to real bookkeeping discipline without enterprise software they do not need yet.
 
 Try it on your next statement cycle: one business checking or card PDF is enough to see the time savings versus manual entry.
+
+## Sources
+
+- [Wikipedia: Optical character recognition](https://en.wikipedia.org/wiki/Optical_character_recognition)
+- [Wikipedia: Bookkeeping](https://en.wikipedia.org/wiki/Bookkeeping)
+- [IRS: Recordkeeping for small businesses](https://www.irs.gov/businesses/small-businesses-self-employed/recordkeeping)
+- [SBA: Manage your finances](https://www.sba.gov/business-guide/manage-your-business/manage-your-finances)

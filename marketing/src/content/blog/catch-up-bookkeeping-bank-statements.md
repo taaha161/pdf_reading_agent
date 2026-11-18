@@ -177,3 +177,8 @@ Do not categorize personal expenses as miscellaneous operating costs. In a sole 
 ## Finalizing Your Records
 
 Catch-up bookkeeping can feel overwhelming when months of statements sit unreviewed, but the procedure is mechanical. By assembling authentic statements, extracting the transaction rows using a tool like Bank Statement Scanner, standardizing descriptions, and confirming reconciliations month by month, you turn disorganized PDFs into clean, audit-ready financial statements.
+
+## Sources
+
+- [Wikipedia: Bookkeeping](https://en.wikipedia.org/wiki/Bookkeeping)
+- [IRS: Recordkeeping for small businesses](https://www.irs.gov/businesses/small-businesses-self-employed/recordkeeping)

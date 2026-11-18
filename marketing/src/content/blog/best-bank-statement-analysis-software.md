@@ -134,3 +134,8 @@ When evaluating the best bank statement analysis software, you do not need overp
 [Bank Statement Scanner](/) provides high-accuracy OCR designed specifically for bank and credit card statements. It automatically handles skewed scans, verifies row-by-row balance calculations, and exports clean CSV and Excel files ready for any accounting system. Designed to make [bank statement scanning easy for accountants](/blog/bank-statement-scanner-for-accountants) and small business owners alike, it strips the friction out of statement analysis so you can focus on high-value financial work.
 
 Upload your challenging bank statement PDFs today to see how quickly you can convert raw financial records into clean, dependable data.
+
+## Sources
+
+- [Wikipedia: Intelligent document processing](https://en.wikipedia.org/wiki/Intelligent_document_processing)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

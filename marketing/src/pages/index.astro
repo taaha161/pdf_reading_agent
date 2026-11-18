@@ -11,7 +11,7 @@ import FounderBlock from '../components/FounderBlock.astro';
 import StickyCta from '../components/StickyCta.astro';
 import { comparePages } from '../comparePages';
 import {
-  SITE_URL, SITE_NAME, SITE_TAGLINE, SUPPORT_EMAIL, canonical,
+  SITE_URL, SITE_NAME, SITE_TAGLINE, SUPPORT_EMAIL, LEGAL_ENTITY, SAME_AS, canonical,
   FREE_ANON_PAGES, FREE_SIGNUP_PAGES, FREE_SIGNUP_DAYS, FREE_LABEL, PLAN_PRICE, PLAN_PAGES, PAGE_PACKS, ACCURATE_MULTIPLIER, PRICING_SUMMARY,
 } from '../consts';
 
@@ -67,6 +67,7 @@ const jsonLd = [
     applicationCategory: 'FinanceApplication',
     operatingSystem: 'Web',
     url: `${SITE_URL}/`,
+    ...(SAME_AS.length ? { sameAs: SAME_AS } : {}),
     // No `offers` here: a SoftwareApplication/WebApplication with offers is
     // required by Google/Semrush to also carry aggregateRating or review, and
     // we won't fabricate ratings. Pricing is communicated in the visible
@@ -78,6 +79,8 @@ const jsonLd = [
     name: SITE_NAME,
     url: `${SITE_URL}/`,
     logo: `${SITE_URL}/og-image.png`,
+    legalName: LEGAL_ENTITY,
+    ...(SAME_AS.length ? { sameAs: SAME_AS } : {}),
     contactPoint: {
       '@type': 'ContactPoint',
       email: SUPPORT_EMAIL,

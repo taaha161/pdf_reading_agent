@@ -161,3 +161,8 @@ Banks occasionally issue encrypted or password-protected PDF statements when sen
 ## Summary
 
 Knowing how to download wells fargo statements allows you to maintain clean financial records, stay compliant during tax season, and eliminate filing backlogs. By logging in regularly, downloading each monthly PDF, and saving files into an organized local directory, you ensure your personal or business finances remain accurate and audit-ready.
+
+## Sources
+
+- [Wells Fargo: Online statements](https://www.wellsfargo.com/online-banking/statements/)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

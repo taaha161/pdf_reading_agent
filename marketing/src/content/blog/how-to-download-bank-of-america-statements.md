@@ -149,3 +149,8 @@ Yes. Electronic bank statements downloaded directly from an institution's secure
 ## Summary of Best Practices
 
 Downloading your financial records on a set monthly schedule avoids the administrative scramble that often accompanies quarterly reviews and tax deadlines. Always download official statement PDFs rather than taking website screenshots, store your files in an organized folder structure using consistent date nomenclature, and verify that ending balances reconcile correctly before archiving. When you need to analyze transactions in spreadsheets or import them into financial workflows, using a secure converter turns your locked documents into workable accounting data.
+
+## Sources
+
+- [Bank of America: Online banking](https://www.bankofamerica.com/online-banking/)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

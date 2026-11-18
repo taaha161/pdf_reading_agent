@@ -6,7 +6,8 @@
 
 - [Home](https://bankstatementscanner.com/): Product overview, features, pricing, and FAQ.
 - [Scanner](https://bankstatementscanner.com/scanner): The app — upload a statement PDF and export structured data.
-- [Blog](https://bankstatementscanner.com/blog): Guides on statement extraction, CSV/Excel export, and bookkeeping workflows.
+- [About](https://bankstatementscanner.com/about): Who we are (CARC LABS LLC), what the product does, and who it's for.
+- [Blog](https://bankstatementscanner.com/blog): Guides on statement extraction, CSV/Excel export, and bookkeeping workflows. RSS feed: https://bankstatementscanner.com/rss.xml
 - [Security](https://bankstatementscanner.com/security): How financial data is protected — encryption, incognito processing, retention controls, Stripe payments.
 - [Contact](https://bankstatementscanner.com/contact): Support and general enquiries.
 

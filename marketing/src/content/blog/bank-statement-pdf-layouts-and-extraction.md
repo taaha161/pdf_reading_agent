@@ -33,3 +33,8 @@ Consistent does not mean every bank uses the same PDF—it means **your exports 
 ## One workflow for many banks
 
 Whether your statement comes from a national bank, a regional credit union, or a major card network, the workflow stays the same in Bank Statement Scanner: upload PDF, review extracted lines and smart categories, export to CSV or Excel. That consistency is what lets individuals, small businesses, and firms standardize training and quality checks instead of maintaining one-off hacks per institution.
+
+## Sources
+
+- [Wikipedia: Intelligent document processing](https://en.wikipedia.org/wiki/Intelligent_document_processing)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

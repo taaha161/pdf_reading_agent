@@ -159,3 +159,8 @@ For firms handling multiple clients, an automated organization pipeline speeds u
 Organizing your bank statements shouldn't mean spending weekends renaming PDF files and manually typing transaction rows into spreadsheets. An effective organization strategy pairs structured document naming and smart folder hierarchies with automated data extraction.
 
 **Bank Statement Scanner** eliminates the friction of managing financial PDFs. Simply upload your native or scanned bank and credit card statements, and receive accurately parsed, clean CSV or Excel files ready for immediate import into your accounting software. Stop fighting messy financial files—structure your statements, extract your data, and take control of your financial records today.
+
+## Sources
+
+- [Wikipedia: Bookkeeping](https://en.wikipedia.org/wiki/Bookkeeping)
+- [IRS: Recordkeeping for small businesses](https://www.irs.gov/businesses/small-businesses-self-employed/recordkeeping)

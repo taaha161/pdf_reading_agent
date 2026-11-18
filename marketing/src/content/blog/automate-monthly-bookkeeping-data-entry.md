@@ -121,3 +121,9 @@ Automating your financial data entry does not require completely overhauling you
 Adopting tools like [Bank Statement Scanner](https://bankstatementscanner.com/scanner) empowers bookkeepers, accounting firms, and business operators to convert messy bank and credit card PDF statements into pristine, structured CSV and Excel spreadsheets in seconds. Whether you manage single accounts or need to [prepare bank statements for year end accounting](https://bankstatementscanner.com/blog/bank-statement-scanner-for-accountants) across dozens of corporate clients, shifting to an automated pipeline ensures accuracy, speeds up delivery, and scales your productivity.
 
 This article is for general informational purposes only and does not constitute professional accounting, financial, or legal advice.
+
+## Sources
+
+- [Wikipedia: Data entry](https://en.wikipedia.org/wiki/Data_entry)
+- [Wikipedia: Bookkeeping](https://en.wikipedia.org/wiki/Bookkeeping)
+- [IRS: Recordkeeping for small businesses](https://www.irs.gov/businesses/small-businesses-self-employed/recordkeeping)

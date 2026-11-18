@@ -165,3 +165,8 @@ Many free conversion tools monetize by displaying ads, capturing user emails, or
 Selecting software for financial document processing comes down to matching your conversion frequency with the right billing model. If your workload fluctuates throughout the year, signing up for an ongoing subscription drains cash without saving you extra time. 
 
 By choosing a bank statement converter no subscription solution, you retain complete control over your software spend. You convert what you need, export clean CSV or Excel spreadsheets directly into your financial templates, and pay strictly for the work you complete.
+
+## Sources
+
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)
+- [Wikipedia: Bank statement](https://en.wikipedia.org/wiki/Bank_statement)

@@ -90,3 +90,8 @@ image: "/blog/images/how-to-download-chase-bank-statements.jpg"
 
 <h2>Conclusion: take control of your Chase account data</h2>
 <p>Downloading your Chase statements is the first step to understanding your money. Grab the PDF for records, use the CSV/Excel activity export for a quick recent look, and <a href="/scanner">convert your statement PDFs to CSV or Excel</a> whenever you need clean, spreadsheet-ready transactions across any period. With structured data in hand, budgeting, bookkeeping, and tax prep all get faster.</p>
+
+## Sources
+
+- [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)
+- [Wikipedia: Comma-separated values](https://en.wikipedia.org/wiki/Comma-separated_values)

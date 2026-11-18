@@ -160,3 +160,9 @@ Your bank statement only shows the single lump-sum payment made to the credit ca
 Gathering and organizing your tax preparation bank statements systematically turns a chaotic tax season into a smooth, predictable routine. By downloading complete date ranges, isolating non-operational transfers, and compiling original statements alongside clear spreadsheets, you save valuable time and reduce preparation fees.
 
 If you have locked, digital, or scanned PDF statements that need to be categorized in a spreadsheet, tools like [Bank Statement Scanner](/) make it straightforward. You can upload your PDF statements one at a time and extract clean, tabular CSV or Excel files with dates, descriptions, amounts, and classifications ready for your tax organizer.
+
+## Sources
+
+- [IRS: How long should I keep records?](https://www.irs.gov/businesses/small-businesses-self-employed/how-long-should-i-keep-records)
+- [IRS: What kind of records should I keep?](https://www.irs.gov/businesses/small-businesses-self-employed/what-kind-of-records-should-i-keep)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

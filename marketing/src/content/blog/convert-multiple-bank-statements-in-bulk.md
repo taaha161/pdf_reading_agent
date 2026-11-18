@@ -57,3 +57,8 @@ The most damaging bulk error is a subtle one: two clients' transactions in a sin
 Bank Statement Scanner converts one statement at a time: upload a PDF, review the extracted transactions and smart categories, and export clean **CSV or Excel**. Every export uses the same columns (date, description, amount, credit or debit, category), so stacking a year of files for one account in a spreadsheet is a copy-paste job, and the reconciliation checks above go quickly. Name each export after its source file and the account stays easy to trace.
 
 Feeding a GL specifically? See [converting statements for QuickBooks and Xero](/blog/convert-bank-statement-pdf-to-quickbooks) for format and column-mapping details.
+
+## Sources
+
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)
+- [Wikipedia: Bank statement](https://en.wikipedia.org/wiki/Bank_statement)

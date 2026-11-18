@@ -164,3 +164,8 @@ If this formula equals zero, your extracted dataset is mathematically balanced a
 Manually retyping bank statements is tedious, inefficient, and prone to costly entry mistakes. Modern bookkeeping workflows require clean, structured data delivered without hours of manual cleanup.
 
 With [Bank Statement Scanner](/), you can convert bank statement PDF to Excel documents cleanly and reliably. The platform automatically handles multi-line transaction descriptions, complex debit and credit columns, and multi-page layouts—providing you with structured, error-free spreadsheets ready for instant financial analysis and reconciliation.
+
+## Sources
+
+- [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)
+- [Wikipedia: Comma-separated values](https://en.wikipedia.org/wiki/Comma-separated_values)

@@ -62,6 +62,8 @@ def dry_run() -> int:
     clash = b._title_clash(data["title"], posts)
     if clash:
         print(f"  ⚠ title too close to /blog/{clash}; the live run would NOT publish this")
+    b._ensure_bank_link(topic, data)
+    data["body_markdown"] = b.ensure_sources(data["body_markdown"], slug, topic["keyword"], data["title"])
     md = b._build_markdown(data, f"/blog/images/{slug}.jpg", today, topic["keyword"])
 
     OUT.mkdir(parents=True, exist_ok=True)

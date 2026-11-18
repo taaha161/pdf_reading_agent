@@ -152,3 +152,8 @@ Manual copy-pasting is slow and prone to human error, while barebones PDF extrac
 [Bank Statement Scanner](/) provides a specialized, intelligent solution built specifically for financial records. Whether you need to process clean electronic PDFs or scanned paper files, the system identifies financial tables automatically, parses multi-line descriptions, balances credits and debits accurately, and exports directly to audit-ready Excel and CSV spreadsheets.
 
 If you are tired of fixing broken columns, scrambling to assemble records at tax season, or struggling with unreliable free converters, try Bank Statement Scanner to streamline your bookkeeping workflow in seconds.
+
+## Sources
+
+- [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)
+- [Wikipedia: Comma-separated values](https://en.wikipedia.org/wiki/Comma-separated_values)

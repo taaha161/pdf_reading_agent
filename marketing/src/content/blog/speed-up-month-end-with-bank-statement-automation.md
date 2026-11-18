@@ -35,3 +35,8 @@ Agree on naming for exports (entity, period, last four of account), a short revi
 ## Close with confidence
 
 Speed without accuracy is just risk on a shorter timeline. Our product emphasizes reliable extraction across the messy reality of real-world statement layouts—so month twelve looks like month one. Upload, review in the app, export, reconcile—then spend the time you saved on analysis, planning, and clients—not on fixing fat-fingered debits.
+
+## Sources
+
+- [Wikipedia: Bookkeeping](https://en.wikipedia.org/wiki/Bookkeeping)
+- [IRS: Recordkeeping for small businesses](https://www.irs.gov/businesses/small-businesses-self-employed/recordkeeping)

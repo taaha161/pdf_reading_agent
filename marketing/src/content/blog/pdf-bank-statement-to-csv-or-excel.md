@@ -35,3 +35,8 @@ Quick checks save hours later: confirm the statement period matches what you exp
 ## How Bank Statement Scanner fits your workflow
 
 Upload your PDF, review extracted transactions and categories in the app, then export to **CSV or Excel**—whichever matches your next step. Same product for personal use, small business books, or firm-wide client work; the difference is only which system receives the file after you export.
+
+## Sources
+
+- [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)
+- [Wikipedia: Comma-separated values](https://en.wikipedia.org/wiki/Comma-separated_values)

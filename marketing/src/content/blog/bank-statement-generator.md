@@ -136,3 +136,8 @@ Do not edit the PDF to change the address. Instead, log into your banking profil
 Attempting to bypass financial qualification criteria with a bank statement generator creates severe legal, financial, and reputational risks. Financial institutions, automated verification networks, and leasing offices are trained to detect the layout flaws, metadata inconsistencies, and balance calculation errors inherent in fabricated records.
 
 Whenever you need to demonstrate financial status, rely exclusively on official bank downloads, interim branch summaries, or formal bank verification letters. When your challenge is simply converting an official, locked PDF into clean tabular data for your own ledger, use [Bank Statement Scanner](/) to extract clean CSV or Excel files from your legitimate statements safely.
+
+## Sources
+
+- [Wikipedia: Forgery](https://en.wikipedia.org/wiki/Forgery)
+- [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)
