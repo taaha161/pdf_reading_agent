@@ -115,3 +115,26 @@ def fill_running_balances(transactions: list[dict[str, Any]]) -> list[dict[str, 
     for t, value in zip(transactions, filled):
         t["balance"] = f"{round(value, 2) + 0.0:.2f}"
     return transactions
+
+
+def opening_closing(transactions: list[dict[str, Any]]) -> tuple[bool, float, float] | None:
+    """(newest_first, opening balance, closing balance) for a whole statement, else None.
+
+    Works from the rows' balances (as filled by fill_running_balances): the opening balance is the
+    oldest row's balance with that row undone, the closing balance is the newest row's balance.
+    Only when every row has a balance and one reading explains every step between them, so a
+    filtered subset of rows, edited amounts or unreliable balances get None instead of a wrong figure.
+    """
+    n = len(transactions)
+    balances = [parse_money(t.get("balance")) for t in transactions]
+    if n == 0 or any(b is None for b in balances):
+        return None
+    nets = [_net(t) for t in transactions]
+    readings = _READINGS if n >= 2 else [(False, 1)]  # one row: assume the usual layout
+    for newest_first, sign in readings:
+        ns = nets[::-1] if newest_first else nets
+        bs = balances[::-1] if newest_first else balances
+        if _score(ns, dict(enumerate(bs)), sign) == n - 1:
+            opening = round(bs[0] - sign * ns[0], 2) + 0.0
+            return newest_first, opening, round(bs[-1], 2) + 0.0
+    return None

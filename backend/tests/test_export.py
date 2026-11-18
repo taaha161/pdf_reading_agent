@@ -259,8 +259,10 @@ def test_balance_column_when_statement_has_balances(client):
     r = client.post("/api/export", json={"transactions": BALANCE_ROWS, "format": "csv"})
     assert r.text.splitlines() == [
         "date,description,debit,credit,balance,category",
+        "01 Jul,Opening balance,,,500.00,",
         "01 Jul,Salary,,1000.00,1500.00,Income",
         "02 Jul,Overdrawn,2000.00,,-500.00,Other",
+        "02 Jul,Closing balance,,,-500.00,",
     ]
     r = client.post("/api/export", json={"transactions": BALANCE_ROWS, "format": "xlsx", "include_totals": True})
     ws = load_workbook(io.BytesIO(r.content)).active
@@ -269,6 +271,52 @@ def test_balance_column_when_statement_has_balances(client):
     assert ws["E3"].number_format == "#,##0.00"
     # Totals still read the Debit/Credit columns, with Category now in F.
     assert ws["C6"].value == "=SUMPRODUCT(--(F2:F3=A6),D2:D3)"
+
+
+def test_balance_rows_in_excel_download(client):
+    r = client.post("/api/export", json={"transactions": BALANCE_ROWS, "format": "xlsx"})
+    ws = load_workbook(io.BytesIO(r.content)).active
+    rows = [[c.value for c in row] for row in ws.iter_rows(min_row=2, max_col=5)]
+    assert rows == [
+        ["01 Jul", "Opening balance", None, None, 500.0],
+        ["01 Jul", "Salary", None, 1000.0, 1500.0],
+        ["02 Jul", "Overdrawn", 2000.0, None, -500.0],
+        ["02 Jul", "Closing balance", None, None, -500.0],
+    ]
+    assert ws.auto_filter.ref == "A1:F5"
+
+
+def test_balance_rows_follow_newest_first_statements():
+    from services.csv_export import transactions_to_csv
+
+    rows = list(reversed(BALANCE_ROWS))
+    lines = transactions_to_csv(rows).splitlines()
+    assert lines[1] == "02 Jul,Closing balance,,,-500.00,"
+    assert lines[-1] == "01 Jul,Opening balance,,,500.00,"
+
+
+def test_no_balance_rows_when_balances_dont_add_up():
+    from services.csv_export import transactions_to_csv
+
+    # A filtered subset (a row missing between them) or edited amounts: balances no longer chain.
+    rows = [dict(BALANCE_ROWS[0]), {**BALANCE_ROWS[1], "amount": "50"}]
+    assert "Opening balance" not in transactions_to_csv(rows)
+    # Statements without balances get no Balance column and no balance rows.
+    plain = [{k: v for k, v in r.items() if k != "balance"} for r in BALANCE_ROWS]
+    assert "Opening balance" not in transactions_to_csv(plain)
+
+
+def test_opening_closing_credit_card_sign():
+    from services.balances import opening_closing
+
+    # Credit card: balance is what you owe, so a purchase (debit) raises it.
+    rows = [
+        {"amount": "100", "type": "debit", "balance": "300.00"},
+        {"amount": "50", "type": "credit", "balance": "250.00"},
+    ]
+    assert opening_closing(rows) == (False, 200.0, 250.0)
+    assert opening_closing([]) is None
+    assert opening_closing([{"amount": "10", "type": "debit", "balance": ""}]) is None
 
 
 def test_ledger_csv_keeps_stored_shape():
