@@ -4,7 +4,7 @@ export const SITE_NAME = 'Bank Statement Scanner';
 export const SITE_TAGLINE = 'Convert bank statements, then ask them anything.';
 export const SITE_DESCRIPTION =
   'Convert bank statement PDFs into categorized Excel or CSV, then ask the AI for any transactions (like everything from John) and download just those.';
-export const OG_IMAGE = `${SITE_URL}/og-image.png`;
+export const OG_IMAGE = `${SITE_URL}/og-image.png?v=2`; // bump v to refresh social caches
 export const SUPPORT_EMAIL = 'team@bankstatementscanner.com';
 export const LEGAL_ENTITY = 'CARC LABS LLC';
 
