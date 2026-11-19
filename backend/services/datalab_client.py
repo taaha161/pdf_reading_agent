@@ -116,17 +116,111 @@ def _poll_result(check_url: str, headers: dict, t0: float) -> str:
         logger.debug("convert_pdf_to_markdown: status=%s, waiting...", status)
 
 
-def _delete_file(base_url: str, file_id: str, headers: dict) -> None:
-    """Delete the uploaded PDF from Datalab. Best-effort, like _delete_result."""
+DELETE_ATTEMPTS = 3
+DELETE_RETRY_DELAY_SEC = 1.0
+# Under the Datalab DPA, files uploaded through the Files API are kept until we
+# delete them (no auto-expiry). Any upload older than this is a leftover from a
+# failed delete or a crashed worker; scans finish well inside it.
+STALE_FILE_AGE_SEC = 15 * 60
+SWEEP_INTERVAL_SEC = 10 * 60
+
+
+def _delete_file(base_url: str, file_id: str, headers: dict) -> bool:
+    """Delete the uploaded PDF from Datalab, retrying transient failures.
+    Never raises. Returns True once the file is gone. Anything still left behind
+    is removed by the periodic sweep (sweep_stale_files)."""
     import httpx
 
+    for attempt in range(1, DELETE_ATTEMPTS + 1):
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                r = client.delete(f"{base_url}/api/v1/files/{file_id}", headers=headers)
+            if r.status_code < 400 or r.status_code == 404:
+                return True
+            logger.warning("datalab: delete file %s failed (%s), attempt %d", file_id, r.status_code, attempt)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("datalab: delete file %s error: %s, attempt %d", file_id, e, attempt)
+        if attempt < DELETE_ATTEMPTS:
+            time.sleep(DELETE_RETRY_DELAY_SEC * attempt)
+    logger.error("datalab: delete file %s gave up; periodic sweep will retry", file_id)
+    return False
+
+
+def sweep_stale_files(max_age_sec: int = STALE_FILE_AGE_SEC) -> int:
+    """Delete every file on our Datalab account older than max_age_sec.
+    Files persist on Datalab until deleted, so this is the backstop for deletes
+    that failed or never ran. Returns how many files were deleted. Never raises."""
+    import httpx
+    from datetime import datetime, timedelta, timezone
+
+    api_key = os.environ.get("DATALAB_API_KEY", "").strip()
+    if not api_key:
+        return 0
+    base_url = os.environ.get("DATALAB_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
+    headers = {"X-API-Key": api_key}
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=max_age_sec)
+
+    # Collect first, delete after: deleting while paging by offset would skip files.
+    stale: list[str] = []
     try:
-        with httpx.Client(timeout=10.0) as client:
-            r = client.delete(f"{base_url}/api/v1/files/{file_id}", headers=headers)
-        if r.status_code >= 400 and r.status_code != 404:
-            logger.error("datalab: delete file %s failed (%s)", file_id, r.status_code)  # statement left on Datalab ~1 day
+        offset, limit = 0, 100
+        with httpx.Client(timeout=30.0) as client:
+            while True:
+                r = client.get(f"{base_url}/api/v1/files", params={"limit": limit, "offset": offset}, headers=headers)
+                r.raise_for_status()
+                page = r.json()
+                files = page.get("files") or []
+                for f in files:
+                    created = _parse_ts(f.get("created"))
+                    if created is None or created < cutoff:
+                        stale.append(str(f.get("file_id")))
+                offset += len(files)
+                if not files or offset >= int(page.get("total") or 0):
+                    break
     except Exception as e:  # noqa: BLE001
-        logger.error("datalab: delete file %s error: %s", file_id, e)
+        logger.error("datalab: sweep list failed: %s", e)
+
+    deleted = sum(1 for fid in stale if _delete_file(base_url, fid, headers))
+    if stale:
+        logger.info("datalab: sweep deleted %d/%d stale files", deleted, len(stale))
+    return deleted
+
+
+def _parse_ts(value):
+    """Parse an ISO timestamp from Datalab. Naive times are taken as UTC. None if unparseable."""
+    from datetime import datetime, timezone
+
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+_sweeper_started = False
+
+
+def start_file_sweeper(interval_sec: int = SWEEP_INTERVAL_SEC) -> None:
+    """Run sweep_stale_files now and then every interval_sec in a daemon thread.
+    Idempotent per process. No-op without DATALAB_API_KEY."""
+    import threading
+
+    global _sweeper_started
+    if _sweeper_started or not os.environ.get("DATALAB_API_KEY", "").strip():
+        return
+    _sweeper_started = True
+
+    def _loop():
+        while True:
+            try:
+                sweep_stale_files()
+            except Exception as e:  # noqa: BLE001
+                logger.error("datalab: sweep crashed: %s", e)
+            time.sleep(interval_sec)
+
+    threading.Thread(target=_loop, name="datalab-file-sweeper", daemon=True).start()
 
 
 def _delete_result(base_url: str, request_id: str, headers: dict) -> None:
