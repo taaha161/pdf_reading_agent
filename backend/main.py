@@ -99,6 +99,7 @@ from services.pdf_processor import (
     decrypt_pdf,
     extract_text_from_pdf,
 )
+from services.datalab_client import start_file_sweeper
 from services.scan_jobs import create_scan, fail_scan, finish_scan, get_scan, set_stage as set_scan_stage
 from services.recaptcha import verify_recaptcha
 from services.statement_agent import extract_and_categorize
@@ -176,6 +177,12 @@ limiter = Limiter(**_limiter_kwargs)
 app = FastAPI(title="PDF Bank Statement Processor")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@app.on_event("startup")
+def _start_datalab_sweeper() -> None:
+    # Uploaded statements stay on Datalab until deleted; sweep any leftovers.
+    start_file_sweeper()
 
 GENERIC_500_MESSAGE = "Something went wrong. Please try again later."
 
