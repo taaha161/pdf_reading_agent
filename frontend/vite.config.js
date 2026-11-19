@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
   const siteUrl = env.VITE_PUBLIC_SITE_URL ?? ''
   const basePath = (env.BASE_PATH || '/').replace(/\/?$/, '/')
   const origin = siteUrl || DEFAULT_SITE_URL
-  const ogImageUrl = `${origin.replace(/\/$/, '')}${basePath}og-image.png`
+  const ogImageUrl = `${origin.replace(/\/$/, '')}${basePath}og-image.png?v=2`
 
   const baseUrl = (siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '') + basePath.replace(/\/?$/, '/')
 
