@@ -5,7 +5,6 @@
   padding: 1rem 1.25rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-left: 4px solid var(--recon-accent);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
@@ -15,9 +14,11 @@
   --recon-tint: var(--color-success-muted);
 }
 
+/* A mismatch is the one state that should catch the eye: the whole frame turns red, not one edge. */
 .recon--mismatch {
   --recon-accent: var(--color-error);
   --recon-tint: var(--color-error-bg);
+  border-color: var(--color-error-border);
 }
 
 .recon-head {
