@@ -1,0 +1,202 @@
+.recon {
+  --recon-accent: var(--graphite);
+  --recon-tint: var(--color-primary-subtle);
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.recon--reconciled {
+  --recon-accent: var(--color-success);
+  --recon-tint: var(--color-success-muted);
+}
+
+/* A mismatch is the one state that should catch the eye: the whole frame turns red, not one edge. */
+.recon--mismatch {
+  --recon-accent: var(--color-error);
+  --recon-tint: var(--color-error-bg);
+  border-color: var(--color-error-border);
+}
+
+.recon-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.recon-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  color: var(--recon-accent);
+  background: var(--recon-tint);
+}
+
+.recon-head-text {
+  min-width: 0;
+}
+
+.recon-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.recon-sub {
+  margin: 0.2rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.recon-stale {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.recon-hints {
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.recon-hints li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--recon-tint);
+  border-radius: var(--radius-md);
+  font-size: 0.93rem;
+  color: var(--color-text);
+}
+
+.recon-jump {
+  flex: none;
+  padding: 0.2rem 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.recon-jump:hover {
+  border-color: var(--rule-strong);
+}
+
+.recon-jump:focus-visible,
+.recon-details summary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.recon-details {
+  margin-top: 0.75rem;
+  font-size: 0.93rem;
+}
+
+.recon-details summary {
+  cursor: pointer;
+  width: fit-content;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.recon-detail-line {
+  margin: 0.5rem 0 0;
+  color: var(--color-text);
+}
+
+.recon-table-wrap {
+  margin-top: 0.6rem;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.recon-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.recon-table th,
+.recon-table td {
+  padding: 0.5rem 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.recon-table thead th {
+  background: var(--color-primary-subtle);
+  font-weight: 600;
+}
+
+.recon-table tbody th {
+  font-weight: 500;
+}
+
+.recon-table tbody tr:last-child > * {
+  border-bottom: none;
+}
+
+.recon-table .recon-num {
+  text-align: right;
+}
+
+.recon-check-mark {
+  display: inline-block;
+  width: 1.1em;
+  margin-right: 0.35rem;
+  font-weight: 700;
+}
+
+.recon-check--pass .recon-check-mark {
+  color: var(--color-success);
+}
+
+.recon-check--fail .recon-check-mark,
+.recon-check--fail td:last-child {
+  color: var(--color-error);
+}
+
+.recon-check--skipped {
+  color: var(--color-text-muted);
+}
+
+.recon .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .recon {
+    padding: 0.9rem 1rem;
+  }
+}

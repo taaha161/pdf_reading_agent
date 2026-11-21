@@ -103,6 +103,7 @@ from services.datalab_client import start_file_sweeper
 from services.scan_jobs import create_scan, fail_scan, finish_scan, get_scan, set_stage as set_scan_stage
 from services.recaptcha import verify_recaptcha
 from services.statement_agent import extract_and_categorize
+from services.reconciliation import reconcile
 from store import (
     get_auth_user,
     get_job_owner,
@@ -431,6 +432,13 @@ def list_user_jobs(user_id: str = Depends(get_current_user)):
     return JobListResponse(jobs=[JobListItem(**j) for j in jobs], stats=stats_model)
 
 
+def _job_reconciliation(job: dict) -> dict | None:
+    """Reconciliation for a saved job, recomputed from its rows; None when its data is gone."""
+    if job.get("data_status"):
+        return None
+    return reconcile(job["transactions"])
+
+
 @app.get("/api/jobs/{job_id}", response_model=JobDetailResponse)
 def get_job_detail(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
     """Get one job's data for viewing (transactions + summary)."""
@@ -442,6 +450,7 @@ def get_job_detail(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
         job_id=str(job_id),
         transactions=[Transaction(**t) for t in job["transactions"]],
         summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+        reconciliation=_job_reconciliation(job),
         currency=job.get("currency"),
         data_status=job.get("data_status"),
         conversion_mode=job.get("conversion_mode"),
@@ -470,6 +479,7 @@ def update_job_detail(
         job_id=str(job_id),
         transactions=[Transaction(**t) for t in updated["transactions"]],
         summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+        reconciliation=_job_reconciliation(updated),
         currency=updated.get("currency"),
         data_status=updated.get("data_status"),
         conversion_mode=updated.get("conversion_mode"),
@@ -833,6 +843,7 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
     csv_content = transactions_to_csv(transactions, ledger=True)
     job_id = create_job_id()
     summary = _summary_by_category(transactions)
+    reconciliation = reconcile(transactions)
     is_trial = user_id is None
 
     # Owner notification (best-effort, non-blocking): a PDF was scanned.
@@ -851,6 +862,7 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
             transaction_count=len(transactions),
             conversion_mode=req.conversion_mode,
             filename=req.filename,
+            reconciliation=reconciliation,
         )
     except Exception as e:  # noqa: BLE001
         logger.warning("scan notification failed (continuing): %s", e)
@@ -868,6 +880,7 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
             job_id=job_id,
             transactions=[Transaction(**t) for t in transactions],
             summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+            reconciliation=reconciliation,
             csv_url="",
             markdown_url="",
             currency=currency,
@@ -896,6 +909,7 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
         job_id=job_id,
         transactions=[Transaction(**t) for t in transactions],
         summary_by_category=[CategorySummary(category=c, total=t) for c, t in summary],
+        reconciliation=reconciliation,
         csv_url=f"/api/jobs/{job_id}/csv",
         markdown_url=f"/api/jobs/{job_id}/markdown",
         currency=currency,

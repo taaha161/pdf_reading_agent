@@ -268,6 +268,7 @@ def notify_scan(
     transaction_count: int,
     conversion_mode: str,
     filename: str | None = None,
+    reconciliation: dict | None = None,
 ) -> None:
     who = "anonymous trial" if is_trial else (name or email or user_id or "unknown")
     _notify(
@@ -279,6 +280,20 @@ def notify_scan(
             f"User ID: {user_id or 'n/a'}\n"
             f"File: {filename or 'n/a'}\n"
             f"Transactions: {transaction_count}\n"
-            f"Mode: {conversion_mode}"
+            f"Mode: {conversion_mode}\n"
+            f"Reconciliation: {_reconciliation_line(reconciliation)}"
         ),
     )
+
+
+def _reconciliation_line(reconciliation: dict | None) -> str:
+    """One line for the owner alert, so extraction mismatches are visible without a complaint."""
+    if not reconciliation:
+        return "n/a"
+    status = reconciliation.get("status", "n/a")
+    if status == "mismatch":
+        diffs = [c.get("difference") for c in reconciliation.get("checks", []) if c.get("status") == "fail"]
+        return f"MISMATCH (off by {', '.join(f'{d:.2f}' for d in diffs if d is not None) or '?'})"
+    if status == "unverified":
+        return f"unverified ({reconciliation.get('reason') or 'no reason'})"
+    return status

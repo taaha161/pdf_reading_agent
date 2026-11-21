@@ -110,3 +110,11 @@ def test_scan_is_private_to_its_owner(client):
     app.dependency_overrides[get_current_user_optional] = lambda: "someone-else"
     assert client.get(f"/api/scans/{scan_id}").status_code == 404
     assert client.get("/api/scans/does-not-exist").status_code == 404
+
+
+def test_scan_result_includes_reconciliation(client):
+    scan_id = _start(client).json()["scan_id"]
+    rec = client.get(f"/api/scans/{scan_id}").json()["result"]["reconciliation"]
+    # The fake row has no printed balance, so there's nothing to check against.
+    assert rec["status"] == "unverified"
+    assert rec["total_debits"] == 4.5 and rec["total_credits"] == 0.0

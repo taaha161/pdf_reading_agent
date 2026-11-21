@@ -14,6 +14,38 @@ class Transaction(BaseModel):
     # Account balance after this row (printed on the statement or worked out from the nearest
     # printed one); blank when the statement has no balances. Older jobs don't have it.
     balance: Optional[str] = ""
+    # True when the balance was printed on the statement, False when it was worked out.
+    # None for rows saved before this existed. Reconciliation only checks printed balances.
+    balance_printed: Optional[bool] = None
+
+
+class ReconciliationCheck(BaseModel):
+    key: Literal["balance_chain", "opening", "closing", "credits", "debits"]
+    status: Literal["pass", "fail", "skipped"]
+    expected: Optional[float] = None  # what the statement says
+    actual: Optional[float] = None  # what the extracted rows add up to
+    difference: Optional[float] = None  # expected - actual
+    breaks: Optional[int] = None  # balance_chain: steps between printed balances that don't add up
+
+
+class ReconciliationHint(BaseModel):
+    kind: Literal["flipped_type", "duplicate_row", "missing_row"]
+    row_index: Optional[int] = None  # flipped_type / duplicate_row: the suspect row
+    from_row: Optional[int] = None  # missing_row: it belongs between these two rows
+    to_row: Optional[int] = None
+    amount: float
+    direction: Optional[Literal["credit", "debit"]] = None  # missing_row
+
+
+class Reconciliation(BaseModel):
+    status: Literal["reconciled", "mismatch", "unverified"]
+    reason: Optional[str] = None  # user-facing, set when unverified
+    opening_balance: Optional[float] = None
+    closing_balance: Optional[float] = None
+    total_credits: float
+    total_debits: float
+    checks: list[ReconciliationCheck] = Field(default_factory=list)
+    hints: list[ReconciliationHint] = Field(default_factory=list)
 
 
 class CategorySummary(BaseModel):
@@ -27,6 +59,7 @@ class ProcessPdfResponse(BaseModel):
     summary_by_category: list[CategorySummary]
     csv_url: str
     markdown_url: str
+    reconciliation: Optional[Reconciliation] = None
     currency: Optional[str] = None  # Inferred from statement (e.g. USD, PKR); None if unknown
     csv_content: Optional[str] = None  # Set for trial (no job stored); client uses for download
     raw_text: Optional[str] = None  # Set for trial; client uses for markdown download
@@ -93,6 +126,7 @@ class JobDetailResponse(BaseModel):
     job_id: str
     transactions: list[Transaction]
     summary_by_category: list[CategorySummary]
+    reconciliation: Optional[Reconciliation] = None  # None when the job has no saved data
     currency: Optional[str] = None
     data_status: Optional[str] = None  # "incognito" | "purged" when no payload
     conversion_mode: Optional[str] = None  # fast | balanced | accurate

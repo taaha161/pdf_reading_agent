@@ -122,6 +122,7 @@ export default function ResultsTable({
   onClearCategoryFilter,
   highlighted = null,
   highlightQuestion = "",
+  highlightNote = "",
   onClearHighlight,
 }) {
   const [editingIndex, setEditingIndex] = useState(null);
@@ -221,8 +222,12 @@ export default function ResultsTable({
       {highlighted?.size > 0 && (
         <p className="results-highlight-note" role="status">
           <span className="pencil-note">
-            {highlighted.size} {highlighted.size === 1 ? "row answers" : "rows answer"}
-            {highlightQuestion ? <> &ldquo;{highlightQuestion}&rdquo;</> : " your question"}
+            {highlightNote || (
+              <>
+                {highlighted.size} {highlighted.size === 1 ? "row answers" : "rows answer"}
+                {highlightQuestion ? <> &ldquo;{highlightQuestion}&rdquo;</> : " your question"}
+              </>
+            )}
           </span>
           <button type="button" className="results-highlight-clear" onClick={onClearHighlight}>
             Clear highlight
@@ -266,13 +271,13 @@ export default function ResultsTable({
                 </span>
               );
               return (
-                <tr key={i} className={`results-row${highlighted?.has(i) ? " results-row--hit" : ""}`} role="row">
+                <tr key={i} data-row-index={i} className={`results-row${highlighted?.has(i) ? " results-row--hit" : ""}`} role="row">
                   <td className="results-cell-date" role="cell">
                     <span className="results-date">{t.date || "—"}</span>
                   </td>
                   <td className="results-cell-desc" role="cell">
                     <div className="results-desc-main">{t.description || "—"}</div>
-                    {highlighted?.has(i) && <span className="results-hit-sr"> (answers your question)</span>}
+                    {highlighted?.has(i) && <span className="results-hit-sr">{highlightNote ? " (highlighted)" : " (answers your question)"}</span>}
                   </td>
                   <td className="results-cell-category" role="cell">
                     {t.category ? (
