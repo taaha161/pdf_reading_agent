@@ -162,12 +162,14 @@ const jsonLd = [
     </section>
 
     <section class="bank-section bank-check">
-      <h2>Check your export before you import it</h2>
+      <h2>We check your export against the statement</h2>
       <p>
-        Every statement prints an opening and a closing balance. Add up the credits and debits in your
-        export: <strong>opening balance + credits − debits</strong> should equal the closing balance. If it
-        doesn't, compare the row count with the statement to find a missing or duplicated line. This takes
-        a minute, and it catches the silent errors that copy-paste and general AI chatbots make.
+        Every statement prints an opening and a closing balance. After converting, Bank Statement Scanner
+        checks that <strong>opening balance + credits − debits</strong> equals the closing balance, that the
+        rows match every running balance printed on the statement, and that the totals match its summary box.
+        If something doesn't add up, it shows you which rows to look at: a line that may be missing, read
+        twice, or recorded as a credit instead of a debit. That's the silent error copy-paste and general AI
+        chatbots make, caught before you import.
       </p>
     </section>
 

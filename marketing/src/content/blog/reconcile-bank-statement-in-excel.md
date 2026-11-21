@@ -272,6 +272,8 @@ Mastering how to reconcile a bank statement in Excel gives you total control ove
 
 Manually typing hundreds of transaction rows from bank statements introduces typos, transpositions, and broken date formats that undermine your formula models. [Bank Statement Scanner](/) solves this extraction bottleneck by converting digital, scanned, or password-protected PDF bank statements into clean Excel sheets with structured columns for Date, Description, Amount, and Type. With an optional Incognito mode that stores no financial transaction data, you get audit-ready rows ready for your reconciliation workbook in seconds.
 
+Before the rows reach your workbook, each statement is checked against its own printed balances and summary, so you start the reconciliation knowing the extracted data matches the bank's numbers. If it doesn't, you're shown which rows to look at. The Excel download includes a Reconciliation sheet with the statement's figures next to the extracted totals.
+
 ## Sources
 
 - [Wikipedia: Bank reconciliation](https://en.wikipedia.org/wiki/Bank_reconciliation)

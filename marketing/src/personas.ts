@@ -29,6 +29,7 @@ export const PERSONAS: Persona[] = [
       { old: 'Staff hours lost to keying dates and amounts', new: 'Every transaction extracted and categorized' },
       { old: 'Hunting a statement for every payment to one payee', new: 'Ask for them in plain English and export just those rows' },
       { old: 'Scanned paper statements from older years', new: 'Scanned PDFs go through OCR' },
+      { old: 'Ticking totals back to the statement before review', new: 'Every statement checked against its printed balances and summary' },
     ],
     guide: 'bank-statement-scanner-for-accountants',
     faqs: [
@@ -64,6 +65,7 @@ export const PERSONAS: Persona[] = [
       { old: 'Copy-paste from PDFs breaks the columns', new: 'Clean date, description, amount and type columns' },
       { old: 'Categorizing hundreds of rows by hand', new: 'Every row categorized automatically' },
       { old: 'Pulling every charge from one vendor', new: 'Ask for them in plain English and export just those rows' },
+      { old: 'Finding the missing month in a catch-up stack', new: 'Saved statements linked month to month, so gaps stand out' },
     ],
     guide: 'automate-monthly-bookkeeping-data-entry',
     faqs: [
