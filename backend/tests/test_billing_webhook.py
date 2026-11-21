@@ -110,3 +110,90 @@ def test_subscription_deleted_clears_plan_pages_only():
 @pytest.mark.parametrize("pages,mode,cost", [(1, "fast", 1), (12, "balanced", 12), (12, "accurate", 24), (0, "fast", 1)])
 def test_scan_cost_pages(pages, mode, cost):
     assert billing.scan_cost_pages(pages, mode) == cost
+
+
+# --- promo-code bonus pages (e.g. REDDIT200: promotion code metadata bonus_pages=200) ---
+
+def _pack_session(discounts, pack="10"):
+    return {"id": "cs_1", "mode": "payment", "amount_total": 0, "currency": "usd", "customer": "cus_1",
+            "metadata": {"user_id": "user-1", "topup": "1", "pack": pack}, "discounts": discounts}
+
+
+def _checkout(session, promo=None, customer_meta=None):
+    customer = {"id": "cus_1", "metadata": customer_meta or {}}
+    with patch.object(billing, "add_pack_pages") as add_pack, \
+         patch.object(billing, "_track_ga4"), \
+         patch.object(billing.stripe.Customer, "retrieve", return_value=customer), \
+         patch.object(billing.stripe.Customer, "modify"), \
+         patch.object(billing.stripe.PromotionCode, "retrieve", return_value=promo) as retrieve:
+        result = billing._handle_checkout_completed({"data": {"object": session}})
+    return result, add_pack, retrieve
+
+
+def test_promo_code_bonus_added_to_pack_pages():
+    promo = {"id": "promo_1", "metadata": {"bonus_pages": "200"}, "coupon": {"id": "c1", "metadata": {}}}
+    (ok, msg), add_pack, retrieve = _checkout(_pack_session([{"coupon": "c1", "promotion_code": "promo_1"}]), promo)
+    assert ok and "200 promo bonus" in msg
+    retrieve.assert_called_once_with("promo_1")
+    add_pack.assert_called_once_with("user-1", 210)
+
+
+def test_coupon_metadata_bonus_when_promo_has_none():
+    promo = {"id": "promo_1", "metadata": {}, "coupon": {"id": "c1", "metadata": {"bonus_pages": "50"}}}
+    (ok, _), add_pack, _ = _checkout(_pack_session([{"coupon": "c1", "promotion_code": "promo_1"}]), promo)
+    add_pack.assert_called_once_with("user-1", 60)
+
+
+def test_ordinary_discount_gives_no_bonus():
+    promo = {"id": "promo_2", "metadata": {}, "coupon": {"id": "c2", "metadata": {}}}
+    (ok, _), add_pack, _ = _checkout(_pack_session([{"coupon": "c2", "promotion_code": "promo_2"}]), promo)
+    add_pack.assert_called_once_with("user-1", 10)
+
+
+def test_no_discounts_skips_stripe_lookup():
+    (ok, _), add_pack, retrieve = _checkout(_pack_session(None))
+    retrieve.assert_not_called()
+    add_pack.assert_called_once_with("user-1", 10)
+
+
+def test_bonus_is_capped_and_bad_metadata_ignored():
+    assert billing._metadata_bonus({"metadata": {"bonus_pages": "lots"}}) == 0
+    promo = {"id": "p", "metadata": {"bonus_pages": "999999"}, "coupon": None}
+    (ok, _), add_pack, _ = _checkout(_pack_session([{"promotion_code": "p"}]), promo)
+    add_pack.assert_called_once_with("user-1", 10 + billing._MAX_BONUS_PAGES)
+
+
+def test_stripe_error_fails_webhook_before_crediting():
+    with patch.object(billing, "add_pack_pages") as add_pack, \
+         patch.object(billing.stripe.PromotionCode, "retrieve", side_effect=billing.StripeError("down")):
+        ok, _ = billing._handle_checkout_completed({"data": {"object": _pack_session([{"promotion_code": "p"}])}})
+    assert not ok
+    add_pack.assert_not_called()
+
+
+def test_promo_bonus_on_subscription_checkout():
+    session = {"id": "cs_2", "mode": "subscription", "amount_total": 800, "currency": "usd", "customer": "cus_1",
+               "metadata": {"user_id": "user-1"}, "discounts": [{"promotion_code": "promo_1"}]}
+    promo = {"id": "promo_1", "metadata": {"bonus_pages": "200"}, "coupon": None}
+    (ok, _), add_pack, _ = _checkout(session, promo)
+    assert ok
+    add_pack.assert_called_once_with("user-1", 200)
+
+
+def test_bonus_only_once_per_customer_but_retry_still_credits():
+    promo = {"id": "promo_1", "metadata": {"bonus_pages": "200"}, "coupon": None}
+    session = _pack_session([{"promotion_code": "promo_1"}])
+    (_, _), add_pack, _ = _checkout(session, promo, customer_meta={"bonus_promo_1": "cs_other"})
+    add_pack.assert_called_once_with("user-1", 10)  # second use: no bonus
+    (_, _), add_pack, _ = _checkout(session, promo, customer_meta={"bonus_promo_1": "cs_1"})
+    add_pack.assert_called_once_with("user-1", 210)  # webhook retry of the first use
+
+
+def test_first_use_records_session_on_customer():
+    promo = {"id": "promo_1", "metadata": {"bonus_pages": "200"}, "coupon": None}
+    with patch.object(billing, "add_pack_pages"), patch.object(billing, "_track_ga4"), \
+         patch.object(billing.stripe.PromotionCode, "retrieve", return_value=promo), \
+         patch.object(billing.stripe.Customer, "retrieve", return_value={"id": "cus_1", "metadata": {}}), \
+         patch.object(billing.stripe.Customer, "modify") as modify:
+        billing._handle_checkout_completed({"data": {"object": _pack_session([{"promotion_code": "promo_1"}])}})
+    modify.assert_called_once_with("cus_1", metadata={"bonus_promo_1": "cs_1"})
