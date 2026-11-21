@@ -73,31 +73,51 @@ def _score(nets: list[float], stated: dict[int, float], sign: int) -> int:
     return hits
 
 
+def _oriented(
+    nets: list[float], stated: dict[int, float], newest_first: bool
+) -> tuple[list[float], dict[int, float]]:
+    """Nets and printed balances in oldest-first order."""
+    if not newest_first:
+        return nets, stated
+    n = len(nets)
+    return nets[::-1], {n - 1 - i: v for i, v in stated.items()}
+
+
+def _best_reading(nets: list[float], stated: dict[int, float]) -> tuple[tuple[bool, int], int]:
+    """((newest_first, sign), score) for the reading that explains the most balance steps.
+    Ties go to the reading listed first in _READINGS (the usual layout)."""
+    best: tuple[tuple[bool, int], int] | None = None
+    for newest_first, sign in _READINGS:
+        ns, st = _oriented(nets, stated, newest_first)
+        score = _score(ns, st, sign)
+        if best is None or score > best[1]:
+            best = ((newest_first, sign), score)
+    assert best is not None
+    return best
+
+
 def fill_running_balances(transactions: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Set each row's "balance" to a 2-decimal string (blank when it can't be worked out).
+    """Set each row's "balance" to a 2-decimal string (blank when it can't be worked out), and
+    "balance_printed" to whether that balance was printed on the statement (vs worked out).
 
     Rows come in statement order with the printed balance (if any) in "balance".
     Returns the same list, updated in place.
     """
     stated_raw = {i: parse_money(t.get("balance")) for i, t in enumerate(transactions)}
     stated = {i: v for i, v in stated_raw.items() if v is not None}
+    for i, t in enumerate(transactions):
+        t["balance_printed"] = i in stated
     if not stated:
         for t in transactions:
             t["balance"] = ""
         return transactions
 
     nets = [_net(t) for t in transactions]
-    n = len(transactions)
     best = None
     if len(stated) >= 2:
-        scored = []
-        for newest_first, sign in _READINGS:
-            ns = nets[::-1] if newest_first else nets
-            st = {n - 1 - i: v for i, v in stated.items()} if newest_first else stated
-            scored.append((_score(ns, st, sign), newest_first, sign))
-        top = max(s[0] for s in scored)
+        reading, top = _best_reading(nets, stated)
         if top > 0:
-            best = next((nf, sg) for sc, nf, sg in scored if sc == top)
+            best = reading
     else:
         best = (False, 1)  # one printed balance: assume the usual layout
 
@@ -107,14 +127,61 @@ def fill_running_balances(transactions: list[dict[str, Any]]) -> list[dict[str, 
         return transactions
 
     newest_first, sign = best
-    ns = nets[::-1] if newest_first else nets
-    st = {n - 1 - i: v for i, v in stated.items()} if newest_first else stated
+    ns, st = _oriented(nets, stated, newest_first)
     filled = _fill(ns, st, sign)
     if newest_first:
         filled = filled[::-1]
     for t, value in zip(transactions, filled):
         t["balance"] = f"{round(value, 2) + 0.0:.2f}"
     return transactions
+
+
+def printed_balances(transactions: list[dict[str, Any]]) -> dict[int, float] | None:
+    """{row index: balance} for the balances printed on the statement, or None for rows saved
+    before "balance_printed" existed (their filled-in balances can't be told apart from printed)."""
+    if not any("balance_printed" in t for t in transactions):
+        return None
+    out: dict[int, float] = {}
+    for i, t in enumerate(transactions):
+        value = parse_money(t.get("balance")) if t.get("balance_printed") else None
+        if value is not None:
+            out[i] = value
+    return out
+
+
+def balance_breaks(
+    transactions: list[dict[str, Any]], stated: dict[int, float]
+) -> tuple[tuple[bool, int], list[dict[str, Any]]]:
+    """((newest_first, sign), breaks): every step between two consecutive printed balances that
+    the rows in between don't explain, under the reading that explains the most steps.
+
+    Each break is {"from_row", "to_row", "rows", "gap"}: the two rows carrying the printed
+    balances (statement order), the rows whose amounts make up that step (statement order), and
+    printed minus expected balance. stated maps row index -> printed balance (statement order).
+    """
+    nets = [_net(t) for t in transactions]
+    n = len(transactions)
+    if len(stated) < 2:
+        return (False, 1), []
+    (newest_first, sign), _ = _best_reading(nets, stated)
+    ns, st = _oriented(nets, stated, newest_first)
+
+    def to_statement(k: int) -> int:
+        return n - 1 - k if newest_first else k
+
+    breaks = []
+    idx = sorted(st)
+    for a, b in zip(idx, idx[1:]):
+        gap = st[b] - (st[a] + sign * sum(ns[a + 1 : b + 1]))
+        if abs(gap) > _TOLERANCE:
+            rows = sorted(to_statement(k) for k in range(a + 1, b + 1))
+            breaks.append({
+                "from_row": min(to_statement(a), to_statement(b)),
+                "to_row": max(to_statement(a), to_statement(b)),
+                "rows": rows,
+                "gap": round(gap, 2) + 0.0,
+            })
+    return (newest_first, sign), breaks
 
 
 def opening_closing(transactions: list[dict[str, Any]]) -> tuple[bool, float, float] | None:

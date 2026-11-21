@@ -6,6 +6,7 @@ import FileUpload from "../components/FileUpload";
 import Loader from "../components/Loader";
 import SummaryTable from "../components/SummaryTable";
 import ResultsTable from "../components/ResultsTable";
+import ReconciliationPanel from "../components/ReconciliationPanel";
 import ChatPanel from "../components/ChatPanel";
 import EmailSpreadsheet from "../components/EmailSpreadsheet";
 import FeedbackPrompt from "../components/FeedbackPrompt";
@@ -20,6 +21,22 @@ import { fileTooLarge, formatMB, maxFileBytes, MAX_FILE_BYTES_SIGNED_IN, MB } fr
 import { trackLinkedInConversion, LINKEDIN_TRIAL_SCAN_CONVERSION_ID } from "../lib/linkedinConversions";
 import sampleStatement from "../lib/sampleStatement.json";
 import { isDirectionFilter, summaryByCategory as computeSummaryByCategory } from "../lib/transactionDirection";
+
+/** The sample statement prints no running balances, but its summary box is known and adds up. */
+function sampleReconciliation() {
+  const { opening, closing, credits, debits } = sampleStatement;
+  const check = (key, value) => ({ key, status: "pass", expected: value, actual: value, difference: 0 });
+  return {
+    status: "reconciled",
+    reason: null,
+    opening_balance: opening,
+    closing_balance: closing,
+    total_credits: credits,
+    total_debits: debits,
+    checks: [check("opening", opening), check("credits", credits), check("debits", debits), check("closing", closing)],
+    hints: [],
+  };
+}
 
 function ChatIcon() {
   return (
@@ -140,6 +157,9 @@ export default function ScannerPage() {
   const [jobId, setJobId] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [summaryByCategory, setSummaryByCategory] = useState([]);
+  const [reconciliation, setReconciliation] = useState(null);
+  // Trial edits aren't sent to the server, so the check can't be recomputed for them.
+  const [reconciliationStale, setReconciliationStale] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [currency, setCurrency] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -231,6 +251,17 @@ export default function ScannerPage() {
   );
   useEffect(() => setAnswerHighlight(null), [jobId]);
 
+  // A reconciliation hint's "Show row": clear filters, highlight the rows, scroll to the first.
+  const handleJumpToRows = useCallback((indices) => {
+    setCategoryFilter(null);
+    setAnswerHighlight({ indices: new Set(indices), note: "The reconciliation check points here" });
+    requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-row-index="${Math.min(...indices)}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, []);
+
   // Guest wants chat: keep their statement in this browser so it reopens after signup
   // (login returns to /scanner?handoff=1; the dashboard offers it after email confirmation).
   const lastFileRef = useRef(null);
@@ -284,6 +315,8 @@ export default function ScannerPage() {
           setTransactions(data.transactions || []);
           setSummaryByCategory((data.summary_by_category || []).map((s) => ({ category: s.category, total: s.total })));
           setCurrency(data.currency ?? null);
+          setReconciliation(data.reconciliation ?? null);
+          setReconciliationStale(false);
           setDataStatus(data.data_status ?? null);
           setTrialCsvContent(null);
         } else {
@@ -317,6 +350,8 @@ export default function ScannerPage() {
     setTransactions([]);
     setSummaryByCategory([]);
     setCurrency(null);
+    setReconciliation(null);
+    setReconciliationStale(false);
     setDataStatus(null);
     setTrialCsvContent(null);
     setScanProgress({ stage: "uploading" });
@@ -343,6 +378,8 @@ export default function ScannerPage() {
       setTransactions(data.transactions || []);
       setSummaryByCategory(data.summary_by_category || []);
       setCurrency(data.currency ?? null);
+      setReconciliation(data.reconciliation ?? null);
+      setReconciliationStale(false);
       setDataStatus(null);
       setTrialCsvContent(data.csv_content ?? null);
       applyUsage(data);
@@ -431,6 +468,8 @@ export default function ScannerPage() {
     setTransactions(rows);
     setSummaryByCategory(computeSummaryByCategory(rows));
     setCurrency(sampleStatement.currency);
+    setReconciliation(sampleReconciliation());
+    setReconciliationStale(false);
     setDataStatus(null);
     setTrialCsvContent(transactionsToCsvBrowser(rows));
     pushDataLayer({ event: "sample_view", where: "scanner" });
@@ -476,11 +515,13 @@ export default function ScannerPage() {
     if (!isLoggedIn || trialCsvContent != null) {
       setTrialCsvContent(transactionsToCsvBrowser(nextTransactions));
     }
+    if (!(jobId && !isSample && isLoggedIn && !dataStatus)) setReconciliationStale(true);
 
     // Persist changes for stored jobs (non-incognito / not purged)
     if (jobId && !isSample && isLoggedIn && !dataStatus) {
       try {
         const updated = await updateJobTransactions(jobId, nextTransactions);
+        setReconciliation(updated.reconciliation ?? null);
         setSummaryByCategory(
           (updated.summary_by_category || []).map((s) => ({
             category: s.category,
@@ -508,10 +549,12 @@ export default function ScannerPage() {
     if (!isLoggedIn || trialCsvContent != null) {
       setTrialCsvContent(transactionsToCsvBrowser(nextTransactions));
     }
+    if (!(jobId && !isSample && isLoggedIn && !dataStatus)) setReconciliationStale(true);
 
     if (jobId && !isSample && isLoggedIn && !dataStatus) {
       try {
         const updated = await updateJobTransactions(jobId, nextTransactions);
+        setReconciliation(updated.reconciliation ?? null);
         setSummaryByCategory(
           (updated.summary_by_category || []).map((s) => ({
             category: s.category,
@@ -704,6 +747,14 @@ export default function ScannerPage() {
                 </button>
               )}
               <div className="scanner-results-tables">
+                <ReconciliationPanel
+                  reconciliation={reconciliation}
+                  currency={currency}
+                  transactions={transactions}
+                  onJumpToRow={handleJumpToRows}
+                  stale={reconciliationStale}
+                  jobId={jobId}
+                />
                 <SummaryTable
                   summaryByCategory={summaryByCategory}
                   currency={currency}
@@ -722,6 +773,7 @@ export default function ScannerPage() {
                   onSaveTransaction={handleSaveTransaction}
                   highlighted={answerHighlight?.indices}
                   highlightQuestion={answerHighlight?.question}
+                  highlightNote={answerHighlight?.note}
                   onClearHighlight={() => setAnswerHighlight(null)}
                 />
               </div>
