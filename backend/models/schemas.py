@@ -228,6 +228,8 @@ class ExportRequest(BaseModel):
     # Append count / money in / money out / net under the rows (chat downloads). Off by default so
     # files for QuickBooks/Xero imports stay rows-only.
     include_totals: bool = False
+    # Excel only: the scan's reconciliation, written to a separate "Reconciliation" sheet.
+    reconciliation: Optional[Reconciliation] = None
 
 
 class EmailSpreadsheetRequest(BaseModel):
@@ -239,6 +241,7 @@ class EmailSpreadsheetRequest(BaseModel):
     format: ExportFormat = "csv"
     include_categories: bool = True
     marketing_opt_in: bool = False
+    reconciliation: Optional[Reconciliation] = None  # Excel only, see ExportRequest
 
 
 class FeedbackRequest(BaseModel):

@@ -18,7 +18,7 @@ function ChevronIcon() {
  * "Download" button with CSV / Excel, with or without categories.
  * kind="summary" downloads the category totals table instead (no category toggle).
  */
-export default function DownloadMenu({ transactions, onError, kind = "transactions" }) {
+export default function DownloadMenu({ transactions, onError, kind = "transactions", reconciliation = null }) {
   const isSummary = kind === "summary";
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(null);
@@ -44,7 +44,7 @@ export default function DownloadMenu({ transactions, onError, kind = "transactio
     const key = `${format}-${includeCategories}`;
     setBusy(key);
     try {
-      await exportTransactions(transactions, { format, includeCategories, kind });
+      await exportTransactions(transactions, { format, includeCategories, kind, reconciliation });
       setOpen(false);
     } catch (e) {
       onError?.(e.message);

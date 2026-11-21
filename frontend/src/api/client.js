@@ -412,7 +412,7 @@ function exportRows(transactions) {
  */
 export async function exportTransactions(
   transactions,
-  { format = "csv", includeCategories = true, kind = "transactions", filenameBase, includeTotals = false } = {},
+  { format = "csv", includeCategories = true, kind = "transactions", filenameBase, includeTotals = false, reconciliation = null } = {},
 ) {
   const res = await fetch(`${API_BASE}/api/export`, {
     method: "POST",
@@ -423,6 +423,8 @@ export async function exportTransactions(
       include_categories: includeCategories,
       kind,
       include_totals: includeTotals,
+      // Excel only: adds a "Reconciliation" sheet; the rows sheet stays import-ready.
+      reconciliation: format === "xlsx" ? reconciliation : null,
     }),
   });
   if (!res.ok) {
@@ -482,7 +484,7 @@ export async function updateJobTransactions(jobId, transactions) {
 }
 
 /** Anonymous trial: email the spreadsheet (CSV or Excel) to the user and capture their email. */
-export async function emailSpreadsheet(jobId, email, transactions, { format = "xlsx", includeCategories = true, marketingOptIn = false } = {}) {
+export async function emailSpreadsheet(jobId, email, transactions, { format = "xlsx", includeCategories = true, marketingOptIn = false, reconciliation = null } = {}) {
   const res = await fetch(`${API_BASE}/api/email-spreadsheet`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -494,6 +496,7 @@ export async function emailSpreadsheet(jobId, email, transactions, { format = "x
       format,
       include_categories: includeCategories,
       marketing_opt_in: marketingOptIn,
+      reconciliation: format === "xlsx" ? reconciliation : null,
     }),
   });
   if (!res.ok) {

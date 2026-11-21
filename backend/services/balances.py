@@ -83,15 +83,20 @@ def _oriented(
     return nets[::-1], {n - 1 - i: v for i, v in stated.items()}
 
 
-def _best_reading(nets: list[float], stated: dict[int, float]) -> tuple[tuple[bool, int], int]:
+def _best_reading(
+    nets: list[float], stated: dict[int, float], sign: int | None = None
+) -> tuple[tuple[bool, int], int]:
     """((newest_first, sign), score) for the reading that explains the most balance steps.
-    Ties go to the reading listed first in _READINGS (the usual layout)."""
+    Ties go to the reading listed first in _READINGS (the usual layout). A known sign (from the
+    account type) limits the readings to that sign."""
     best: tuple[tuple[bool, int], int] | None = None
-    for newest_first, sign in _READINGS:
+    for newest_first, reading_sign in _READINGS:
+        if sign is not None and reading_sign != sign:
+            continue
         ns, st = _oriented(nets, stated, newest_first)
-        score = _score(ns, st, sign)
+        score = _score(ns, st, reading_sign)
         if best is None or score > best[1]:
-            best = ((newest_first, sign), score)
+            best = ((newest_first, reading_sign), score)
     assert best is not None
     return best
 
@@ -150,7 +155,7 @@ def printed_balances(transactions: list[dict[str, Any]]) -> dict[int, float] | N
 
 
 def balance_breaks(
-    transactions: list[dict[str, Any]], stated: dict[int, float]
+    transactions: list[dict[str, Any]], stated: dict[int, float], sign: int | None = None
 ) -> tuple[tuple[bool, int], list[dict[str, Any]]]:
     """((newest_first, sign), breaks): every step between two consecutive printed balances that
     the rows in between don't explain, under the reading that explains the most steps.
@@ -158,12 +163,13 @@ def balance_breaks(
     Each break is {"from_row", "to_row", "rows", "gap"}: the two rows carrying the printed
     balances (statement order), the rows whose amounts make up that step (statement order), and
     printed minus expected balance. stated maps row index -> printed balance (statement order).
+    sign: +1 bank account, -1 credit card, None to work it out from the balances.
     """
     nets = [_net(t) for t in transactions]
     n = len(transactions)
     if len(stated) < 2:
-        return (False, 1), []
-    (newest_first, sign), _ = _best_reading(nets, stated)
+        return (False, sign or 1), []
+    (newest_first, sign), _ = _best_reading(nets, stated, sign)
     ns, st = _oriented(nets, stated, newest_first)
 
     def to_statement(k: int) -> int:
