@@ -2,10 +2,38 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import { useAuth } from "../contexts/AuthContext";
+import AccountTimeline from "../components/AccountTimeline";
 import { useJobs } from "../contexts/JobsContext";
 import { deleteJobData, deleteJobsData } from "../api/client";
 import { peekHandedOffFileName, takeHandedOffFile } from "../lib/fileHandoff";
 import "./Dashboard.css";
+
+const RECON_MARKS = {
+  reconciled: { mark: "✓", label: "Reconciles" },
+  mismatch: { mark: "✗", label: "Doesn't add up" },
+};
+
+/** ✓ / ✗ before a statement's name when it was checked; nothing when it couldn't be. */
+function ReconciliationMark({ status }) {
+  const m = RECON_MARKS[status];
+  if (!m) return null;
+  return (
+    <span className={`dashboard-recon dashboard-recon--${status}`} title={m.label}>
+      <span aria-hidden>{m.mark}</span>
+      <span className="dashboard-table-sr-only">{m.label}: </span>
+    </span>
+  );
+}
+
+/** "Chase ••1234 · Mar 2026" when the statement's summary was read, else "USD statement". */
+function statementLabel(job) {
+  if (job.account_last4 && job.period_end) {
+    const d = new Date(`${job.period_end}T00:00:00`);
+    const when = Number.isNaN(d.getTime()) ? job.period_end : d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+    return `${job.bank_name || "Account"} ••${job.account_last4} · ${when}`;
+  }
+  return `${job.currency || "Statement"} statement`;
+}
 
 function formatDate(isoString) {
   try {
@@ -34,7 +62,7 @@ function formatSurplus(value, currency) {
 
 export default function Dashboard() {
   const { user, accessToken } = useAuth();
-  const { jobs, stats, loading, error, loadJobs, refreshJobs, hasFetched } = useJobs();
+  const { jobs, stats, accounts, loading, error, loadJobs, refreshJobs, hasFetched } = useJobs();
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState("");
@@ -176,6 +204,7 @@ export default function Dashboard() {
           <div className="dashboard-loading">Loading your statements…</div>
         ) : (
           <div className="dashboard-desk">
+            <AccountTimeline accounts={accounts} />
             {/* Account summary: set like the summary box on a statement */}
             <section className="dashboard-sheet dashboard-summary" aria-labelledby="dash-summary-h">
               <h2 id="dash-summary-h" className="dashboard-sheet-title">Summary</h2>
@@ -321,7 +350,8 @@ export default function Dashboard() {
                             <td className="dashboard-table-desc">
                               {job.has_payload ? (
                                 <Link to={`/scanner/${job.id}`} className="dashboard-table-open">
-                                  {job.currency || "Statement"} statement
+                                  <ReconciliationMark status={job.reconciliation_status} />
+                                  {statementLabel(job)}
                                 </Link>
                               ) : (
                                 <span className="dashboard-table-gone">Data deleted or not saved (incognito)</span>

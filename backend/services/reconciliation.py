@@ -13,6 +13,7 @@ statements that print no running balances.
 """
 from __future__ import annotations
 
+from datetime import date, timedelta
 from typing import Any
 
 from services.balances import _TOLERANCE, _net, balance_breaks, opening_closing, parse_money, printed_balances
@@ -232,3 +233,91 @@ def reconcile(transactions: list[dict[str, Any]], meta: dict[str, Any] | None = 
     else:
         result["reason"] = REASON_ONE_BALANCE if stated else REASON_NO_BALANCES
     return result
+
+
+# --- Account continuity across saved statements ----------------------------------------------
+
+# Statement cycles drift by a few days (weekends, 28-31 day months); a bigger hole is a missing statement.
+GAP_DAYS = 7
+
+
+def _date(value: Any) -> date | None:
+    try:
+        return date.fromisoformat(str(value or ""))
+    except ValueError:
+        return None
+
+
+def _account_key(meta: dict[str, Any], currency: str | None) -> tuple[str, str, bool]:
+    """Statements of one account: same last 4 digits, currency and kind (card vs bank account).
+    Bank names aren't part of the key: the same bank is printed many ways ("Chase", "JPMorgan Chase Bank, N.A.")."""
+    return (meta["account_last4"], (currency or "").strip().upper(), meta.get("account_type") == "credit_card")
+
+
+def account_continuity(jobs: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]:
+    """(accounts, unmatched job ids) for a user's saved statements.
+
+    jobs: [{"id", "currency", "statement_meta", "reconciliation"}] (reconciliation as from reconcile()).
+    Each account lists its statements oldest first, and a link between each consecutive pair:
+    "ok", "gap" (a statement seems to be missing), "balance_mismatch" (closing balance != next
+    opening balance) or "duplicate" (same period saved twice). Statements without an account
+    number or period can't be placed and are returned as unmatched.
+    """
+    groups: dict[tuple[str, str, bool], list[dict[str, Any]]] = {}
+    unmatched: list[str] = []
+    for job in jobs:
+        meta = job.get("statement_meta") or {}
+        end = _date(meta.get("period_end"))
+        if not meta.get("account_last4") or end is None:
+            unmatched.append(str(job["id"]))
+            continue
+        rec = job.get("reconciliation") or {}
+        groups.setdefault(_account_key(meta, job.get("currency")), []).append({
+            "job_id": str(job["id"]),
+            "period_start": meta.get("period_start"),
+            "period_end": meta["period_end"],
+            "opening_balance": rec.get("opening_balance", meta.get("opening_balance")),
+            "closing_balance": rec.get("closing_balance", meta.get("closing_balance")),
+            "status": rec.get("status", UNVERIFIED),
+            "_bank": meta.get("bank_name"),
+        })
+
+    accounts = []
+    for (last4, currency, is_card), statements in groups.items():
+        statements.sort(key=lambda s: (s["period_end"], s["period_start"] or ""))
+        links = [_link(a, b) for a, b in zip(statements, statements[1:])]
+        bank = next((s["_bank"] for s in reversed(statements) if s["_bank"]), None)
+        for s in statements:
+            del s["_bank"]
+        accounts.append({
+            "bank_name": bank,
+            "account_last4": last4,
+            "currency": currency or None,
+            "account_type": "credit_card" if is_card else "bank",
+            "statements": statements,
+            "links": links,
+        })
+    accounts.sort(key=lambda a: a["statements"][-1]["period_end"], reverse=True)
+    return accounts, unmatched
+
+
+def _link(prev: dict[str, Any], nxt: dict[str, Any]) -> dict[str, Any]:
+    link: dict[str, Any] = {"from_job": prev["job_id"], "to_job": nxt["job_id"], "kind": "ok"}
+    prev_end, next_end = _date(prev["period_end"]), _date(nxt["period_end"])
+    next_start = _date(nxt["period_start"])
+    if prev["period_end"] == nxt["period_end"] and prev["period_start"] == nxt["period_start"]:
+        link["kind"] = "duplicate"
+        return link
+    # Without a start date, assume a monthly cycle ending on next_end.
+    start = next_start or (next_end - timedelta(days=31))
+    if (start - prev_end).days > GAP_DAYS:
+        link.update(
+            kind="gap",
+            missing_from=(prev_end + timedelta(days=1)).isoformat(),
+            missing_to=(start - timedelta(days=1)).isoformat(),
+        )
+        return link
+    closing, opening = prev["closing_balance"], nxt["opening_balance"]
+    if closing is not None and opening is not None and not _close(closing, opening):
+        link.update(kind="balance_mismatch", difference=_money(opening - closing))
+    return link

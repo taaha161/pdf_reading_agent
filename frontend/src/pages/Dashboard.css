@@ -1141,3 +1141,17 @@
     align-items: flex-start;
   }
 }
+
+/* Reconciliation mark before a statement's name */
+.dashboard-recon {
+  display: inline-block;
+  width: 1.1em;
+  margin-right: 0.3rem;
+  font-weight: 800;
+}
+.dashboard-recon--reconciled {
+  color: var(--color-success);
+}
+.dashboard-recon--mismatch {
+  color: var(--color-error);
+}
