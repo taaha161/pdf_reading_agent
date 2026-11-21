@@ -124,6 +124,7 @@ export default function ResultsTable({
   highlightQuestion = "",
   highlightNote = "",
   onClearHighlight,
+  reconciliation = null,
 }) {
   const [editingIndex, setEditingIndex] = useState(null);
   const [draft, setDraft] = useState({ date: "", description: "", category: "", type: "", amount: "" });
@@ -215,7 +216,7 @@ export default function ResultsTable({
         </div>
         <div className="results-header-actions">
           {transactions?.length > 0 && (
-            <DownloadMenu transactions={transactions} onError={onDownloadError} />
+            <DownloadMenu transactions={transactions} onError={onDownloadError} reconciliation={reconciliation} />
           )}
         </div>
       </div>

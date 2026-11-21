@@ -774,6 +774,8 @@ export default function ScannerPage() {
                   highlighted={answerHighlight?.indices}
                   highlightQuestion={answerHighlight?.question}
                   highlightNote={answerHighlight?.note}
+                  // Edited trial rows no longer match the check, so don't export a stale one.
+                  reconciliation={reconciliationStale ? null : reconciliation}
                   onClearHighlight={() => setAnswerHighlight(null)}
                 />
               </div>
@@ -837,6 +839,7 @@ export default function ScannerPage() {
           key={jobId}
           jobId={jobId}
           transactions={transactions}
+          reconciliation={reconciliationStale ? null : reconciliation}
           onClose={() => setEmailPopupOpen(false)}
         />
       )}

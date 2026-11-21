@@ -123,8 +123,84 @@ def _write_totals(wb, ws, transactions: list[dict[str, Any]], fields: list[str],
     ws.set_column(0, 0, max(_WIDTHS["date"], min(longest + 2, 32)))
 
 
+_CHECK_LABELS = {
+    "balance_chain": "Running balances",
+    "opening": "Opening balance",
+    "credits": "Total money in",
+    "debits": "Total money out",
+    "closing": "Closing balance",
+}
+_STATUS_LABELS = {
+    "reconciled": "Reconciles with the statement",
+    "mismatch": "Doesn't add up",
+    "unverified": "Can't check this statement",
+}
+_RESULT_LABELS = {"pass": "Matches", "fail": "Doesn't match", "skipped": "Not checked"}
+
+
+def _hint_line(hint: dict[str, Any]) -> str:
+    amount = f"{hint.get('amount', 0):,.2f}"
+    if hint.get("kind") == "flipped_type" and hint.get("row_index") is not None:
+        return f"Row {hint['row_index'] + 1} ({amount}) may have the wrong direction (credit vs debit)."
+    if hint.get("kind") == "duplicate_row" and hint.get("row_index") is not None:
+        return f"Row {hint['row_index'] + 1} ({amount}) may have been read twice."
+    if hint.get("kind") == "missing_row" and hint.get("from_row") is not None and hint.get("to_row") is not None:
+        what = "credit" if hint.get("direction") == "credit" else "debit"
+        return f"A {what} of {amount} may be missing between rows {hint['from_row'] + 1} and {hint['to_row'] + 1}."
+    return ""
+
+
+def _write_reconciliation(wb, header, money, reconciliation: dict[str, Any], fields: list[str], data_rows: int) -> None:
+    """A "Reconciliation" sheet: what the statement prints vs what the rows add up to.
+
+    Money in/out are live SUMs over the Transactions sheet's Credit/Debit columns (with cached
+    values), so a correction made in Excel shows up here. The statement's own figures are values.
+    Row numbers refer to the transaction rows as listed in the app.
+    """
+    ws = wb.add_worksheet("Reconciliation")
+    bold = wb.add_format({"bold": True})
+    ws.set_column(0, 0, 22)
+    ws.set_column(1, 3, 18)
+    ws.set_column(4, 4, 16)
+    ws.write_string(0, 0, _STATUS_LABELS.get(reconciliation.get("status"), ""), bold)
+    if reconciliation.get("reason"):
+        ws.write_string(1, 0, reconciliation["reason"])
+    head = ("Check", "Statement says", "We extracted", "Difference", "Result")
+    for col, label in enumerate(head):
+        ws.write_string(3, col, label, header)
+    last = data_rows + 1  # Excel row of the last data row on the Transactions sheet
+    sums = {
+        key: f"=SUM(Transactions!{xl_col_to_name(fields.index(field))}2:{xl_col_to_name(fields.index(field))}{last})"
+        for key, field in (("credits", CREDIT), ("debits", DEBIT))
+    }
+    r = 4
+    for check in reconciliation.get("checks") or []:
+        key = check.get("key")
+        expected, actual = check.get("expected"), check.get("actual")
+        ws.write_string(r, 0, _CHECK_LABELS.get(key, str(key)))
+        if expected is not None:
+            ws.write_number(r, 1, expected, money)
+        if actual is not None:
+            if key in sums and data_rows:
+                ws.write_formula(r, 2, sums[key], money, actual)
+            else:
+                ws.write_number(r, 2, actual, money)
+        if expected is not None and actual is not None:
+            ws.write_formula(r, 3, f"=B{r + 1}-C{r + 1}", money, check.get("difference") or 0)
+        ws.write_string(r, 4, _RESULT_LABELS.get(check.get("status"), ""))
+        r += 1
+    hints = [line for line in (_hint_line(h) for h in reconciliation.get("hints") or []) if line]
+    if hints:
+        ws.write_string(r + 1, 0, "Where to look", bold)
+        for i, line in enumerate(hints):
+            ws.write_string(r + 2 + i, 0, line)
+
+
 def transactions_to_xlsx(
-    transactions: list[dict[str, Any]], include_categories: bool = True, include_totals: bool = False
+    transactions: list[dict[str, Any]],
+    include_categories: bool = True,
+    include_totals: bool = False,
+    reconciliation: dict[str, Any] | None = None,
 ) -> bytes:
     """Return .xlsx bytes laid out like a statement: Date, Description, Debit, Credit[, Balance],
     Category[, Sub-category], with a bold frozen header, numeric money cells, sized columns and an autofilter.
@@ -133,6 +209,8 @@ def transactions_to_xlsx(
     (off by default: accounting imports expect rows only).
     Without totals, statements whose balances chain get "Opening balance" / "Closing balance" rows
     around the transactions (see with_balance_rows).
+    reconciliation (schemas.Reconciliation) adds a second "Reconciliation" sheet; the first sheet
+    stays rows-only so accounting imports are unaffected.
     """
     fields = export_fields(include_categories, has_groups(transactions), has_balances(transactions))
     out, wb, ws, header, money = _new_workbook("Transactions")
@@ -156,6 +234,8 @@ def transactions_to_xlsx(
     ws.autofilter(0, 0, max(len(rows), 1), len(fields) - 1)
     if include_totals and transactions:
         _write_totals(wb, ws, transactions, fields, header)
+    if reconciliation:
+        _write_reconciliation(wb, header, money, reconciliation, fields, len(rows))
     wb.close()
     return out.getvalue()
 

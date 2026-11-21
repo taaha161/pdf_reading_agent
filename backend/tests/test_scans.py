@@ -118,3 +118,15 @@ def test_scan_result_includes_reconciliation(client):
     # The fake row has no printed balance, so there's nothing to check against.
     assert rec["status"] == "unverified"
     assert rec["total_debits"] == 4.5 and rec["total_credits"] == 0.0
+
+
+def test_scan_reconciles_against_printed_summary(client, no_live_statement_meta):
+    no_live_statement_meta.return_value = {
+        "opening_balance": "100.00", "total_credits": "0.00", "total_debits": "4.50",
+        "closing_balance": "95.50", "account_type": "checking", "account_count": 1,
+    }
+    scan_id = _start(client).json()["scan_id"]
+    rec = client.get(f"/api/scans/{scan_id}").json()["result"]["reconciliation"]
+    assert rec["status"] == "reconciled"
+    assert {c["key"] for c in rec["checks"]} == {"opening", "credits", "debits", "closing"}
+    no_live_statement_meta.assert_called_once()

@@ -326,3 +326,35 @@ def test_ledger_csv_keeps_stored_shape():
         "date,description,amount,type,category",
         "01 Jul,Salary,\"1,000.00\",credit,Income",
     ]
+
+
+RECON = {
+    "status": "mismatch", "total_credits": 1200.0, "total_debits": 4.5,
+    "opening_balance": 100.0, "closing_balance": 1300.0,
+    "checks": [
+        {"key": "opening", "status": "skipped", "expected": 100.0, "actual": None},
+        {"key": "credits", "status": "pass", "expected": 1200.0, "actual": 1200.0, "difference": 0.0},
+        {"key": "debits", "status": "fail", "expected": 4.5, "actual": 4.5, "difference": 0.0},
+    ],
+    "hints": [{"kind": "missing_row", "from_row": 0, "to_row": 1, "amount": 4.5, "direction": "debit"}],
+}
+
+
+def test_xlsx_reconciliation_sheet(client):
+    r = _export(client, format="xlsx", reconciliation=RECON)
+    wb = load_workbook(io.BytesIO(r.content))
+    assert wb.sheetnames == ["Transactions", "Reconciliation"]
+    ws = wb["Reconciliation"]
+    assert ws["A1"].value == "Doesn't add up"
+    assert [c.value for c in ws[4]] == ["Check", "Statement says", "We extracted", "Difference", "Result"]
+    assert ws["A5"].value == "Opening balance" and ws["C5"].value is None and ws["E5"].value == "Not checked"
+    # Money in is a live SUM over the Transactions sheet's Credit column.
+    assert ws["C6"].value == "=SUM(Transactions!D2:D3)"
+    assert ws["D6"].value == "=B6-C6" and ws["E6"].value == "Matches"
+    assert ws["E7"].value == "Doesn't match"
+    assert ws["A10"].value == "A debit of 4.50 may be missing between rows 1 and 2."
+
+
+def test_xlsx_without_reconciliation_has_one_sheet(client):
+    wb = load_workbook(io.BytesIO(_export(client, format="xlsx").content))
+    assert wb.sheetnames == ["Transactions"]

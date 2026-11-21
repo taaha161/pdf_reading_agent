@@ -7,6 +7,7 @@ import os
 import re
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -104,6 +105,7 @@ from services.scan_jobs import create_scan, fail_scan, finish_scan, get_scan, se
 from services.recaptcha import verify_recaptcha
 from services.statement_agent import extract_and_categorize
 from services.reconciliation import reconcile
+from services.statement_meta import extract_statement_meta, normalize_meta
 from store import (
     get_auth_user,
     get_job_owner,
@@ -436,7 +438,7 @@ def _job_reconciliation(job: dict) -> dict | None:
     """Reconciliation for a saved job, recomputed from its rows; None when its data is gone."""
     if job.get("data_status"):
         return None
-    return reconcile(job["transactions"])
+    return reconcile(job["transactions"], job.get("statement_meta"))
 
 
 @app.get("/api/jobs/{job_id}", response_model=JobDetailResponse)
@@ -829,6 +831,10 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
 
     progress("extracting")
     t2 = time.perf_counter()
+    # The summary box is read by its own small call, alongside the transactions (never fails the scan).
+    meta_pool = ThreadPoolExecutor(max_workers=1)
+    meta_future = meta_pool.submit(extract_statement_meta, raw_text)
+    meta_pool.shutdown(wait=False)
     try:
         transactions, currency = extract_and_categorize(
             raw_text, on_chunk=lambda i, n: progress("extracting", chunk=i, chunks=n)
@@ -836,6 +842,8 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
     except Exception as e:
         logger.exception("AI extraction failed: %s", e)
         raise HTTPException(500, GENERIC_500_MESSAGE)
+    raw_meta = meta_future.result()
+    statement_meta = normalize_meta(raw_meta, currency) if raw_meta else None
     logger.info("scan: [2/3] AI extraction + categorization done, transactions=%d, currency=%s (%.2f s this step, total %.2f s)", len(transactions), currency or "none", time.perf_counter() - t2, time.perf_counter() - t0)
 
     progress("finalizing")
@@ -843,7 +851,7 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
     csv_content = transactions_to_csv(transactions, ledger=True)
     job_id = create_job_id()
     summary = _summary_by_category(transactions)
-    reconciliation = reconcile(transactions)
+    reconciliation = reconcile(transactions, statement_meta)
     is_trial = user_id is None
 
     # Owner notification (best-effort, non-blocking): a PDF was scanned.
@@ -903,7 +911,10 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
         insert_usage_log(user_id, job_id, req.cost_pages, left, req.conversion_mode)
     except Exception as e:
         logger.warning("insert_usage_log failed (continuing): %s", e)
-    set_job(job_id, user_id, transactions, csv_content, raw_text, currency, incognito=req.incognito, conversion_mode=req.conversion_mode)
+    set_job(
+        job_id, user_id, transactions, csv_content, raw_text, currency,
+        incognito=req.incognito, conversion_mode=req.conversion_mode, statement_meta=statement_meta,
+    )
     logger.info("scan: [3/3] finished successfully, job_id=%s, pages=%d, left=%d (total %.2f s)", job_id, req.cost_pages, left, time.perf_counter() - t0)
     return ProcessPdfResponse(
         job_id=job_id,
@@ -1058,7 +1069,12 @@ def _rows_from_trial_csv(csv_content: str) -> list[dict] | None:
 
 
 def _build_export(
-    rows: list[dict], fmt: str, include_categories: bool, kind: str = "transactions", include_totals: bool = False
+    rows: list[dict],
+    fmt: str,
+    include_categories: bool,
+    kind: str = "transactions",
+    include_totals: bool = False,
+    reconciliation: dict | None = None,
 ) -> tuple[bytes, str, str]:
     """Return (file bytes, filename, media type) for a CSV or Excel export."""
     if kind == "summary":
@@ -1068,7 +1084,8 @@ def _build_export(
         return summary_to_csv(summary).encode("utf-8"), "statement-summary.csv", "text/csv; charset=utf-8"
     suffix = "" if include_categories else "-uncategorized"
     if fmt == "xlsx":
-        return transactions_to_xlsx(rows, include_categories, include_totals), f"statement{suffix}.xlsx", XLSX_MIME
+        content = transactions_to_xlsx(rows, include_categories, include_totals, reconciliation)
+        return content, f"statement{suffix}.xlsx", XLSX_MIME
     content = transactions_to_csv(rows, include_categories, include_totals).encode("utf-8")
     return content, f"statement{suffix}.csv", "text/csv; charset=utf-8"
 
@@ -1083,7 +1100,12 @@ def export_transactions(request: Request, body: ExportRequest):
     """
     rows = [t.model_dump() for t in body.transactions]
     content, filename, media_type = _build_export(
-        rows, body.format, body.include_categories, body.kind, body.include_totals
+        rows,
+        body.format,
+        body.include_categories,
+        body.kind,
+        body.include_totals,
+        body.reconciliation.model_dump() if body.reconciliation else None,
     )
     return Response(
         content=content,
@@ -1120,7 +1142,12 @@ def email_spreadsheet(request: Request, body: EmailSpreadsheetRequest):
     if rows is None:
         raise HTTPException(400, "Invalid spreadsheet data.")
 
-    content, filename, _ = _build_export(_sanitize_rows(rows), body.format, body.include_categories)
+    content, filename, _ = _build_export(
+        _sanitize_rows(rows),
+        body.format,
+        body.include_categories,
+        reconciliation=body.reconciliation.model_dump() if body.reconciliation else None,
+    )
     if not send_spreadsheet_email(email, content, filename):
         raise HTTPException(502, "Couldn't send the email right now. Please download the file instead.")
 

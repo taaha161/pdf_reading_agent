@@ -137,3 +137,77 @@ def test_unverified_with_one_balance():
 
 def test_no_rows():
     assert reconcile([])["status"] == UNVERIFIED
+
+
+# --- Printed summary box -------------------------------------------------------------------
+
+def _meta(opening=1000.0, credits=600.0, debits=280.0, closing=1320.0, account_type="checking", **extra):
+    return {"opening_balance": opening, "total_credits": credits, "total_debits": debits,
+            "closing_balance": closing, "account_type": account_type, "account_count": 1, **extra}
+
+
+def _checks(result):
+    return {c["key"]: c["status"] for c in result["checks"]}
+
+
+def test_summary_matches_rows():
+    result = reconcile(_scan(GOOD), _meta())
+    assert result["status"] == RECONCILED
+    assert _checks(result) == {"balance_chain": "pass", "opening": "pass", "credits": "pass", "debits": "pass", "closing": "pass"}
+
+
+def test_summary_works_without_running_balances():
+    rows = _scan([(t, a, "") for t, a, _ in GOOD])
+    result = reconcile(rows, _meta())
+    assert result["status"] == RECONCILED
+    assert _checks(result) == {"opening": "skipped", "credits": "pass", "debits": "pass", "closing": "pass"}
+    assert result["opening_balance"] == 1000.0 and result["closing_balance"] == 1320.0
+
+
+def test_summary_catches_a_missed_row_without_running_balances():
+    rows = _scan([(t, a, "") for t, a, _ in GOOD[:-1]])  # the 30.00 debit was missed
+    result = reconcile(rows, _meta())
+    assert result["status"] == MISMATCH
+    debits = next(c for c in result["checks"] if c["key"] == "debits")
+    assert debits == {"key": "debits", "status": "fail", "expected": 280.0, "actual": 250.0, "difference": 30.0}
+    closing = next(c for c in result["checks"] if c["key"] == "closing")
+    assert closing["status"] == "fail" and closing["difference"] == -30.0
+
+
+def test_misread_summary_is_skipped_not_blamed_on_rows():
+    # 1000 + 600 - 280 != 9999: the summary itself doesn't add up, so it was misread.
+    result = reconcile(_scan(GOOD), _meta(closing=9999.0))
+    assert result["status"] == RECONCILED  # the running balances still check out
+    assert all(c["status"] == "skipped" for c in result["checks"] if c["key"] != "balance_chain")
+
+
+def test_credit_card_summary():
+    rows = _scan([("debit", "40.00", ""), ("debit", "10.00", ""), ("credit", "100.00", "")])
+    meta = _meta(opening=100.0, credits=100.0, debits=50.0, closing=50.0, account_type="credit_card")
+    assert reconcile(rows, meta)["status"] == RECONCILED
+
+
+def test_card_sign_from_summary_math_when_type_unknown():
+    rows = _scan([("debit", "40.00", ""), ("debit", "10.00", ""), ("credit", "100.00", "")])
+    meta = _meta(opening=100.0, credits=100.0, debits=50.0, closing=50.0, account_type="other")
+    assert reconcile(rows, meta)["status"] == RECONCILED
+
+
+def test_account_type_settles_sign_for_two_balances():
+    # With two printed balances, a flipped debit also fits the credit-card reading; knowing it's a
+    # checking account rules that out.
+    rows = _scan([("credit", "500.00", "1500.00"), ("debit", "100.00", "1600.00")])
+    assert reconcile(rows)["status"] == RECONCILED  # ambiguous on its own
+    result = reconcile(rows, {"account_type": "checking", "account_count": 1})
+    assert result["status"] == MISMATCH
+    assert result["hints"] == [{"kind": "flipped_type", "row_index": 1, "amount": 100.0}]
+
+
+def test_multi_account_statement_is_unverified():
+    result = reconcile(_scan(GOOD), _meta(account_count=2))
+    assert result["status"] == UNVERIFIED and "more than one account" in result["reason"]
+
+
+def test_meta_with_no_amounts_falls_back_to_chain():
+    meta = _meta(opening=None, credits=None, debits=None, closing=None)
+    assert _checks(reconcile(_scan(GOOD), meta)) == {"balance_chain": "pass"}

@@ -62,6 +62,20 @@ def _cursor():
         conn.close()
 
 
+def _json_value(value: Any) -> Any:
+    """A JSONB column's value (psycopg2 returns it parsed; tolerate text)."""
+    return json.loads(value) if isinstance(value, str) else value
+
+
+def set_statement_meta(job_id: str, statement_meta: dict) -> None:
+    """Save the printed summary for an existing payload (backfill). No-op when purged."""
+    with _cursor() as cur:
+        cur.execute(
+            "UPDATE job_payloads SET statement_meta = %s WHERE job_id = %s",
+            (json.dumps(statement_meta), job_id),
+        )
+
+
 def create_job_id() -> str:
     return str(uuid.uuid4())
 
@@ -75,8 +89,10 @@ def set_job(
     currency: str | None = None,
     incognito: bool = False,
     conversion_mode: str | None = None,
+    statement_meta: dict | None = None,
 ) -> None:
-    """Insert job for user; if not incognito, also insert payload (transactions, raw_text, currency)."""
+    """Insert job for user; if not incognito, also insert payload (transactions, raw_text, currency,
+    statement_meta: the printed summary box, see services.statement_meta)."""
     with _cursor() as cur:
         cur.execute(
             """
@@ -88,10 +104,16 @@ def set_job(
         if not incognito:
             cur.execute(
                 """
-                INSERT INTO job_payloads (job_id, transactions, raw_text, currency)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO job_payloads (job_id, transactions, raw_text, currency, statement_meta)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
-                (job_id, json.dumps(transactions), encrypt_text(raw_text), currency),
+                (
+                    job_id,
+                    json.dumps(transactions),
+                    encrypt_text(raw_text),
+                    currency,
+                    json.dumps(statement_meta) if statement_meta else None,
+                ),
             )
 
 
@@ -158,7 +180,7 @@ def get_job(job_id: str, user_id: str) -> dict | None:
         return None
     with _cursor() as cur:
         cur.execute(
-            "SELECT transactions, raw_text, currency FROM job_payloads WHERE job_id = %s",
+            "SELECT transactions, raw_text, currency, statement_meta FROM job_payloads WHERE job_id = %s",
             (job_id,),
         )
         payload_row = cur.fetchone()
@@ -171,6 +193,7 @@ def get_job(job_id: str, user_id: str) -> dict | None:
             "csv_content": csv_content,
             "raw_text": decrypt_text(payload_row["raw_text"]) or "",
             "currency": payload_row["currency"],
+            "statement_meta": _json_value(payload_row.get("statement_meta")),
             "conversion_mode": job_row.get("conversion_mode"),
         }
     # No payload: incognito or purged

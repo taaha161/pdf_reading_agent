@@ -262,3 +262,17 @@ def test_single_filter_value_adds_no_group_column(monkeypatch):
     _fake_client(monkeypatch, lambda t: t["attach_transactions"](category_contains="wajid ali"))
     _, rows = cs.get_reply({"transactions": GROUP_TX}, "transactions from wajid ali")
     assert all("group" not in r for r in rows)
+
+
+def test_reconciliation_summary_uses_table_row_numbers():
+    from services.balances import fill_running_balances
+
+    rows = fill_running_balances([
+        {"date": "1", "description": "a", "amount": "500.00", "type": "credit", "category": "Income", "balance": "1500.00"},
+        {"date": "2", "description": "b", "amount": "200.00", "type": "debit", "category": "Other", "balance": "1300.00"},
+        {"date": "3", "description": "c", "amount": "100.00", "type": "debit", "category": "Other", "balance": "1400.00"},
+        {"date": "4", "description": "d", "amount": "50.00", "type": "debit", "category": "Other", "balance": "1350.00"},
+    ])
+    summary = cs.reconciliation_summary(rows, None)
+    assert summary["status"] == "mismatch"
+    assert summary["likely_causes"] == [{"kind": "flipped_type", "row": 3, "amount": 100.0}]

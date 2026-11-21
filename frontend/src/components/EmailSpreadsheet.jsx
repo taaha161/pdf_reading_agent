@@ -74,7 +74,7 @@ function Segmented({ label, name, value, options, onChange, disabled }) {
 }
 
 /** Anonymous trial: "Email me the spreadsheet" popup shown after a scan. */
-export default function EmailSpreadsheet({ jobId, transactions, onClose }) {
+export default function EmailSpreadsheet({ jobId, transactions, reconciliation = null, onClose }) {
   const [email, setEmail] = useState("");
   const [format, setFormat] = useState("xlsx");
   const [includeCategories, setIncludeCategories] = useState(true);
@@ -123,7 +123,7 @@ export default function EmailSpreadsheet({ jobId, transactions, onClose }) {
     setError(null);
     setSending(true);
     try {
-      await emailSpreadsheet(jobId, address, transactions, { format, includeCategories, marketingOptIn: optIn });
+      await emailSpreadsheet(jobId, address, transactions, { format, includeCategories, marketingOptIn: optIn, reconciliation });
       setSentTo(address);
       trackLinkedInConversion(LINKEDIN_SPREADSHEET_EMAILED_CONVERSION_ID, jobId);
       trackEvent("spreadsheet_emailed", { format });

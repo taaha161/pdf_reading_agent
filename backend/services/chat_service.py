@@ -15,6 +15,7 @@ from google import genai
 from google.genai.types import AutomaticFunctionCallingConfig, GenerateContentConfig, HttpOptions
 
 from services.csv_export import transactions_to_csv
+from services.reconciliation import reconcile
 from services.summary import _parse_amount, _summary_by_category
 
 CHAT_MODEL = "gemini-2.5-flash"
@@ -77,6 +78,9 @@ Ground rules:
   OFFICIAL TOTALS part of <statement_data> or from a query_transactions result. For anything not in OFFICIAL TOTALS
   (a person, a month, a keyword, credits only, a date range...), call query_transactions and use its
   "count", "credit_total", "debit_total" and "net".
+- Whether the statement balances / reconciles / adds up, its opening and closing balance, and what may be
+  wrong with it come ONLY from "reconciliation" in OFFICIAL TOTALS. Row numbers there match the # column.
+  "unverified" means it couldn't be checked: say why (its "reason"), never that it balances.
 - Amounts are always positive; "type" says the direction: credit = money added to the account,
   debit = money deducted. Say "received"/"sent" (or credit/debit) explicitly.
 - Direction words: "from X", "sent by X", "paid by X", "received from X" = credits (money X gave the user);
@@ -182,6 +186,29 @@ def official_totals(transactions: list[dict]) -> dict[str, Any]:
             {"category": c, "summary_total": _money(total), "transactions": counts.get(c, 0)}
             for c, total in _summary_by_category(transactions)
         ],
+    }
+
+
+def reconciliation_summary(transactions: list[dict], statement_meta: dict | None) -> dict[str, Any]:
+    """The reconciliation panel's result for the model, with row numbers matching the # column."""
+    rec = reconcile(transactions, statement_meta)
+    hints = []
+    for h in rec["hints"]:
+        hint = {k: v for k, v in h.items() if v is not None}
+        for key in ("row_index", "from_row", "to_row"):
+            if key in hint:
+                hint[key.replace("_index", "")] = hint.pop(key) + 1
+        hints.append(hint)
+    return {
+        "status": rec["status"],
+        "reason": rec["reason"],
+        "opening_balance": rec["opening_balance"],
+        "closing_balance": rec["closing_balance"],
+        "checks": [
+            {k: c[k] for k in ("key", "status", "expected", "actual", "difference") if c.get(k) is not None}
+            for c in rec["checks"]
+        ],
+        "likely_causes": hints,
     }
 
 
@@ -468,7 +495,9 @@ def get_reply(
         truncated_note = "\n(The listing above is cut short; use query_transactions for rows not shown.)"
 
     currency = _fence(job_data.get("currency") or "unknown")[:20]
-    totals = _fence(official_totals(transactions))
+    totals = official_totals(transactions)
+    totals["reconciliation"] = reconciliation_summary(transactions, job_data.get("statement_meta"))
+    totals = _fence(totals)
     history_text = _fence(_history_text(history))
     # Everything from the PDF or the browser is fenced so it can't fake a section boundary.
     user_content = (

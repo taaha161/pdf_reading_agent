@@ -53,3 +53,15 @@ def no_live_analytics(monkeypatch):
     """
     monkeypatch.delenv("GA4_API_SECRET", raising=False)
     monkeypatch.delenv("LINKEDIN_CAPI_TOKEN", raising=False)
+
+
+@pytest.fixture(autouse=True)
+def no_live_statement_meta():
+    """Scans read the summary box with a real Gemini call; tests must never make it.
+
+    Request this fixture by name to set a return value or assert on the mock.
+    """
+    from unittest.mock import patch
+
+    with patch("main.extract_statement_meta", return_value=None) as mock:
+        yield mock
