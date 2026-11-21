@@ -341,8 +341,73 @@ def _handle_subscription_deleted(event) -> tuple[bool, str]:
     return True, "OK"
 
 
+# Promotion codes (or their coupons) with metadata bonus_pages=<n> add n free
+# pack pages to the checkout that uses them, e.g. REDDIT200. Set up in Stripe;
+# no deploy needed for new codes. Capped as a guard against a metadata typo.
+_MAX_BONUS_PAGES = 1000
+
+
+def _metadata_bonus(obj) -> int:
+    try:
+        return max(0, int(((obj or {}).get("metadata") or {}).get("bonus_pages") or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _promo_bonus_pages(session) -> int:
+    """Bonus pages from promotion codes applied to a Checkout Session. Raises on Stripe errors (webhook retries).
+
+    Stripe can't limit a code to once per customer, so the first session to use
+    a bonus code is recorded on the customer (metadata bonus_<promo id> =
+    session id); later sessions by that customer get the discount but no bonus.
+    A webhook retry of the recorded session still gets it.
+    """
+    bonus = 0
+    for d in session.get("discounts") or []:
+        promo, coupon = d.get("promotion_code"), d.get("coupon")
+        if isinstance(promo, str):
+            stripe.api_key = _STRIPE_KEY
+            promo = stripe.PromotionCode.retrieve(promo)
+        if isinstance(coupon, str):
+            coupon = None  # the promo code carries its coupon
+        coupon = coupon or (promo or {}).get("coupon")
+        pages = _metadata_bonus(promo) or _metadata_bonus(coupon)
+        if pages and _claim_bonus(session, (promo or {}).get("id") or (coupon or {}).get("id")):
+            bonus += pages
+    return min(bonus, _MAX_BONUS_PAGES)
+
+
+def _claim_bonus(session, promo_id: str | None) -> bool:
+    """True if this session may take `promo_id`'s bonus for its customer (first use, or a retry of it)."""
+    customer_id = session.get("customer")
+    if not customer_id or not promo_id:
+        return False
+    stripe.api_key = _STRIPE_KEY
+    key = f"bonus_{promo_id}"[:40]
+    customer = stripe.Customer.retrieve(customer_id)
+    claimed = (customer.get("metadata") or {}).get(key)
+    if claimed:
+        return claimed == session.get("id")
+    stripe.Customer.modify(customer_id, metadata={key: session.get("id")})
+    return True
+
+
+def _grant_promo_bonus(user_id: str, session) -> tuple[bool, int]:
+    """Add any promo-code bonus pages. Returns (ok, pages); ok=False means retry the webhook."""
+    try:
+        bonus = _promo_bonus_pages(session)
+        if bonus:
+            add_pack_pages(user_id, bonus)
+            logger.info("Promo bonus: user=%s pages=%d session=%s", user_id, bonus, session.get("id"))
+        return True, bonus
+    except Exception as e:  # noqa: BLE001
+        logger.exception("Promo bonus failed on checkout.session.completed: %s", e)
+        return False, 0
+
+
 def _handle_checkout_completed(event) -> tuple[bool, str]:
-    """Top-up payments (mode=payment) credit the balance; subscription checkouts report `subscribe` to GA4."""
+    """Top-up payments (mode=payment) credit the balance; subscription checkouts report `subscribe` to GA4.
+    Either kind also credits promo-code bonus pages (see _promo_bonus_pages)."""
     session = event["data"]["object"]
     metadata = session.get("metadata") or {}
 
@@ -354,6 +419,9 @@ def _handle_checkout_completed(event) -> tuple[bool, str]:
             if not user_id:
                 return False, "Paid signup account not ready; retry"
         if user_id:
+            ok, _ = _grant_promo_bonus(user_id, session)
+            if not ok:
+                return False, "Promo bonus failed; retry"
             _track_ga4(
                 user_id,
                 "subscribe",
@@ -387,9 +455,14 @@ def _handle_checkout_completed(event) -> tuple[bool, str]:
     pages = _pack_pages_from_metadata(metadata, amount)
     if pages <= 0:
         return True, "No pages to apply for top-up"
+    try:
+        bonus = _promo_bonus_pages(session)
+    except Exception as e:  # noqa: BLE001
+        logger.exception("Promo bonus lookup failed on checkout.session.completed: %s", e)
+        return False, str(e)  # before crediting anything, so the retry is clean
 
     try:
-        add_pack_pages(user_id, pages)
+        add_pack_pages(user_id, pages + bonus)  # one write: a retry can't double-credit just the bonus
     except Exception as e:
         logger.exception("add_pack_pages failed on checkout.session.completed: %s", e)
         return False, str(e)
@@ -407,7 +480,7 @@ def _handle_checkout_completed(event) -> tuple[bool, str]:
         },
         metadata,
     )
-    return True, f"Top-up applied: {pages} pages"
+    return True, f"Top-up applied: {pages} pages" + (f" + {bonus} promo bonus" if bonus else "")
 
 
 def _pack_pages_from_metadata(metadata: dict, amount_cents: int) -> int:
