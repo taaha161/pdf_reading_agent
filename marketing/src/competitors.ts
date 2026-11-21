@@ -44,7 +44,7 @@ const US = {
   free: '100 pages free your first month, plus 10 without an account; no card',
   exports: 'CSV, Excel (XLSX)',
   scanned: 'Yes, with an accurate mode for poor scans',
-  balance: 'Not automatic yet. Compare totals with the statement yourself',
+  balance: 'Automatic on every statement: rows checked against its printed balances and summary, with the rows to look at when they don’t add up',
   data: 'Incognito mode stores no transaction data; payments through Stripe',
   setup: 'None. Upload a statement and review the rows',
 };
@@ -118,14 +118,14 @@ export const competitors: Competitor[] = [
     h1: 'Bank Statement Scanner vs Bankstatemently',
     intro: [
       'Bankstatemently sells plans by the page, with a free tier of 10 pages a month, QBO and Xero exports, and a balance-to-balance check across statements. It’s a strong tool, especially for bookkeepers who import into accounting software.',
-      'Bank Statement Scanner also charges by the page, with a simpler setup: $10 a month for 100 pages, page packs that never expire, and every row categorized. Here’s the comparison.',
+      'Bank Statement Scanner also charges by the page, with a simpler setup: $10 a month for 100 pages, page packs that never expire, and every row categorized. Both check statements: we check each one against its printed balances and summary, and link your saved months so a missing one shows as a gap. Here’s the comparison.',
     ],
     themName: 'Bankstatemently',
     rows: [
       { label: 'How you pay', us: US.perStatement, them: 'By page: Beginner 400 pages/month, Pro 1,000 pages/month, or a one-time 50-page pack valid 30 days' },
       { label: 'Free use', us: US.free, them: '10 pages a month (max 5 a day), no card' },
       { label: 'Export formats', us: US.exports, them: 'CSV, Excel, QBO, Xero, JSON via API' },
-      { label: 'Balance check', us: US.balance, them: 'Chains statements balance to balance, so a missing month shows as a gap' },
+      { label: 'Balance check', us: `${US.balance}; saved months linked so a missing one shows as a gap`, them: 'Chains statements balance to balance, so a missing month shows as a gap' },
       { label: 'Integrations', us: 'None', them: 'API, MCP server, and use inside ChatGPT or Claude' },
       { label: 'Data', us: US.data, them: 'Encrypted in transit and at rest; GDPR compliant; data not sold' },
     ],
@@ -141,7 +141,7 @@ export const competitors: Competitor[] = [
     ],
     fit: {
       us: ['You want a low monthly price', 'You only need CSV or Excel', 'You want extra pages that never expire', 'You want an incognito mode that saves nothing'],
-      them: ['You need QBO or Xero import files', 'You want an automatic balance check across months', 'You want an API or MCP integration', 'You convert hundreds of pages every month'],
+      them: ['You need QBO or Xero import files', 'You want a free tier that renews every month', 'You want an API or MCP integration', 'You convert hundreds of pages every month'],
     },
     faqs: [
       { q: 'Is Bankstatemently free?', a: 'It has a free tier of 10 pages a month, up to 5 a day. Bank Statement Scanner gives you 100 pages free in your first month, plus 10 without an account.' },
@@ -165,7 +165,7 @@ export const competitors: Competitor[] = [
     h1: 'Bank Statement Scanner vs MoneyThumb',
     intro: [
       'MoneyThumb has been converting statements for years. It offers desktop converters (2qfx Convert) and online platform plans with reconciliation against the statement summary, SOC 2 Type II, and QuickBooks formats like QBO and QFX.',
-      'That depth comes at a price: platform plans start at $599.95 a year and trials go through MoneyThumb’s team. Bank Statement Scanner runs in your browser and starts at $10 a month for 100 pages after a free first month.',
+      'That depth comes at a price: platform plans start at $599.95 a year and trials go through MoneyThumb’s team. Bank Statement Scanner runs in your browser, checks every statement against its printed summary too, and starts at $10 a month for 100 pages after a free first month.',
     ],
     themName: 'MoneyThumb',
     rows: [
@@ -182,7 +182,6 @@ export const competitors: Competitor[] = [
       {
         heading: 'Where MoneyThumb is stronger',
         bullets: [
-          'Automatic reconciliation against the statement’s printed summary.',
           'Direct QuickBooks, Quicken, and OFX formats.',
           'SOC 2 Type II, which some firms require from vendors.',
           'Repeat conversions of the same document are free, and statements with fewer than 5 transactions aren’t charged.',
@@ -190,8 +189,8 @@ export const competitors: Competitor[] = [
       },
     ],
     fit: {
-      us: ['You want to start today without a sales call', 'You convert a few statements a month', 'CSV or Excel is enough', 'You don’t want to install software'],
-      them: ['You need QBO, QFX, or QIF files', 'You need SOC 2 Type II from vendors', 'You want automatic reconciliation', 'You process statements at volume and want an API'],
+      us: ['You want to start today without a sales call', 'You convert a few statements a month', 'You want each statement checked against its summary, in the browser', 'You don’t want to install software'],
+      them: ['You need QBO, QFX, or QIF files', 'You need SOC 2 Type II from vendors', 'You want desktop software that runs offline', 'You process statements at volume and want an API'],
     },
     faqs: [
       { q: 'How much does MoneyThumb cost?', a: 'Its platform plans start at $599.95 a year. Desktop license prices aren’t listed on the same page.' },

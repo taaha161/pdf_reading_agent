@@ -23,11 +23,12 @@ Success: a statement goes from PDF to a checked, usable spreadsheet in minutes, 
 
 ## Positioning
 
-Three claims, all true today:
+Four claims, all true today:
 
-1. **Ask your statement.** A chat over the extracted transactions that finds, totals and exports any subset ("every payment to John in March", "all ATM withdrawals"), downloaded as Excel or CSV.
-2. **Fair billing.** Pay per page. No annual contract. Cancel anytime. This is the opposite of the lock-in and post-cancel charges that dominate complaints about the category leader (DocuClipper).
-3. **Low-friction free tier.** 10 pages free without an account, 100 pages free in the first month after signup with no card, then $10/month for 100 pages, or one-off page packs.
+1. **Checked against the statement.** Every converted statement is checked against its own printed running balances and summary box (opening balance, total in, total out, closing balance). When the rows don't add up, the user sees how far off they are and which rows to look at (a line that may be missing, read twice, or on the wrong side). Saved statements for the same account are linked month to month, so a missing month or a balance that doesn't carry over stands out. This matches what MoneyThumb, DocuClipper and Bankstatemently offer, at our price.
+2. **Ask your statement.** A chat over the extracted transactions that finds, totals and exports any subset ("every payment to John in March", "all ATM withdrawals"), downloaded as Excel or CSV.
+3. **Fair billing.** Pay per page. No annual contract. Cancel anytime. This is the opposite of the lock-in and post-cancel charges that dominate complaints about the category leader (DocuClipper).
+4. **Low-friction free tier.** 10 pages free without an account, 100 pages free in the first month after signup with no card, then $10/month for 100 pages, or one-off page packs.
 
 ## Operating Context
 
@@ -44,6 +45,8 @@ Three claims, all true today:
 - AI categorization of every row. Rows can be edited in the app.
 - CSV and XLSX export.
 - "Ask your statement" chat, with export of any subset it returns.
+- Reconciliation on every statement: running balances and the printed summary box checked against the rows, with likely-cause hints and a Reconciliation sheet in Excel downloads. Statements that print no balances or totals are shown as "can't check", never as passed.
+- Account timeline on the dashboard: saved statements grouped by account (last 4 digits) and linked month to month, flagging missing months and balances that don't carry over. Incognito and guest scans aren't saved, so they aren't in it.
 - Import from Google Drive or a URL.
 - Guests can email themselves the spreadsheet.
 - Dashboard of past jobs. Saved data can be deleted per job.
@@ -55,7 +58,7 @@ Three claims, all true today:
 - PDF only. Image files are not accepted.
 
 **Not built (never claim):**
-- Automatic balance tie-out (opening + credits − debits = closing).
+- Matching bank rows against QuickBooks or Xero ledger entries. Reconciliation here means the statement checks above, not book-to-bank reconciliation.
 - QBO, OFX or direct accounting-software sync. Export is CSV/XLSX only.
 - Batch or multi-file upload.
 

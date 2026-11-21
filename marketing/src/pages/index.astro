@@ -44,6 +44,10 @@ const faqs = [
     a: PRICING_SUMMARY,
   },
   {
+    q: 'How do I know no transactions were missed?',
+    a: 'Every statement is checked against its own numbers: the running balances it prints and its summary box (opening balance, total in, total out, closing balance). You see "Reconciles with the statement" when the rows add up. If they don’t, we show how far off it is and which rows to look at, such as a line that may be missing or recorded as a credit instead of a debit. Statements that print no balances or totals are marked as not checkable rather than passed.',
+  },
+  {
     q: 'Can I ask the AI for specific transactions?',
     a: 'Yes. After a statement is converted, open the chat and ask in plain English, for example "Give me all transactions from John" or "Show every ATM withdrawal in March". You get the matching rows with exact totals, plus a one-click download of just those transactions as Excel or CSV.',
   },
@@ -106,11 +110,12 @@ const CLOSING_HEADLINE = 'Never type a bank statement into Excel again.';
 const steps = [
   { title: 'Drop in the PDF', body: 'Any bank or credit card statement: digital, scanned, or password-protected.' },
   { title: 'AI does the typing', body: 'Every date, payee and amount is extracted and sorted into a category.' },
-  { title: 'Review and export', body: 'Look over the rows, then download Excel or CSV for QuickBooks, Xero or your workbook.' },
+  { title: 'Check and export', body: 'We check the rows against the statement’s own balances and flag anything that doesn’t add up. Then download Excel or CSV.' },
 ];
 
 const features = [
-  { title: 'Ask your statement', body: 'Ask for “all transactions from John” or “every ATM withdrawal” and download just those rows as Excel or CSV.', isNew: true },
+  { title: 'Checked against your statement', body: 'Every statement is checked against its printed balances and summary box. If a row is missing, doubled or on the wrong side, we point you to it. Saved statements are linked month to month, so a missing month stands out.', isNew: true },
+  { title: 'Ask your statement', body: 'Ask for “all transactions from John” or “every ATM withdrawal” and download just those rows as Excel or CSV.' },
   { title: 'AI-powered extraction', body: 'Instantly pull line-item data from any computer-generated or scanned PDF with high accuracy.' },
   { title: 'Smart categorization', body: 'Automatically group transactions by merchant, type, and description using custom rules and AI categorization.' },
   { title: 'Secure & private', body: 'Encrypted over HTTPS. Use incognito mode to process statements without saving them.', link: { href: '/security', label: 'Read about security' } },
@@ -183,8 +188,8 @@ const features = [
     <div class="container">
       <div class="sheet summary-sheet">
         <header class="summary-head">
-          <h2 id="summary-h">Convert it, ask it, export it</h2>
-          <p>One upload gets you the rows, the categories and the answers, in a file you can open in Excel.</p>
+          <h2 id="summary-h">Convert it, check it, ask it</h2>
+          <p>One upload gets you the rows, a check against the statement, the categories and the answers, in a file you can open in Excel.</p>
         </header>
         <dl class="summary-list">
           {features.map((f) => (

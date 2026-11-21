@@ -39,7 +39,7 @@ import ComparePage from '../../components/ComparePage.astro';
       heading: 'If you use ChatGPT, use it carefully',
       paras: [
         'Ask for a strict format, for example: "Extract every transaction from this statement as a table with columns Date, Description, Amount, Type (credit or debit). Include every row on every page. Do not include opening balance, closing balance, or totals. Do not guess or fill in missing values; mark unclear rows instead."',
-        'Then check the result. Opening balance + credits − debits should equal the closing balance printed on the statement. If it doesn’t, compare the row count with the statement. That check takes a minute, and you should run it on any converter’s output, ours included.',
+        'Then check the result. Opening balance + credits − debits should equal the closing balance printed on the statement. If it doesn’t, compare the row count with the statement. Bank Statement Scanner runs this check on every statement for you and points to the rows that don’t add up; with ChatGPT you have to do it yourself.',
         'Bank statements are sensitive. On personal ChatGPT plans, turn off "Improve the model for everyone" under Settings → Data Controls if you don’t want your chats used for training.',
       ],
     },
