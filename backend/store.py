@@ -119,11 +119,14 @@ def set_job(
 
 def list_jobs(user_id: str, limit: int = 100) -> tuple[list[dict], dict[str, Any] | None]:
     """Return (jobs list, dashboard stats or None). Jobs: id, created_at, transaction_count, currency, etc. Newest first.
-    Stats: total_income, total_expenses, surplus, summary_by_category, primary_currency. Computed from same query (no extra DB round-trip)."""
+    Each job also carries its saved "transactions" and "statement_meta" (for reconciliation and account
+    continuity; not part of the list response). Stats: total_income, total_expenses, surplus,
+    summary_by_category, primary_currency. Computed from same query (no extra DB round-trip)."""
     with _cursor() as cur:
         cur.execute(
             """
-            SELECT j.id, j.created_at, j.conversion_mode, p.transactions, p.currency, (p.job_id IS NOT NULL) AS has_payload
+            SELECT j.id, j.created_at, j.conversion_mode, p.transactions, p.currency, p.statement_meta,
+                   (p.job_id IS NOT NULL) AS has_payload
             FROM jobs j
             LEFT JOIN job_payloads p ON j.id = p.job_id
             WHERE j.user_id = %s
@@ -156,6 +159,8 @@ def list_jobs(user_id: str, limit: int = 100) -> tuple[list[dict], dict[str, Any
             "currency": row["currency"],
             "has_payload": bool(row.get("has_payload")),
             "conversion_mode": row.get("conversion_mode"),
+            "transactions": transactions,
+            "statement_meta": _json_value(row.get("statement_meta")),
         })
     summary_list = sorted(category_totals.items(), key=lambda x: -x[1])
     stats = {

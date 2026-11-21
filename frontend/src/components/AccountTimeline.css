@@ -1,0 +1,140 @@
+.acct {
+  grid-column: 1 / -1;
+}
+
+.acct-list {
+  margin-top: 1rem;
+  border-top: 2px solid var(--ink);
+}
+
+.acct-row {
+  display: grid;
+  grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+  gap: 0.5rem 1.5rem;
+  align-items: center;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.acct-name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.acct-summary {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.acct-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 0.5rem;
+}
+
+.acct-chips > li {
+  flex: none;
+}
+
+.acct-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-md);
+}
+
+.acct-chip:hover {
+  background: var(--hi-soft);
+}
+
+.acct-chip:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.acct-chip-mark {
+  font-weight: 800;
+}
+
+.acct-chip--reconciled .acct-chip-mark {
+  color: var(--color-success);
+}
+
+.acct-chip--mismatch {
+  border-color: var(--color-error-border);
+  background: var(--color-error-bg);
+}
+
+.acct-chip--mismatch .acct-chip-mark {
+  color: var(--color-error);
+}
+
+.acct-chip--unverified .acct-chip-mark {
+  color: var(--graphite);
+}
+
+.acct-link {
+  display: flex;
+  align-items: center;
+  padding: 0 0.35rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+.acct-link-line {
+  display: block;
+  width: 1.5rem;
+  height: 2px;
+  background: var(--color-success);
+}
+
+.acct-link--bad {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.acct-link--bad::before,
+.acct-link--bad::after,
+.acct-link--gap::before,
+.acct-link--gap::after {
+  content: "";
+  display: block;
+  width: 0.6rem;
+  height: 2px;
+  background: currentColor;
+}
+
+.acct-link-note {
+  padding: 0 0.3rem;
+}
+
+.acct-missing {
+  padding: 0.3rem 0.6rem;
+  border: 1.5px dashed var(--graphite);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 640px) {
+  .acct-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

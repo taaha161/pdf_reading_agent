@@ -104,7 +104,7 @@ from services.datalab_client import start_file_sweeper
 from services.scan_jobs import create_scan, fail_scan, finish_scan, get_scan, set_stage as set_scan_stage
 from services.recaptcha import verify_recaptcha
 from services.statement_agent import extract_and_categorize
-from services.reconciliation import reconcile
+from services.reconciliation import account_continuity, reconcile
 from services.statement_meta import extract_statement_meta, normalize_meta
 from store import (
     get_auth_user,
@@ -428,10 +428,26 @@ async def delete_account(user_id: str = Depends(get_current_user)):
 
 @app.get("/api/jobs", response_model=JobListResponse)
 def list_user_jobs(user_id: str = Depends(get_current_user)):
-    """List current user's jobs (newest first) and dashboard stats (income, expenses, surplus, category breakdown)."""
+    """List current user's jobs (newest first), dashboard stats (income, expenses, surplus, category
+    breakdown), each job's reconciliation status, and the user's accounts linked month to month."""
     jobs, stats = list_jobs(user_id)
     stats_model = DashboardStats(**stats) if stats else None
-    return JobListResponse(jobs=[JobListItem(**j) for j in jobs], stats=stats_model)
+    items, saved = [], []
+    for j in jobs:
+        meta = j.get("statement_meta") or {}
+        item = JobListItem(
+            **j,
+            bank_name=meta.get("bank_name"),
+            account_last4=meta.get("account_last4"),
+            period_end=meta.get("period_end"),
+        )
+        if j.get("has_payload"):
+            rec = reconcile(j.get("transactions") or [], j.get("statement_meta"))
+            item.reconciliation_status = rec["status"]
+            saved.append({**j, "reconciliation": rec})
+        items.append(item)
+    accounts, unmatched = account_continuity(saved)
+    return JobListResponse(jobs=items, stats=stats_model, accounts=accounts, unmatched_job_ids=unmatched)
 
 
 def _job_reconciliation(job: dict) -> dict | None:

@@ -8,6 +8,8 @@ export function JobsProvider({ children }) {
   const { accessToken } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [stats, setStats] = useState(null);
+  // Saved statements grouped by account and linked month to month (see AccountTimeline).
+  const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasFetched, setHasFetched] = useState(false);
@@ -17,6 +19,7 @@ export function JobsProvider({ children }) {
     if (!accessToken) {
       setJobs([]);
       setStats(null);
+      setAccounts([]);
       setError(null);
       setHasFetched(false);
     }
@@ -30,6 +33,7 @@ export function JobsProvider({ children }) {
       .then((data) => {
         setJobs(data.jobs || []);
         setStats(data.stats ?? null);
+        setAccounts(data.accounts || []);
         setHasFetched(true);
       })
       .catch((e) => {
@@ -47,6 +51,7 @@ export function JobsProvider({ children }) {
       .then((data) => {
         setJobs(data.jobs || []);
         setStats(data.stats ?? null);
+        setAccounts(data.accounts || []);
       })
       .catch((e) => {
         setError(e.status === 401 ? "Please log in again." : e.message || "Failed to load jobs");
@@ -57,6 +62,7 @@ export function JobsProvider({ children }) {
   const value = {
     jobs,
     stats,
+    accounts,
     loading,
     error,
     loadJobs,

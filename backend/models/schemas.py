@@ -107,6 +107,10 @@ class JobListItem(BaseModel):
     currency: Optional[str] = None
     has_payload: bool = True  # False when incognito or payload was purged
     conversion_mode: Optional[str] = None  # fast | balanced | accurate
+    reconciliation_status: Optional[Literal["reconciled", "mismatch", "unverified"]] = None  # None without data
+    bank_name: Optional[str] = None  # from the statement's summary, when read
+    account_last4: Optional[str] = None
+    period_end: Optional[str] = None  # YYYY-MM-DD
 
 
 class DashboardStats(BaseModel):
@@ -117,9 +121,40 @@ class DashboardStats(BaseModel):
     primary_currency: Optional[str] = None
 
 
+class AccountStatement(BaseModel):
+    job_id: str
+    period_start: Optional[str] = None  # YYYY-MM-DD
+    period_end: str
+    opening_balance: Optional[float] = None
+    closing_balance: Optional[float] = None
+    status: Literal["reconciled", "mismatch", "unverified"]
+
+
+class AccountLink(BaseModel):
+    from_job: str
+    to_job: str
+    kind: Literal["ok", "gap", "balance_mismatch", "duplicate"]
+    missing_from: Optional[str] = None  # gap: the dates no saved statement covers
+    missing_to: Optional[str] = None
+    difference: Optional[float] = None  # balance_mismatch: next opening - previous closing
+
+
+class Account(BaseModel):
+    """One bank account or card, with its saved statements oldest first (see reconciliation.account_continuity)."""
+    bank_name: Optional[str] = None
+    account_last4: str
+    currency: Optional[str] = None
+    account_type: Literal["bank", "credit_card"]
+    statements: list[AccountStatement]
+    links: list[AccountLink]
+
+
 class JobListResponse(BaseModel):
     jobs: list[JobListItem]
     stats: Optional[DashboardStats] = None
+    accounts: list[Account] = Field(default_factory=list)
+    # Saved statements we couldn't place in an account (no account number or period read).
+    unmatched_job_ids: list[str] = Field(default_factory=list)
 
 
 class JobDetailResponse(BaseModel):
