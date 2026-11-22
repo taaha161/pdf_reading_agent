@@ -298,8 +298,15 @@ export default function ScannerPage() {
   };
 
   // Load existing job when opening from dashboard (e.g. /scanner/:jobId)
+  // Set to a fresh scan's job id before putting it in the URL, so this effect doesn't refetch
+  // results that are already on screen (incognito jobs would come back empty).
+  const justScannedJobId = useRef(null);
   useEffect(() => {
     if (!routeJobId) return;
+    if (routeJobId === justScannedJobId.current) {
+      justScannedJobId.current = null; // one-shot: Back/Forward to this job later should load it
+      return;
+    }
     setTooLargeUpgrade(null);
     if (!isLoggedIn) {
       setError("Sign in to view this job.");
@@ -382,6 +389,14 @@ export default function ScannerPage() {
       setReconciliationStale(false);
       setDataStatus(null);
       setTrialCsvContent(data.csv_content ?? null);
+      // Keep the URL on the job being shown: signed-in jobs reopen at /scanner/:jobId;
+      // guests can't open stored jobs, so drop a stale id instead.
+      if (isLoggedIn && data.job_id) {
+        justScannedJobId.current = data.job_id;
+        navigate(`/scanner/${data.job_id}`);
+      } else if (routeJobId) {
+        navigate("/scanner", { replace: true });
+      }
       applyUsage(data);
       refreshUsage();
       trackEvent("scan_completed", { rows: (data.transactions || []).length, logged_in: isLoggedIn });
