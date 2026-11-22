@@ -2,6 +2,7 @@
 import { getCollection, render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import { SITE_URL, SITE_NAME, OG_IMAGE, canonical } from '../../consts';
+import { relatedPosts } from '../../lib/relatedPosts';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -12,12 +13,9 @@ const { post } = Astro.props;
 const { Content } = await render(post);
 const { data } = post;
 
-// Cross-link to sibling posts so every article has more than one inbound
-// internal link (fixes the "only one internal link" audit finding).
-const related = (await getCollection('blog'))
-  .filter((p) => p.id !== post.id)
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-  .slice(0, 3);
+// Topically related posts plus the next-older post, so internal links spread
+// across the whole archive instead of all pointing at the newest posts.
+const related = relatedPosts(post, await getCollection('blog'));
 
 const fmt = (d: Date) =>
   d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
