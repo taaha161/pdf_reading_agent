@@ -499,6 +499,22 @@ export default function ScannerPage() {
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [jobId]);
 
+  // "Upload new statement" on the results view: opens a file picker without scrolling back to the dropzone.
+  const newUploadInputRef = useRef(null);
+  const handleNewUploadClick = () => {
+    if (trialExhausted) {
+      goToSignup();
+      return;
+    }
+    newUploadInputRef.current?.click();
+  };
+  const handleNewUploadChange = (e) => {
+    const file = e.target?.files?.[0];
+    e.target.value = "";
+    if (!file || file.type !== "application/pdf") return;
+    handleUpload(file);
+  };
+
   const handleTransactionChange = async (index, field, value) => {
     if (!Array.isArray(transactions) || index < 0 || index >= transactions.length) {
       return;
@@ -737,15 +753,37 @@ export default function ScannerPage() {
         {hasResults && (
           <>
             <div className="scanner-results" ref={resultsRef}>
-              {canEmailSpreadsheet && !emailPopupOpen && (
-                <button type="button" className="email-sheet-reopen" onClick={() => setEmailPopupOpen(true)}>
+              <div className="scanner-results-actions">
+                <button
+                  type="button"
+                  className="scanner-new-upload-btn"
+                  onClick={handleNewUploadClick}
+                  disabled={loading}
+                >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                    <rect x="3" y="5" width="18" height="14" rx="2" />
-                    <path d="m3.5 6.5 8.5 6 8.5-6" />
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
-                  Email me this spreadsheet
+                  Upload new statement
                 </button>
-              )}
+                <input
+                  ref={newUploadInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleNewUploadChange}
+                  hidden
+                />
+                {canEmailSpreadsheet && !emailPopupOpen && (
+                  <button type="button" className="email-sheet-reopen" onClick={() => setEmailPopupOpen(true)}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <rect x="3" y="5" width="18" height="14" rx="2" />
+                      <path d="m3.5 6.5 8.5 6 8.5-6" />
+                    </svg>
+                    Email me this spreadsheet
+                  </button>
+                )}
+              </div>
               <div className="scanner-results-tables">
                 <ReconciliationPanel
                   reconciliation={reconciliation}
