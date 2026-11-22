@@ -87,4 +87,76 @@ export const PERSONAS: Persona[] = [
       },
     ],
   },
+{
+    slug: 'tax-preparers',
+    name: 'Tax preparers',
+    seoTitle: 'Bank Statement Converter for Tax Preparers',
+    description:
+      'Turn client bank and credit card statement PDFs into categorized Excel or CSV files for Schedule C and tax workpapers. Built for tax season bursts. 100 pages free your first month.',
+    eyebrow: 'For tax preparers',
+    h1: 'A year of client statements, sorted by category before you open the return.',
+    sub: 'Clients hand you twelve PDFs and a shoebox. Upload the statements and get every transaction back categorized, so you total expenses instead of typing them.',
+    pains: [
+      { old: 'Twelve monthly PDFs per account, per client', new: 'Convert each statement in seconds and combine the rows' },
+      { old: 'Adding up expense categories with a calculator', new: 'Every row categorized, ready for a pivot table' },
+      { old: 'Hunting for one deductible payee across a year', new: 'Ask "every payment to the landlord in 2026" and export just those rows' },
+      { old: 'Not sure the conversion caught every row', new: 'Every statement checked against its printed balances and totals' },
+      { old: 'Paying for a tool all year that you need for three months', new: 'Pay per page, no annual contract, cancel anytime' },
+    ],
+    guide: 'tax-season-checklist-bank-statements',
+    faqs: [
+      {
+        q: 'Can I use it for Schedule C expense totals?',
+        a: 'Yes. Every transaction gets a category you can edit. Export to Excel and build a pivot table by category to total expenses for the return. Review the categories before you rely on them.',
+      },
+      {
+        q: 'Does it handle credit card statements too?',
+        a: 'Yes. Bank and credit card statements from Chase, Amex, Capital One, Discover and other US issuers convert the same way, including scanned PDFs.',
+      },
+      {
+        q: 'How do I keep client data private?',
+        a: 'Uploads are encrypted in transit, and incognito mode converts a statement without saving its data. Saved statements stay until you delete them.',
+      },
+      {
+        q: 'How does pricing work in tax season?',
+        a: PRICING_SUMMARY,
+      },
+    ],
+  },
+  {
+    slug: 'small-business-owners',
+    name: 'Small business owners',
+    seoTitle: 'Bank Statement to Excel for Small Business Owners',
+    description:
+      'Convert business bank and credit card statement PDFs into categorized Excel or CSV files for your books, your accountant, or a loan application. 10 pages free with no account.',
+    eyebrow: 'For small business owners',
+    h1: 'Your business statements in a spreadsheet, without the weekend of data entry.',
+    sub: 'Upload a business checking or credit card statement. Get every transaction back in clean, categorized columns to import into QuickBooks or Xero, or hand to your accountant.',
+    pains: [
+      { old: 'Behind on the books and the bank feed only reaches back a few months', new: 'Convert PDF statements from any month you can download' },
+      { old: 'Sorting personal from business spending by hand', new: 'Every row categorized, so you filter instead of scan' },
+      { old: 'Finding every payment to one supplier', new: 'Ask in plain English and export just those rows' },
+      { old: 'Your accountant asks for spreadsheets, you have PDFs', new: 'Excel and CSV exports ready to send' },
+      { old: 'Software subscriptions you use twice a year', new: 'Pay per page, no contract, cancel anytime' },
+    ],
+    guide: 'bank-statement-scanner-for-small-businesses',
+    faqs: [
+      {
+        q: 'Can I import the export into QuickBooks or Xero?',
+        a: 'Yes. Download a CSV and use the bank-file import in QuickBooks Online or Xero. Export is CSV or Excel; there is no direct sync.',
+      },
+      {
+        q: 'Does it work for business statements with many pages?',
+        a: 'Yes. Long statements are converted page by page, with repeated headers and balance lines left out, and the rows are checked against the statement totals.',
+      },
+      {
+        q: 'Can I try it without signing up?',
+        a: 'Yes. Convert up to 10 pages without an account. Sign up for 100 free pages in your first month, no card needed.',
+      },
+      {
+        q: 'What does it cost after that?',
+        a: PRICING_SUMMARY,
+      },
+    ],
+  },
 ];
