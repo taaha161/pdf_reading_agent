@@ -20,7 +20,7 @@ const posts = await getCollection('blog');
 const bySlug = (s: string) => posts.find((p) => p.id === s)!;
 const useCases = [
   { slug: 'bank-statement-scanner-for-accountants', label: 'For accountants', persona: '/for/accountants' },
-  { slug: 'bank-statement-scanner-for-small-businesses', label: 'For small business', persona: undefined as string | undefined },
+  { slug: 'bank-statement-scanner-for-small-businesses', label: 'For small business', persona: '/for/small-business-owners' as string | undefined },
   { slug: 'bank-statement-scanner-for-personal-finance', label: 'For personal finance', persona: undefined as string | undefined },
 ].map((u) => ({ ...u, post: bySlug(u.slug) }));
 
@@ -333,6 +333,8 @@ const features = [
         <ul role="list">
           <li><a href="/for/accountants">Accountants &amp; CPA firms</a></li>
           <li><a href="/for/bookkeepers">Bookkeepers</a></li>
+          <li><a href="/for/tax-preparers">Tax preparers</a></li>
+          <li><a href="/for/small-business-owners">Small business owners</a></li>
           {useCases.map((u) => <li><a href={`/blog/${u.slug}`}>{u.post.data.title}</a></li>)}
         </ul>
       </div>
