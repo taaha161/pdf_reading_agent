@@ -6,7 +6,7 @@ export const SITE_DESCRIPTION =
   'Convert bank statement PDFs into categorized Excel or CSV, then ask the AI for any transactions (like everything from John) and download just those.';
 export const OG_IMAGE = `${SITE_URL}/og-image.png?v=2`; // bump v to refresh social caches
 export const SUPPORT_EMAIL = 'team@bankstatementscanner.com';
-export const LEGAL_ENTITY = 'CARC LABS LLC';
+export const LEGAL_ENTITY = 'CARC Labs LLC';
 
 /** Absolute canonical URL for a path (no trailing slash except root). */
 export function canonical(path: string): string {
