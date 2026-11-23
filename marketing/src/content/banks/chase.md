@@ -3,7 +3,7 @@ name: "Chase"
 shortName: "Chase"
 slug: "chase-bank-statement-to-excel"
 seoTitle: "Convert Chase Bank Statements to Excel or CSV"
-description: "Convert Chase checking, savings, and credit card statement PDFs to Excel or CSV. Get every transaction, not just the last 90 days, with dates, descriptions, and amounts in clean columns."
+description: "Convert Chase checking, savings, and credit card statement PDFs to Excel or CSV. Every transaction, not just the last 90 days, in clean columns."
 country: "US"
 statementTypes: ["Checking", "Savings", "Credit card", "Business checking"]
 intro: "Chase gives you two ways to get your transactions out: the monthly PDF statement and an activity download. The activity download is quick, but it only reaches back a short way. For anything older, such as a full tax year, a loan application, or catch-up bookkeeping, the PDF statement is the record you have, and it needs converting before a spreadsheet or QuickBooks can use it."

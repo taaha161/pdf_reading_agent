@@ -3,7 +3,7 @@ name: "Navy Federal Credit Union"
 shortName: "Navy Federal"
 slug: "navy-federal-statement-to-excel"
 seoTitle: "Convert Navy Federal Statements to Excel or CSV"
-description: "Convert Navy Federal Credit Union checking, savings, and credit card statement PDFs to Excel or CSV. Save statements before they pass the 36-month online window."
+description: "Convert Navy Federal checking, savings, and credit card statement PDFs to Excel or CSV. Save statements before the 36-month online window."
 country: "US"
 statementTypes: ["Checking", "Savings", "Credit card"]
 intro: "Navy Federal keeps 36 months of statements online, shorter than many large banks. If you need records for a mortgage, a security clearance review, taxes, or bookkeeping, download the PDFs while they're still available and convert them into a spreadsheet."

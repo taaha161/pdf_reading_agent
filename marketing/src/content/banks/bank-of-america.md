@@ -3,7 +3,7 @@ name: "Bank of America"
 shortName: "Bank of America"
 slug: "bank-of-america-statement-to-excel"
 seoTitle: "Convert Bank of America Statements to Excel or CSV"
-description: "Turn Bank of America checking, savings, and credit card statement PDFs into Excel or CSV, with running balances and statement periods the activity download leaves out."
+description: "Turn Bank of America checking, savings, and credit card statement PDFs into Excel or CSV, including periods the activity download leaves out."
 country: "US"
 statementTypes: ["Checking", "Savings", "Credit card", "Business"]
 intro: "Bank of America lets you download transaction activity, but that file isn't the statement. It leaves out the running balance and the period totals, and it only covers a recent window. When you need the official record, for reconciliation, an audit, or a lender, you work from the PDF statement."

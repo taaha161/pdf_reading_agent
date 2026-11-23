@@ -3,7 +3,7 @@ name: "Truist"
 shortName: "Truist"
 slug: "truist-bank-statement-to-excel"
 seoTitle: "Convert Truist Bank Statements to Excel or CSV"
-description: "Convert Truist checking, savings, and business statement PDFs, including legacy SunTrust and BB&T periods, to Excel or CSV. Every transaction in clean columns, checked against the statement totals."
+description: "Convert Truist statement PDFs, including legacy SunTrust and BB&T periods, to Excel or CSV, with every row checked against the statement totals."
 country: "US"
 statementTypes: ["Checking", "Savings", "Business checking", "Credit card"]
 intro: "Truist lets you download recent transactions as a file, but that download only covers a limited window and is labeled as a tracking copy, not an official record. When you need a full tax year, older months, or statements from the SunTrust and BB&T days, the PDF statement is the record, and it has to be converted before Excel, QuickBooks, or Xero can use it."

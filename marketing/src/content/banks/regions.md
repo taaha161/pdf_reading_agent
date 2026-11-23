@@ -3,7 +3,7 @@ name: "Regions Bank"
 shortName: "Regions"
 slug: "regions-bank-statement-to-excel"
 seoTitle: "Convert Regions Bank Statements to Excel or CSV"
-description: "Convert Regions Bank checking, savings, and business statement PDFs to Excel or CSV. Up to seven years of statements, turned into clean transaction rows checked against the statement totals."
+description: "Convert Regions Bank checking, savings, and business statement PDFs to Excel or CSV. Clean transaction rows checked against statement totals."
 country: "US"
 statementTypes: ["Checking", "Savings", "Business checking", "Credit card"]
 intro: "Regions keeps years of PDF statements online, but its transaction downloads are built mainly for Quicken and QuickBooks Web Connect rather than a plain spreadsheet. If you need a year of history in Excel, or statements older than the transaction history reaches, converting the PDF statements is the direct route."

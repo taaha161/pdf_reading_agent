@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { SUPPORT_EMAIL } from '../consts';
+import { SUPPORT_EMAIL, SITE_NAME, canonical } from '../consts';
 
 const subjectOptions = [
   'General question',
@@ -8,12 +8,32 @@ const subjectOptions = [
   'Technical / product issue',
   'Partnership or press',
 ];
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ContactPage',
+    name: `Contact ${SITE_NAME}`,
+    url: canonical('/contact'),
+    mainEntity: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: canonical('/'),
+      contactPoint: { '@type': 'ContactPoint', contactType: 'customer support', email: SUPPORT_EMAIL, availableLanguage: 'English' },
+    },
+  },
+  { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: canonical('/') },
+    { '@type': 'ListItem', position: 2, name: 'Help Center', item: canonical('/contact') },
+  ] },
+];
 ---
 
 <Base
   title="Help Center — Contact"
   description="Questions about Bank Statement Scanner, your account, or a technical issue? Send us a message—we read every submission."
   path="/contact"
+  jsonLd={jsonLd}
 >
   <section class="container contact">
     <nav class="contact-crumbs" aria-label="Breadcrumb"><a href="/">← Back to home</a></nav>

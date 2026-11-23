@@ -3,7 +3,7 @@ name: "Synchrony (Amazon Store Card and more)"
 shortName: "Synchrony"
 slug: "synchrony-amazon-card-statement-to-excel"
 seoTitle: "Convert Synchrony and Amazon Store Card Statements to Excel"
-description: "Convert Synchrony credit card statement PDFs, including the Amazon Store Card, to Excel or CSV. Every purchase, payment, and promotional-financing line in clean columns."
+description: "Convert Synchrony and Amazon Store Card statement PDFs to Excel or CSV. Every purchase, payment, and promo-financing line in clean columns."
 country: "US"
 statementTypes: ["Store credit card", "Credit card"]
 intro: "Synchrony issues store cards for Amazon and many other retailers, and getting their transactions into a spreadsheet is a long-running complaint. Users disagree about whether a CSV download exists for their card, and some people have written their own scripts to read the PDF statements. Converting the PDF statement works whatever your card's export options are."

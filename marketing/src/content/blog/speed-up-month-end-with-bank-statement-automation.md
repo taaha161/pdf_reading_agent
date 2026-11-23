@@ -1,7 +1,7 @@
 ---
 title: "Speed Up Month-End Close With Automated Bank Statement Data"
 seoTitle: "Speed Up Month-End Close With Automation"
-excerpt: "Speed month-end close by automating PDF statement capture and first-pass categorization—so accountants reconcile faster, scale client work, and spend time on exceptions, not data entry."
+excerpt: "Speed up month-end close by automating PDF statement capture and first-pass categorization, so you spend time on exceptions, not data entry."
 date: 2026-03-15
 category: "For professionals"
 readTime: "8 min read"

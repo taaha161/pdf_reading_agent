@@ -3,7 +3,7 @@ name: "M&T Bank"
 shortName: "M&T"
 slug: "mt-bank-statement-to-excel"
 seoTitle: "Convert M&T Bank Statements to Excel or CSV"
-description: "Convert M&T Bank checking, savings, and business statement PDFs, including former People's United accounts, to Excel or CSV. Every transaction in clean, categorized columns."
+description: "Convert M&T Bank statement PDFs, including former People's United accounts, to Excel or CSV. Every transaction in clean, categorized columns."
 country: "US"
 statementTypes: ["Checking", "Savings", "Business checking"]
 intro: "M&T keeps your monthly statements as eStatements, but its transaction download is meant for recent activity, and former People's United customers saw only a short window of history carried over. For full months or older periods, the PDF statement is the record, and converting it gets those transactions into a spreadsheet."

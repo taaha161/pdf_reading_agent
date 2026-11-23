@@ -16,7 +16,7 @@ interface Props {
   ogType?: 'website' | 'article';
   noindex?: boolean;
   /**
-   * Append " — {SITE_NAME}" when the title lacks the brand. Pages that supply a
+   * Append " — {SITE_NAME}" when the title lacks the brand and the result fits in 60 chars. Pages that supply a
    * pre-composed, length-tuned SEO title (e.g. blog posts) pass false to keep the
    * title tag short and avoid the long-title flag.
    */
@@ -40,8 +40,11 @@ const {
 } = Astro.props;
 
 const canonicalUrl = canonical(path);
+// Google truncates titles past ~60 chars, so the brand suffix is only added when it fits.
+const TITLE_MAX = 60;
+const withBrand = `${title} — ${SITE_NAME}`;
 const fullTitle =
-  appendSiteName && !title.includes(SITE_NAME) ? `${title} — ${SITE_NAME}` : title;
+  appendSiteName && !title.includes(SITE_NAME) && withBrand.length <= TITLE_MAX ? withBrand : title;
 ---
 
 <!doctype html>

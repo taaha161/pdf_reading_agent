@@ -3,7 +3,7 @@ name: "Chime"
 shortName: "Chime"
 slug: "chime-bank-statement-to-excel"
 seoTitle: "Convert Chime Bank Statements to Excel or CSV"
-description: "Convert Chime checking and savings statement PDFs to Excel or CSV. Download your monthly statement from the Chime app, then get every transaction in clean, categorized columns."
+description: "Convert Chime checking and savings statement PDFs to Excel or CSV. Download the statement from the Chime app, then get clean, categorized rows."
 country: "US"
 statementTypes: ["Checking", "Savings", "Credit Builder"]
 intro: "Chime gives you a monthly PDF statement in the app, and that's often what a landlord, lender, or tax preparer asks for. A PDF is fine as proof, but if you need to budget, total your spending by category, or file taxes, you'll want those transactions in a spreadsheet."

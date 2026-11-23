@@ -56,7 +56,7 @@ export const PERSONAS: Persona[] = [
     name: 'Bookkeepers',
     seoTitle: 'Bank Statement to Excel and CSV for Bookkeepers',
     description:
-      'Turn client bank statement PDFs into categorized spreadsheets ready for QuickBooks or Xero. Built for bookkeepers catching up or closing the month. 100 pages free your first month.',
+      'Turn client bank statement PDFs into categorized spreadsheets ready for QuickBooks or Xero, for catch-up work or month-end close. 100 pages free.',
     eyebrow: 'For bookkeepers',
     h1: 'Catch-up bookkeeping without retyping a single statement.',
     sub: 'Upload the PDF. Get a categorized spreadsheet ready for QuickBooks or Xero in seconds, so you review a finished file instead of typing one.',
@@ -92,7 +92,7 @@ export const PERSONAS: Persona[] = [
     name: 'Tax preparers',
     seoTitle: 'Bank Statement Converter for Tax Preparers',
     description:
-      'Turn client bank and credit card statement PDFs into categorized Excel or CSV files for Schedule C and tax workpapers. Built for tax season bursts. 100 pages free your first month.',
+      'Turn client bank and credit card statement PDFs into categorized Excel or CSV for Schedule C and tax workpapers. 100 pages free your first month.',
     eyebrow: 'For tax preparers',
     h1: 'A year of client statements, sorted by category before you open the return.',
     sub: 'Clients hand you twelve PDFs and a shoebox. Upload the statements and get every transaction back categorized, so you total expenses instead of typing them.',
@@ -128,7 +128,7 @@ export const PERSONAS: Persona[] = [
     name: 'Small business owners',
     seoTitle: 'Bank Statement to Excel for Small Business Owners',
     description:
-      'Convert business bank and credit card statement PDFs into categorized Excel or CSV files for your books, your accountant, or a loan application. 10 pages free with no account.',
+      'Convert business bank and credit card statement PDFs into categorized Excel or CSV for your books, your accountant, or a loan application.',
     eyebrow: 'For small business owners',
     h1: 'Your business statements in a spreadsheet, without the weekend of data entry.',
     sub: 'Upload a business checking or credit card statement. Get every transaction back in clean, categorized columns to import into QuickBooks or Xero, or hand to your accountant.',
@@ -162,9 +162,9 @@ export const PERSONAS: Persona[] = [
   {
     slug: 'real-estate',
     name: 'Real estate agents and property managers',
-    seoTitle: 'Bank Statement Analysis for Real Estate Agents and Property Managers',
+    seoTitle: 'Bank Statement Analysis for Real Estate & Property Managers',
     description:
-      'Turn buyer, borrower and tenant bank statement PDFs into clean spreadsheets. Total deposits, spot large transfers and check rent against income in minutes. 100 pages free your first month.',
+      'Turn buyer, borrower, and tenant bank statement PDFs into spreadsheets. Total deposits, spot large transfers, and check rent against income.',
     eyebrow: 'For real estate agents, brokers and property managers',
     h1: 'Read a client’s bank statements in minutes, not an afternoon.',
     sub: 'Buyers, borrowers and tenants send you months of PDF statements. Upload them and get every transaction in a spreadsheet, with money in and out totaled and the statement checked against its own balances.',

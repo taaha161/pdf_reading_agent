@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { SUPPORT_EMAIL } from '../consts';
+import { SUPPORT_EMAIL, SITE_NAME, canonical } from '../consts';
 
 const measures = [
   {
@@ -28,12 +28,27 @@ const measures = [
     body: 'Extracted data is yours to export as CSV or Excel. The original PDF remains your system of record; we help you produce the structured copy.',
   },
 ];
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: `Security & Privacy — ${SITE_NAME}`,
+    url: canonical('/security'),
+    isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: canonical('/') },
+  },
+  { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: canonical('/') },
+    { '@type': 'ListItem', position: 2, name: 'Security', item: canonical('/security') },
+  ] },
+];
 ---
 
 <Base
   title="Security & Privacy"
   description="How Bank Statement Scanner protects your financial data: encryption in transit, incognito processing, retention controls, and Stripe-handled payments."
   path="/security"
+  jsonLd={jsonLd}
 >
   <section class="container sec">
     <nav class="sec-crumbs" aria-label="Breadcrumb"><a href="/">← Back to home</a></nav>

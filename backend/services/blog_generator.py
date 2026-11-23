@@ -565,7 +565,7 @@ class _BlogPost(BaseModel):
 
     title: str = Field(description="On-page H1, <=70 chars, contains the keyword idea")
     seoTitle: str = Field(description="<title> tag, <=60 chars, keyword-first")
-    excerpt: str = Field(description="Meta description, 140-160 chars, includes keyword")
+    excerpt: str = Field(description="Meta description, 120-155 chars (hard max 155), includes keyword")
     category: str = Field(description=f"one of {CATEGORIES}")
     tags: list[str] = Field(description="4-8 short lowercase SEO keyword tags")
     body_markdown: str = Field(description="Full 1500-2500 word article body, markdown, no frontmatter")
