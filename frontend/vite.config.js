@@ -1,8 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
-import { writeFileSync } from 'node:fs'
-import { join } from 'node:path'
 
 // https://vite.dev/config/
 // Base path: set BASE_PATH in env (e.g. /pdf_reading_agent/ for GitHub Pages).
@@ -17,7 +15,6 @@ export default defineConfig(({ mode }) => {
   const origin = siteUrl || DEFAULT_SITE_URL
   const ogImageUrl = `${origin.replace(/\/$/, '')}${basePath}og-image.png?v=2`
 
-  const baseUrl = (siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '') + basePath.replace(/\/?$/, '/')
 
   // Error monitoring: tag events with the deployed commit, and upload source maps
   // (then delete them from dist, so they're never public) only when a token is set.
@@ -45,25 +42,6 @@ export default defineConfig(({ mode }) => {
           return html
             .replace(/__VITE_PUBLIC_SITE_URL__/g, siteUrl)
             .replace(/__VITE_OG_IMAGE_URL__/g, ogImageUrl)
-        },
-      },
-      {
-        name: 'seo-static',
-        closeBundle() {
-          const outDir = join(process.cwd(), 'dist')
-          const robots = `User-agent: *
-Allow: /
-Disallow: /dashboard
-Disallow: /settings
-Disallow: /login
-Disallow: /signup
-Disallow: /forgot-password
-Disallow: /reset-password
-
-Sitemap: ${baseUrl}sitemap.xml
-`
-          writeFileSync(join(outDir, 'robots.txt'), robots)
-          // sitemap.xml is served from public/sitemap.xml (not overwritten here)
         },
       },
     ],
