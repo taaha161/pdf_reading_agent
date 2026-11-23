@@ -3,7 +3,7 @@ name: "Fifth Third Bank"
 shortName: "Fifth Third"
 slug: "fifth-third-bank-statement-to-excel"
 seoTitle: "Convert Fifth Third Bank Statements to Excel or CSV"
-description: "Convert Fifth Third checking, savings, and business statement PDFs to Excel or CSV. Every transaction in clean columns, ready for QuickBooks, Xero, or your workpapers."
+description: "Convert Fifth Third checking, savings, and business statement PDFs to Excel or CSV, ready for QuickBooks, Xero, or your workpapers."
 country: "US"
 statementTypes: ["Checking", "Savings", "Business checking", "Credit card"]
 intro: "Fifth Third keeps your monthly statements online as PDFs. They're the official record, but a PDF can't be sorted, filtered, or imported. Converting them gives you the same transactions as spreadsheet rows, with the statement's own totals used to check the result."

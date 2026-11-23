@@ -3,7 +3,7 @@ name: "Citizens Bank"
 shortName: "Citizens"
 slug: "citizens-bank-statement-to-excel"
 seoTitle: "Convert Citizens Bank Statements to Excel or CSV"
-description: "Convert Citizens Bank checking, savings, and business statement PDFs to Excel or CSV. Get every transaction in clean columns, checked against the statement's own totals."
+description: "Convert Citizens Bank checking, savings, and business statement PDFs to Excel or CSV, with every transaction checked against the statement totals."
 country: "US"
 statementTypes: ["Checking", "Savings", "Business checking", "Credit card"]
 intro: "Citizens lets you export recent account activity from online banking, but the export covers a limited window and doesn't carry the statement's opening and closing balances. For full months, older periods, or a statement you need to tie out, convert the PDF statement instead."

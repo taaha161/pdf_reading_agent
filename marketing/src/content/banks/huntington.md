@@ -3,7 +3,7 @@ name: "Huntington Bank"
 shortName: "Huntington"
 slug: "huntington-bank-statement-to-excel"
 seoTitle: "Convert Huntington Bank Statements to Excel or CSV"
-description: "Convert Huntington checking, savings, and business statement PDFs to Excel or CSV. Every transaction in clean columns, checked against the statement's printed balances."
+description: "Convert Huntington checking, savings, and business statement PDFs to Excel or CSV, with every transaction checked against the printed balances."
 country: "US"
 statementTypes: ["Checking", "Savings", "Business checking", "Credit card"]
 intro: "Huntington lets you download recent transactions, but statements only stay online for about two years, and a transaction download doesn't carry the statement's opening and closing balances. When you need full months for taxes, a loan file, or catch-up bookkeeping, the PDF statement is the record to convert."

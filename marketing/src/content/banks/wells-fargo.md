@@ -3,7 +3,7 @@ name: "Wells Fargo"
 shortName: "Wells Fargo"
 slug: "wells-fargo-statement-to-excel"
 seoTitle: "Convert Wells Fargo Statements to Excel or CSV"
-description: "Convert Wells Fargo checking, savings, and credit card statement PDFs to Excel or CSV. Reach past the activity-download window, with up to 7 years of deposit statements online."
+description: "Convert Wells Fargo checking, savings, and credit card statement PDFs to Excel or CSV, reaching past the short activity-download window."
 country: "US"
 statementTypes: ["Checking", "Savings", "Credit card", "Business"]
 intro: "Wells Fargo keeps years of PDF statements online, but its spreadsheet download covers far less. If you're rebuilding a year of books, answering a lender, or preparing taxes from older months, the PDFs are the complete record, and converting them saves retyping every line."

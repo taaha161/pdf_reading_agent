@@ -1,17 +1,35 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { comparePages, compareCategories } from '../../comparePages';
+import { canonical } from '../../consts';
 
 const groups = compareCategories
   .map((name) => ({ name, pages: comparePages.filter((p) => p.category === name) }))
   .filter((g) => g.pages.length);
 
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Compare Bank Statement Converters',
+    url: canonical('/compare'),
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: comparePages.map((p, i) => ({ '@type': 'ListItem', position: i + 1, name: p.title, url: canonical(p.href) })),
+    },
+  },
+  { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: canonical('/') },
+    { '@type': 'ListItem', position: 2, name: 'Compare', item: canonical('/compare') },
+  ] },
+];
 ---
 
 <Base
   title="Compare Bank Statement Converters"
   description={`Honest comparisons of Bank Statement Scanner with ${comparePages.length} bank statement converters, document parsers, and bookkeeping tools, including where each one wins.`}
   path="/compare"
+  jsonLd={jsonLd}
 >
   <section class="container cmpi">
     <h1>Compare bank statement converters</h1>

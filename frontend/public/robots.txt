@@ -1,10 +1,8 @@
+# This file is only served on app.bankstatementscanner.com (the SPA's own host).
+# bankstatementscanner.com serves its own robots.txt from the Astro marketing site
+# and proxies app routes here, so blocking this host avoids duplicate indexing of
+# app.* without affecting the public site.
 User-agent: *
-Allow: /
-Disallow: /dashboard
-Disallow: /settings
-Disallow: /login
-Disallow: /signup
-Disallow: /forgot-password
-Disallow: /reset-password
+Disallow: /
 
-Sitemap: https://bankstatementscanner.com/sitemap.xml
+Sitemap: https://bankstatementscanner.com/sitemap-index.xml

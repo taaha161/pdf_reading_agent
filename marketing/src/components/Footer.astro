@@ -1,6 +1,7 @@
 ---
 import LogoMark from './LogoMark.astro';
 import { SUPPORT_EMAIL, LEGAL_ENTITY } from '../consts';
+import { PERSONAS } from '../personas';
 const year = new Date().getFullYear();
 ---
 
@@ -24,6 +25,11 @@ const year = new Date().getFullYear();
           <a href="/blog">Blog</a>
           <a href="/convert">Supported banks</a>
           <a href="/compare">Compare</a>
+        </div>
+        <div class="mkt-footer-col">
+          <h3>Who it's for</h3>
+          {PERSONAS.map((p) => <a href={`/for/${p.slug}`}>{p.name}</a>)}
+          <a href="/for">All use cases</a>
         </div>
         <div class="mkt-footer-col">
           <h3>Company</h3>
