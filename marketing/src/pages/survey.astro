@@ -1,0 +1,318 @@
+---
+/**
+ * Customer survey (/survey): use case + product feedback. Sent by personal email to active
+ * users, never linked from the site, noindex and kept out of the sitemap.
+ *
+ * Submits through the existing /api/contact function (frontend/api/contact.js), which emails the
+ * answers to the team with reply-to set to the respondent. No backend change needed.
+ *
+ * Reward: 100 bonus pages (worth $10, never expire) added by hand to the account with the
+ * email given. Pack pages are granted with a one-row update to user_billing.pack_pages.
+ */
+import Base from '../layouts/Base.astro';
+import { SUPPORT_EMAIL } from '../consts';
+
+const roles = [
+  'Real estate agent or broker',
+  'Property manager or landlord',
+  'Mortgage or loan officer',
+  'Accountant or bookkeeper',
+  'Tax preparer',
+  'Small business owner',
+  'Personal use',
+];
+
+const uses = [
+  'Checking a buyer or borrower’s income or funds',
+  'Screening rental tenants',
+  'Proof of funds for an offer',
+  'My own loan or mortgage application',
+  'Bookkeeping or taxes',
+  'Trust or escrow account reconciliation',
+  'Budgeting or tracking spending',
+];
+
+const volumes = ['1–5', '6–20', '21–50', 'More than 50'];
+const owners = ['My own', 'My clients’', 'Both'];
+
+const features = [
+  'Transaction export (Excel / CSV)',
+  'Categories',
+  'Summary totals (money in / out)',
+  'Balance check against the statement',
+  'Asking questions in chat',
+  'Incognito mode',
+];
+---
+
+<Base
+  title="Quick survey — Bank Statement Scanner"
+  description="Tell us how you use Bank Statement Scanner and get 100 free pages."
+  path="/survey"
+  noindex
+>
+  <section class="container survey">
+    <p class="eyebrow">3 minutes · 100 free pages</p>
+    <h1>Help us build what you need</h1>
+    <p class="sub">
+      Tell us how you use Bank Statement Scanner and what's missing. When you finish, we'll add
+      <strong>100 free pages</strong> (worth $10, they never expire) to your account within one business day.
+    </p>
+
+    <p class="alert alert--error" id="s-error" role="alert" hidden></p>
+    <div class="alert alert--ok" id="s-success" role="status" hidden>
+      <strong>Thank you.</strong> Your answers are in. We'll add 100 pages to the account under
+      <span id="s-success-email"></span> within one business day and email you when they're there.
+    </div>
+
+    <form class="form" id="survey-form" novalidate>
+      <div class="field field--honeypot" aria-hidden="true">
+        <label for="s-company">Company</label>
+        <input id="s-company" name="company" type="text" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <fieldset class="q">
+        <legend><span class="n">1</span>Your account</legend>
+        <div class="row">
+          <div class="field">
+            <label for="s-email">Email you signed up with <span class="req">required</span></label>
+            <input id="s-email" name="email" type="email" required autocomplete="email" />
+            <span class="hint">We add the free pages to this account.</span>
+          </div>
+          <div class="field">
+            <label for="s-name">First name</label>
+            <input id="s-name" name="name" type="text" autocomplete="given-name" />
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend><span class="n">2</span>What best describes your work? <span class="req">required</span></legend>
+        <div class="choices">
+          {roles.map((r, i) => (
+            <label class="choice"><input type="radio" name="role" value={r} id={`s-role-${i}`} /> {r}</label>
+          ))}
+          <label class="choice choice--other"><input type="radio" name="role" value="Other" id="s-role-other" /> Other: <input type="text" id="s-role-other-text" aria-label="Other role" /></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend><span class="n">3</span>What do you use the converted statements for? <span class="opt">Pick all that apply</span></legend>
+        <div class="choices">
+          {uses.map((u, i) => (
+            <label class="choice"><input type="checkbox" name="use" value={u} id={`s-use-${i}`} /> {u}</label>
+          ))}
+          <label class="choice choice--other"><input type="checkbox" name="use" value="Other" id="s-use-other" /> Other: <input type="text" id="s-use-other-text" aria-label="Other use" /></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend><span class="n">4</span>Whose statements do you convert?</legend>
+        <div class="choices choices--inline">
+          {owners.map((o, i) => (
+            <label class="choice"><input type="radio" name="owner" value={o} id={`s-owner-${i}`} /> {o}</label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend><span class="n">5</span>About how many statements do you work with in a month?</legend>
+        <div class="choices choices--inline">
+          {volumes.map((v, i) => (
+            <label class="choice"><input type="radio" name="volume" value={v} id={`s-vol-${i}`} /> {v}</label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend><span class="n">6</span>What do you do with the spreadsheet next?</legend>
+        <div class="field">
+          <textarea id="s-next" rows="3" placeholder="e.g. total deposits for a lender, send to my bookkeeper, check rent against income"></textarea>
+        </div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend><span class="n">7</span>Which parts are most useful? <span class="opt">Pick all that apply</span></legend>
+        <div class="choices">
+          {features.map((f, i) => (
+            <label class="choice"><input type="checkbox" name="feature" value={f} id={`s-feat-${i}`} /> {f}</label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend><span class="n">8</span>Would a one-page income summary help?</legend>
+        <p class="hint">Average monthly deposits, large deposits flagged, overdrafts and returned payments, ready to send to a lender or landlord.</p>
+        <div class="choices choices--inline">
+          <label class="choice"><input type="radio" name="summary" value="Yes, a lot" id="s-sum-0" /> Yes, a lot</label>
+          <label class="choice"><input type="radio" name="summary" value="Somewhat" id="s-sum-1" /> Somewhat</label>
+          <label class="choice"><input type="radio" name="summary" value="Not really" id="s-sum-2" /> Not really</label>
+        </div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend><span class="n">9</span>What was missing, wrong or frustrating?</legend>
+        <div class="field">
+          <textarea id="s-missing" rows="3" placeholder="A wrong amount, a bank that didn't work, a column you needed…"></textarea>
+        </div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend><span class="n">10</span>What would make $10 a month an easy yes?</legend>
+        <div class="field">
+          <textarea id="s-pay" rows="2"></textarea>
+        </div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend><span class="n">11</span>How likely are you to recommend us to a colleague?</legend>
+        <div class="nps" role="radiogroup" aria-label="0 is not likely, 10 is very likely">
+          {Array.from({ length: 11 }, (_, i) => (
+            <label class="nps-pt"><input type="radio" name="nps" value={String(i)} id={`s-nps-${i}`} /><span>{i}</span></label>
+          ))}
+        </div>
+        <div class="nps-ends"><span>Not likely</span><span>Very likely</span></div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend><span class="n">12</span>Can we follow up with a 10-minute call?</legend>
+        <div class="choices choices--inline">
+          <label class="choice"><input type="radio" name="call" value="Yes" id="s-call-0" /> Yes</label>
+          <label class="choice"><input type="radio" name="call" value="No" id="s-call-1" /> No thanks</label>
+        </div>
+      </fieldset>
+
+      <button type="submit" class="submit" id="s-submit">Send answers and get 100 pages</button>
+      <p class="fine">Your answers go only to our team at {SUPPORT_EMAIL}. One reward per account.</p>
+    </form>
+  </section>
+</Base>
+
+<script>
+  const form = document.getElementById('survey-form') as HTMLFormElement;
+  const errEl = document.getElementById('s-error') as HTMLElement;
+  const okEl = document.getElementById('s-success') as HTMLElement;
+  const btn = document.getElementById('s-submit') as HTMLButtonElement;
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const val = (id: string) => ((document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement)?.value || '').trim();
+  const one = (name: string) => (form.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement | null)?.value || '';
+  const many = (name: string) =>
+    Array.from(form.querySelectorAll<HTMLInputElement>(`input[name="${name}"]:checked`)).map((i) => i.value);
+
+  function showError(msg: string) {
+    errEl.textContent = msg;
+    errEl.hidden = false;
+    errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errEl.hidden = true;
+    const email = val('s-email');
+    let role = one('role');
+    if (role === 'Other') role = `Other: ${val('s-role-other-text') || '(not given)'}`;
+    if (!EMAIL_RE.test(email)) return showError('Enter the email you signed up with so we can add your pages.');
+    if (!role) return showError('Pick what best describes your work (question 2).');
+
+    const uses = many('use').map((u) => (u === 'Other' ? `Other: ${val('s-use-other-text') || '(not given)'}` : u));
+    const ref = new URLSearchParams(location.search).get('ref') || '';
+    const lines = [
+      `SURVEY RESPONSE${ref ? ` (ref: ${ref})` : ''}`,
+      `Reward: add 100 pack pages to ${email}`,
+      '',
+      `Role: ${role}`,
+      `Uses: ${uses.join('; ') || '-'}`,
+      `Whose statements: ${one('owner') || '-'}`,
+      `Statements per month: ${one('volume') || '-'}`,
+      `Next step with spreadsheet: ${val('s-next') || '-'}`,
+      `Most useful: ${many('feature').join('; ') || '-'}`,
+      `Income summary would help: ${one('summary') || '-'}`,
+      `Missing / frustrating: ${val('s-missing') || '-'}`,
+      `What makes $10/mo an easy yes: ${val('s-pay') || '-'}`,
+      `Recommend (0-10): ${one('nps') || '-'}`,
+      `OK to call: ${one('call') || '-'}`,
+    ];
+
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: val('s-name') || 'Survey respondent',
+          email,
+          subject: `Survey: ${role}`,
+          message: lines.join('\n'),
+          _company: val('s-company'),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        form.hidden = true;
+        (document.getElementById('s-success-email') as HTMLElement).textContent = email;
+        okEl.hidden = false;
+        okEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        (window as any).dataLayer?.push({ event: 'survey_submit', role });
+        return;
+      }
+      showError(`We couldn't save your answers just now. Please try again, or email them to team@bankstatementscanner.com.`);
+    } catch {
+      showError('Network error. Please check your connection and try again.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Send answers and get 100 pages';
+    }
+  });
+</script>
+
+<style>
+  .survey { max-width: 680px; padding-block: 40px 56px; }
+  .eyebrow { margin: 0 0 10px; color: var(--color-primary); font-weight: 600; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .survey h1 { font-size: clamp(28px, 4vw, 38px); margin: 0 0 12px; text-wrap: balance; }
+  .sub { color: var(--color-text-muted); font-size: 17px; margin: 0 0 28px; }
+  .alert { border-radius: var(--radius-md); padding: 14px 16px; font-size: 15px; margin: 0 0 20px; }
+  .alert--error { background: rgba(220, 38, 38, 0.06); color: var(--color-error); border: 1px solid rgba(220, 38, 38, 0.35); }
+  .alert--ok { background: rgba(34, 197, 94, 0.1); color: #15803d; border: 1px solid rgba(34, 197, 94, 0.4); }
+  .form { display: flex; flex-direction: column; gap: 14px; }
+  .q { border: 1px solid var(--color-border); border-radius: 12px; padding: 18px 20px 20px; margin: 0; background: var(--color-surface); min-width: 0; }
+  .q legend { font-weight: 600; font-size: 16px; padding: 0 6px; margin-left: -6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--color-primary-subtle); color: var(--color-primary); font-size: 12px; font-weight: 700; }
+  .req, .opt { font-weight: 500; font-size: 12px; color: var(--color-text-muted); }
+  .hint { font-size: 13px; color: var(--color-text-muted); margin: 6px 0 0; }
+  .row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-top: 10px; }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; min-width: 0; }
+  .row .field { margin-top: 0; }
+  .field--honeypot { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .field label { font-weight: 600; font-size: 14px; }
+  input[type='text'], input[type='email'], textarea {
+    font: inherit; padding: 10px 12px; border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); min-width: 0;
+  }
+  input:focus-visible, textarea:focus-visible { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-subtle); }
+  textarea { resize: vertical; }
+  .choices { display: grid; gap: 8px; margin-top: 12px; }
+  .choices--inline { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .choice { display: flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer; }
+  .choice input[type='radio'], .choice input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--color-primary); flex: none; }
+  .choice--other input[type='text'] { flex: 1; padding: 6px 10px; }
+  .nps { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 4px; margin-top: 12px; }
+  .nps-pt { position: relative; cursor: pointer; }
+  .nps-pt input { position: absolute; opacity: 0; inset: 0; }
+  .nps-pt span { display: grid; place-items: center; height: 38px; border: 1px solid var(--color-border); border-radius: 8px; font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .nps-pt input:checked + span { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
+  .nps-pt input:focus-visible + span { box-shadow: 0 0 0 3px var(--color-primary-subtle); }
+  .nps-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--color-text-muted); margin-top: 6px; }
+  .submit {
+    align-self: flex-start; background: var(--color-primary); color: var(--color-on-primary);
+    font: inherit; font-weight: 600; padding: 13px 24px; border: none; border-radius: var(--radius-md); cursor: pointer; margin-top: 6px;
+  }
+  .submit:hover { background: var(--color-primary-hover); }
+  .submit:disabled { opacity: 0.6; cursor: default; }
+  .fine { font-size: 13px; color: var(--color-text-muted); margin: 0; }
+  @media (max-width: 560px) {
+    .row { grid-template-columns: 1fr; }
+    .nps span { height: 34px; font-size: 13px; }
+  }
+</style>

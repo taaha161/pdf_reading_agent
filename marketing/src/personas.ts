@@ -159,4 +159,44 @@ export const PERSONAS: Persona[] = [
       },
     ],
   },
+  {
+    slug: 'real-estate',
+    name: 'Real estate agents and property managers',
+    seoTitle: 'Bank Statement Analysis for Real Estate Agents and Property Managers',
+    description:
+      'Turn buyer, borrower and tenant bank statement PDFs into clean spreadsheets. Total deposits, spot large transfers and check rent against income in minutes. 100 pages free your first month.',
+    eyebrow: 'For real estate agents, brokers and property managers',
+    h1: 'Read a client’s bank statements in minutes, not an afternoon.',
+    sub: 'Buyers, borrowers and tenants send you months of PDF statements. Upload them and get every transaction in a spreadsheet, with money in and out totaled and the statement checked against its own balances.',
+    pains: [
+      { old: 'Three months of PDFs from every buyer or applicant', new: 'Each statement converted to rows in seconds' },
+      { old: 'Adding up deposits with a calculator to estimate income', new: 'Money in and money out totaled for every statement' },
+      { old: 'Scrolling for the large deposit the lender will ask about', new: 'Ask "deposits over $1,000" and export just those rows' },
+      { old: 'Not sure a statement adds up or a month is missing', new: 'Each statement checked against its printed balances, months linked in order' },
+      { old: 'Client financial data sitting in your inbox and downloads', new: 'Incognito mode converts a statement without saving it' },
+    ],
+    guide: '',
+    faqs: [
+      {
+        q: 'How do agents and property managers use it?',
+        a: 'Common uses are checking that a buyer has the down payment and reserves before submitting an offer, screening rental applicants by comparing their deposits to the rent, preparing proof of funds for cash offers, and keeping commission income organized for taxes.',
+      },
+      {
+        q: 'Can it total a tenant’s or borrower’s monthly deposits?',
+        a: 'Yes. Every converted statement shows total money in and money out. Export to Excel to average deposits across several months, or ask in chat for every deposit over an amount and export just those rows.',
+      },
+      {
+        q: 'Does this replace lender income verification?',
+        a: 'No. It turns statements into spreadsheets so you can review them faster. Lenders and screening services still make their own decisions, and you should only handle statements your clients have shared with you for that purpose.',
+      },
+      {
+        q: 'How is client data protected?',
+        a: 'Uploads are encrypted in transit and the original PDF is not kept after processing. Incognito mode converts a statement without saving its data. Saved statements stay until you delete them.',
+      },
+      {
+        q: 'What does it cost?',
+        a: PRICING_SUMMARY,
+      },
+    ],
+  },
 ];

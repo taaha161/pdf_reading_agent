@@ -18,7 +18,9 @@ export default defineConfig({
       filter: (page) =>
         !/\/(dashboard|settings|login|signup|forgot-password|reset-password|scanner)(\/|$)/.test(page) &&
         // Paid-ad landing pages are noindex.
-        !/\/lp\//.test(page),
+        !/\/lp\//.test(page) &&
+        // Customer survey is noindex and only shared by email.
+        !/\/survey\/?$/.test(page),
     }),
   ],
 });
