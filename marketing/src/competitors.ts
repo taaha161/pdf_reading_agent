@@ -802,6 +802,67 @@ export const competitors: Competitor[] = [
     ],
     checked: '2026-11-24',
   },
+  {
+    slug: 'bankstatementlab-alternative',
+    category: 'Statement converters',
+    card: 'A credit-based converter with OFX export and an API, from $9/month for 50 pages.',
+    seoTitle: 'BankStatementLab Alternative: Compare Price and Features',
+    description: 'Bank Statement Scanner vs BankStatementLab on price, free use, exports, and balance checks. 100 pages free your first month, then $10 a month.',
+    crumb: 'BankStatementLab alternative',
+    eyebrow: 'BankStatementLab alternative',
+    h1: 'Bank Statement Scanner vs BankStatementLab',
+    intro: [
+      'BankStatementLab converts digital and scanned bank statements to Excel, CSV, or OFX, with reconciliation, statement merge, and cash-flow reports on paid plans and a REST API on Pro and Business. It charges one credit per page, from $9 a month for 50 credits.',
+      'Bank Statement Scanner gives you 100 pages free for your first month, then $10 a month for 100 pages, with every statement checked against its printed balances. Here’s how they compare, including where BankStatementLab is the better pick.',
+    ],
+    themName: 'BankStatementLab',
+    rows: [
+      { label: 'Starting price', us: US.price, them: 'Starter $9/month (50 credits); Pro $29 (400); Business $59 (1,000); yearly billing discounted' },
+      { label: 'How you pay', us: US.perStatement, them: '1 credit per page; credits reset each month and don’t roll over' },
+      { label: 'Free use', us: US.free, them: 'Basic plan: 5 credits a month, no card; a 2-page preview without an account' },
+      { label: 'Export formats', us: US.exports, them: 'Excel, CSV, OFX' },
+      { label: 'Scanned PDFs', us: US.scanned, them: 'Digital and scanned PDFs; “AI OCR” listed on Pro and Business' },
+      { label: 'API', us: 'None', them: 'REST API on Pro and Business' },
+      { label: 'Data', us: US.data, them: 'Source files not stored; you set how long extracted data is kept' },
+    ],
+    tableNote: 'BankStatementLab prices are from its English pricing page in USD; its French page lists euro prices. They may have changed.',
+    sections: [
+      {
+        heading: 'Where BankStatementLab is stronger',
+        bullets: [
+          'Cheaper entry plan if you only need about 50 pages a month.',
+          'OFX export, for accounting tools that import OFX.',
+          'A REST API, statement merge, and cash-flow reports on higher plans.',
+          'A small free allowance every month, not only in the first month.',
+        ],
+      },
+      {
+        heading: 'Where Bank Statement Scanner is stronger',
+        bullets: [
+          '100 free pages in your first month, and 10 without an account, against 5 credits a month.',
+          'Page packs that never expire for busy months, so unused pages aren’t lost when the month resets.',
+          'Every statement checked against its opening, running, and closing balances, with the rows to look at when they don’t add up.',
+          'Scanned statements and an accurate mode on every plan.',
+        ],
+      },
+    ],
+    fit: {
+      us: ['You want a full free month to clear a backlog', 'Your volume swings from month to month', 'You want every statement checked against its balances', 'You need CSV or Excel'],
+      them: ['You need OFX files', 'You want API access', 'You convert about 50 pages a month on a tight budget', 'You want merge and cash-flow reports built in'],
+    },
+    faqs: [
+      { q: 'How much does BankStatementLab cost?', a: 'Its English pricing page lists Starter at $9 a month for 50 credits, Pro at $29 for 400, and Business at $59 for 1,000, with a discount for yearly billing. One credit converts one page.' },
+      { q: 'Is BankStatementLab free?', a: 'Its Basic plan includes 5 credits a month with no card, and you can preview 2 pages without an account.' },
+      TRIAL_FAQ,
+      QB_FAQ,
+    ],
+    sources: [
+      { label: 'BankStatementLab pricing', url: 'https://bankstatementlab.com/en/pricing' },
+      { label: 'BankStatementLab homepage', url: 'https://bankstatementlab.com/en' },
+      { label: 'BankStatementLab security', url: 'https://bankstatementlab.com/en/security' },
+    ],
+    checked: '2026-11-24',
+  },
 ];
 
 export const competitorBySlug = (slug: string) => competitors.find((c) => c.slug === slug);
