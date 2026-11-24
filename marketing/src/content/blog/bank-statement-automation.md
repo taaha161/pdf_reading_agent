@@ -40,7 +40,7 @@ This manual pattern introduces severe structural liabilities:
 
 - **Compounding Transcription Errors**: Studies in data management demonstrate that manual keystroke error rates typically hover between 1% and 4%. A single transposed digit transforms a $1,420.00 disbursement into $1,240.00, causing reconciliation discrepancies that consume hours of forensic ledger auditing.
 - **Unscalable Labor Costs**: As a firm’s client roster expands, transaction volume climbs linearly. Relying on human typing forces firms to hire data entry clerks rather than high-value financial advisors.
-- **Operational Delays During Closing**: Manual entry creates severe calendar friction at month-end. You can significantly [speed up month-end with automation](/blog/speed-up-month-end-with-bank-statement-automation) by feeding PDF statements into an extraction pipeline rather than waiting days for preliminary transaction logs.
+- **Operational Delays During Closing**: Manual entry creates severe calendar friction at month-end. You can significantly speed up month-end by feeding PDF statements into an extraction pipeline rather than waiting days for preliminary transaction logs.
 - **Fatigue and Staff Burnout**: Reviewing thousands of rows of high-contrast bank records induces eye strain and mental fatigue, leading to high turnover among junior accounting staff.
 
 ## Core Advantages of Adopting Bank Statement Automation

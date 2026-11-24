@@ -159,7 +159,7 @@ To see this reconciliation mechanics in action, consider a hypothetical account 
 2. **Customer Payment ($2,150.00):** Deposited into the physical night-drop on March 31. The bank did not process it until April 1, making it a deposit in transit.
 3. **Monthly Service Fee ($25.00) & Merchant Chargeback ($180.00):** Deducted by the financial institution on March 31. These are valid bank deductions that must be recorded into the general ledger before closing the month.
 
-If you regularly handle raw transaction exports, read our comparison on [from PDF bank statement to CSV or Excel](/blog/pdf-bank-statement-to-csv-or-excel) to understand how formatting nuances affect automated lookups.
+If you regularly handle raw transaction exports, read our comparison on [from PDF bank statement to CSV or Excel](/blog/convert-bank-statement-pdf-to-excel) to understand how formatting nuances affect automated lookups.
 
 ## Building the Bank Reconciliation Summary Schedule
 
@@ -250,7 +250,7 @@ Dates imported from accounting exports or converted statements are frequently st
 
 Test your date columns using `=ISNUMBER(A2)`. If it returns `FALSE`, convert the column by selecting the range, opening **Data > Text to Columns**, and choosing `Date: YMD` in Step 3 of the wizard.
 
-For teams managing tight month-end schedules, eliminating data cleaning bottlenecks is critical. Learn more about optimizing this cadence in our guide to [speeding up month-end close with automated bank statement data](/blog/speed-up-month-end-with-bank-statement-automation).
+For teams managing tight month-end schedules, eliminating data cleaning bottlenecks is critical. Learn more about optimizing this cadence in our guide to [speeding up month-end close with automated bank statement data](/blog/bank-statement-automation).
 
 ## Frequently Asked Questions
 

@@ -110,7 +110,7 @@ Before adopting software across your team, review technical security audits. For
 
 Reconciliation bottlenecks are the primary reason accounting firms struggle to hit timely month-end reporting targets. When staff spend the first fifteen days of every calendar month collecting missing statements and reconciling bank accounts, strategic reporting and client communication get pushed to the margins.
 
-By integrating standardized extraction into your monthly rhythm, you compress the financial close timeline significantly. For practical insights on shortening this cycle, explore our tactical guide on how to [speed up month-end with bank statement automation](/blog/speed-up-month-end-with-bank-statement-automation). Moving from unstructured inputs to balanced spreadsheets in seconds allows your staff to conduct variance analysis, investigate unusual expenditures, and deliver finished financial statements while the figures are still timely and actionable for business owners.
+By integrating standardized extraction into your monthly rhythm, you compress the financial close timeline significantly. For practical insights on shortening this cycle, explore our tactical guide on how to [speed up month-end with bank statement automation](/blog/bank-statement-automation). Moving from unstructured inputs to balanced spreadsheets in seconds allows your staff to conduct variance analysis, investigate unusual expenditures, and deliver finished financial statements while the figures are still timely and actionable for business owners.
 
 ## How to Build a Repeatable Client Onboarding Template
 

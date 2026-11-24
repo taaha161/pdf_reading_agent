@@ -50,7 +50,7 @@ The engine identifies the header block, transaction tables, and account summary 
 Financial documents contain fonts designed to hinder fraudulent alterations, such as dense MICR fonts or compressed proportional typefaces. Advanced models look at surrounding characters to differentiate between an uppercase "O" and the digit "0", or a lowercase "l", uppercase "I", and the number "1".
 
 ### 4. Mathematical Validation
-A high-quality [bank statement scanner](/blog/pdf-bank-statement-to-csv-or-excel) does not just read the text; it audits the math. It calculates whether the starting balance minus total withdrawals plus total deposits equals the ending balance. If an extracted line item does not tie out against the stated running balance, the system flags the specific discrepancy for human verification rather than silently delivering corrupt data.
+A high-quality [bank statement scanner](/blog/convert-bank-statement-pdf-to-excel) does not just read the text; it audits the math. It calculates whether the starting balance minus total withdrawals plus total deposits equals the ending balance. If an extracted line item does not tie out against the stated running balance, the system flags the specific discrepancy for human verification rather than silently delivering corrupt data.
 
 ## Step-by-Step: How to Scan Bank Statements to Excel or CSV
 
@@ -153,7 +153,7 @@ Automating the scanning process yields immediate operational benefits:
 2. **Reduced Reconciliation Drag:** Because automated tools verify running balances mathematically, bookkeepers spend far less time tracking down ten-cent rounding discrepancies during bank reconciliations.
 3. **Scalability:** Whether a firm takes on 5 new clients or 50, automated document ingestion ensures bookkeeping capacity scales without requiring additional administrative hires.
 
-Firms looking to optimize operational workflows can read our guide on how to [speed up month-end with automation](/blog/speed-up-month-end-with-bank-statement-automation) to eliminate backlogs permanently.
+Firms looking to optimize operational workflows can read our guide on how to [speed up month-end with automation](/blog/bank-statement-automation) to eliminate backlogs permanently.
 
 ## Choosing the Right Tool to Scan Bank Statements
 

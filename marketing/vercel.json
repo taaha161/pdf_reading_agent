@@ -354,6 +354,21 @@
       "source": "/blog/scan-bank-statements-to-excel-and-csv",
       "destination": "/blog/convert-scanned-bank-statement-ocr",
       "permanent": true
+    },
+    {
+      "source": "/blog/pdf-bank-statement-to-csv-or-excel",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/pdf-to-excel-methods-accounting-guide",
+      "destination": "/blog/convert-bank-statement-pdf-to-excel",
+      "permanent": true
+    },
+    {
+      "source": "/blog/speed-up-month-end-with-bank-statement-automation",
+      "destination": "/blog/bank-statement-automation",
+      "permanent": true
     }
   ],
   "rewrites": [

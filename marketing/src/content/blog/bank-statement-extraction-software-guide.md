@@ -116,7 +116,7 @@ For a deeper review of encryption methodologies and processing protocols, consul
 Extraction software serves as the vital bridge between static documents and operational accounting. Once transactional records are freed from static PDFs, teams can accelerate numerous mission-critical workflows.
 
 ### Accelerating Month-End Reconciliations
-Month-end closes often stall waiting for clients to provide live bank feed integrations or missing digital statements. When clients submit static PDF statements months late, extraction software converts those records into clean CSV files, allowing bookkeepers to complete reconciliations immediately. You can read more about how automated parsing can [speed up month-end closes with automation](/blog/speed-up-month-end-with-bank-statement-automation).
+Month-end closes often stall waiting for clients to provide live bank feed integrations or missing digital statements. When clients submit static PDF statements months late, extraction software converts those records into clean CSV files, allowing bookkeepers to complete reconciliations immediately. You can read more about how automated parsing can [speed up month-end closes with automation](/blog/bank-statement-automation).
 
 ### Historical Forensic Accounting and Tax Audits
 During an audit or divorce proceeding, banks often provide historical archives spanning 5 to 10 years strictly as scanned microfiche or locked PDFs. Manually typing a decade of financial transactions is financially and operationally prohibitive. Using high-speed extraction software, forensic accountants convert thousands of pages into unified Excel workbooks in an afternoon, facilitating rapid variance analysis and pivot-table exploration.

@@ -118,7 +118,7 @@ For an individual parsing a single, simple document, a quick desktop script or b
 
 The month-end close is historically marked by late nights, fragmented email chains, and tedious reconciliations. Financial data extraction software serves as a major accelerator in this process, transforming how finance teams tackle period-end closing tasks.
 
-By converting raw statement PDFs directly into structured spreadsheets, finance teams can [speed up month-end with bank statement automation](/blog/speed-up-month-end-with-bank-statement-automation). Rather than spending the first three days of the closing cycle extracting transactions, analysts can jump directly into variance analysis, accruals, and ledger matching on day one.
+By converting raw statement PDFs directly into structured spreadsheets, finance teams can [speed up month-end with bank statement automation](/blog/bank-statement-automation). Rather than spending the first three days of the closing cycle extracting transactions, analysts can jump directly into variance analysis, accruals, and ledger matching on day one.
 
 During audits or forensic reviews, historical statements often arrive as massive batches of unindexed scans. Extraction software processes these multi-year archives into uniform datasets, enabling immediate chronological filtering, duplicate detection, and automated spend categorization. This eliminates friction and turns an otherwise painful audit preparation exercise into a smooth, structured workflow.
 
