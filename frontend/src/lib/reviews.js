@@ -9,6 +9,7 @@ export const G2_REVIEW_URL =
 export const TRUSTPILOT_REVIEW_URL = import.meta.env.VITE_TRUSTPILOT_REVIEW_URL || "";
 export const REVIEW_REWARD_PAGES = 100; // keep in sync with backend store.REVIEW_REWARD_PAGES
 export const REVIEW_PROMPT_AT_PAGES = 50;
+export const REVIEW_PROMPT_AFTER_SCANS = 3;
 
 const DISMISSED_KEY = "bss_review_reward_dismissed_at";
 const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -30,11 +31,16 @@ export function snoozeReviewReward() {
   }
 }
 
-/** Show the offer to a signed-in user at or below the threshold who hasn't claimed it or snoozed it. */
+/**
+ * Show the offer to a signed-in user who has run a few scans (so they've seen it work) or is
+ * running low on pages, unless they've already claimed it or snoozed it.
+ */
 export function reviewRewardDue(usage) {
   if (!G2_REVIEW_URL || !usage?.authenticated) return false;
   if (usage.review_claim != null) return false; // pending, granted, rejected or unknown
   const left = usage.pages_remaining;
-  if (left == null || left > REVIEW_PROMPT_AT_PAGES) return false;
+  const runningLow = left != null && left <= REVIEW_PROMPT_AT_PAGES;
+  const regular = (usage.scan_count ?? 0) >= REVIEW_PROMPT_AFTER_SCANS;
+  if (!runningLow && !regular) return false;
   return !dismissedRecently();
 }

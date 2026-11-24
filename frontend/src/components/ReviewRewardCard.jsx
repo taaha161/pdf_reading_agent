@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { submitReviewClaim } from "../api/client";
 import { trackEvent } from "../lib/analytics";
-import { G2_REVIEW_URL, REVIEW_REWARD_PAGES, TRUSTPILOT_REVIEW_URL } from "../lib/reviews";
+import { G2_REVIEW_URL, REVIEW_PROMPT_AT_PAGES, REVIEW_REWARD_PAGES, TRUSTPILOT_REVIEW_URL } from "../lib/reviews";
 import "./FeedbackPrompt.css";
 import "./ReviewRewardCard.css";
 
@@ -30,7 +30,7 @@ function CloseIcon() {
 }
 
 /**
- * Low-balance offer: 100 pages for a G2 review. Non-modal corner card (same shell as the
+ * Review offer (regular users or low balance): 100 pages for a G2 review. Non-modal corner card (same shell as the
  * feedback prompt). Steps: offer -> claim (paste review link/name) -> sent. Granted by hand.
  * `onClose(claimed)`: claimed = a claim was submitted, so the caller can refresh usage.
  */
@@ -161,7 +161,9 @@ export default function ReviewRewardCard({ pagesLeft, onClose }) {
             </span>
             <div>
               <p className="feedback-card-eyebrow">
-                {pagesLeft.toLocaleString()} {pagesLeft === 1 ? "page" : "pages"} left
+                {pagesLeft <= REVIEW_PROMPT_AT_PAGES
+                  ? `${pagesLeft.toLocaleString()} ${pagesLeft === 1 ? "page" : "pages"} left`
+                  : "Thanks for scanning with us"}
               </p>
               <h2 id="review-card-title" className="feedback-card-title">
                 Get {REVIEW_REWARD_PAGES} free pages for a G2 review

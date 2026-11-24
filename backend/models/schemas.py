@@ -205,6 +205,7 @@ class UsageResponse(BaseModel):
     subscription_active: bool = False
     max_file_bytes: int = 20 * 1024 * 1024  # upload limit for this caller's tier
     review_claim: Optional[str] = None  # authenticated only: None | pending | granted | rejected
+    scan_count: Optional[int] = None  # authenticated only: scans run (review card shows after a few)
 
 
 class CheckoutSessionRequest(BaseModel):

@@ -52,14 +52,15 @@ def test_notification_failure_still_ok(client, deps):
     assert client.post("/api/review-claim", json={"proof": "Scott"}).status_code == 200
 
 
-def test_usage_reports_claim_status(client, no_db_review_claim):
-    no_db_review_claim.return_value = "pending"
+def test_usage_reports_claim_status_and_scans(client, no_db_review_claim):
+    no_db_review_claim.return_value = ("pending", 7)
     with patch("main.ensure_free_grant", return_value={"free_pages": 40}):
-        assert client.get("/api/usage").json()["review_claim"] == "pending"
+        body = client.get("/api/usage").json()
+    assert body["review_claim"] == "pending" and body["scan_count"] == 7
 
 
 def test_usage_survives_claim_lookup_failure(client, no_db_review_claim):
-    from main import _review_claim_status
-
-    with patch("main.get_review_claim_status", side_effect=RuntimeError("no table")):
-        assert _review_claim_status("u") == "unknown"
+    no_db_review_claim.side_effect = RuntimeError("no table")
+    with patch("main.ensure_free_grant", return_value={"free_pages": 40}):
+        body = client.get("/api/usage").json()
+    assert body["review_claim"] == "unknown" and body["scan_count"] == 0

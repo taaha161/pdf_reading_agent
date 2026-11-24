@@ -130,7 +130,7 @@ from store import (
     record_email_capture,
     record_feedback,
     create_review_claim,
-    get_review_claim_status,
+    get_review_prompt_state,
     REVIEW_REWARD_PAGES,
     trial_run_exists,
     set_job,
@@ -1400,18 +1400,19 @@ def get_usage(
         trial_remaining=0,
         subscription_active=_subscription_active(billing),
         max_file_bytes=_max_file_size(user_id, billing),
-        review_claim=_review_claim_status(user_id),
+        **_review_prompt_fields(user_id),
         **_billing_fields(billing),
     )
 
 
-def _review_claim_status(user_id: str) -> str | None:
+def _review_prompt_fields(user_id: str) -> dict:
     """Usage must not fail on this; an unknown status just keeps the review card hidden."""
     try:
-        return get_review_claim_status(user_id)
+        status, scans = get_review_prompt_state(user_id)
+        return {"review_claim": status, "scan_count": scans}
     except Exception as e:  # noqa: BLE001
-        logger.warning("review claim lookup failed (continuing): %s", e)
-        return "unknown"
+        logger.warning("review prompt lookup failed (continuing): %s", e)
+        return {"review_claim": "unknown", "scan_count": 0}
 
 
 @app.post("/api/billing/checkout-session", response_model=CheckoutSessionResponse)
