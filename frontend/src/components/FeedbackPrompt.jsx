@@ -4,9 +4,12 @@ import "./FeedbackPrompt.css";
 
 const RATINGS = [1, 2, 3, 4, 5];
 const SUCCESS_CLOSE_MS = 3500;
-/** Public review profile (Trustpilot/G2). Unset = no review ask. Happy raters (4–5) get the link. */
+/**
+ * Public review profile. Unset = no review ask. Everyone who sends feedback gets the same link,
+ * whatever their rating: asking only happy raters ("review gating") breaks Trustpilot's and G2's
+ * rules and the FTC review rule (16 CFR 465).
+ */
 const REVIEW_URL = import.meta.env.VITE_REVIEW_URL || "";
-const REVIEW_MIN_RATING = 4;
 
 function MessageIcon() {
   return (
@@ -63,7 +66,7 @@ export default function FeedbackPrompt({ jobId, isLoggedIn, onClose }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose, sending]);
 
-  const askForReview = sent && !!REVIEW_URL && rating != null && rating >= REVIEW_MIN_RATING;
+  const askForReview = sent && !!REVIEW_URL;
 
   useEffect(() => {
     // Keep the card open when it's asking for a public review; it closes via X or the link.
@@ -113,7 +116,7 @@ export default function FeedbackPrompt({ jobId, isLoggedIn, onClose }) {
             <p className="feedback-card-sub">We read every response.</p>
             {askForReview && (
               <p className="feedback-card-sub">
-                Glad it's working. Would you share that in a quick public review? It helps other accountants find us.{" "}
+                Would you also share your experience in a public review? Honest reviews, good or bad, help other people decide.{" "}
                 <a
                   href={REVIEW_URL}
                   target="_blank"

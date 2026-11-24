@@ -75,5 +75,5 @@ def no_db_review_claim():
     """
     from unittest.mock import patch
 
-    with patch("main.get_review_claim_status", return_value=None) as mock:
+    with patch("main.get_review_prompt_state", return_value=(None, 0)) as mock:
         yield mock

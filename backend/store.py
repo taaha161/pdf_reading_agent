@@ -362,12 +362,21 @@ def record_feedback(
 REVIEW_REWARD_PAGES = 100
 
 
-def get_review_claim_status(user_id: str) -> str | None:
-    """'pending' | 'granted' | 'rejected', or None if this account never claimed the review reward."""
+def get_review_prompt_state(user_id: str) -> tuple[str | None, int]:
+    """(claim status, scans run) for the review-reward card, in one round trip.
+
+    status: 'pending' | 'granted' | 'rejected', or None if this account never claimed.
+    """
     with _cursor() as cur:
-        cur.execute("SELECT status FROM review_claims WHERE user_id = %s", (user_id,))
-        row = cur.fetchone()
-    return row[0] if row else None
+        cur.execute(
+            """
+            SELECT (SELECT status FROM review_claims WHERE user_id = %s),
+                   (SELECT COUNT(*) FROM jobs WHERE user_id::text = %s)
+            """,
+            (user_id, user_id),
+        )
+        status, scans = cur.fetchone()
+    return status, int(scans or 0)
 
 
 def create_review_claim(user_id: str, platform: str, proof: str) -> bool:
@@ -382,6 +391,16 @@ def create_review_claim(user_id: str, platform: str, proof: str) -> bool:
             (user_id, platform, proof),
         )
         return cur.rowcount == 1
+
+
+def create_granted_review_claim(user_id: str, platform: str, proof: str, pages: int = REVIEW_REWARD_PAGES) -> bool:
+    """For reviews reported outside the app (e.g. a reply to an email): record the claim and grant it.
+
+    False if the account already has a claim, so a reward is never given twice.
+    """
+    if not create_review_claim(user_id, platform, proof):
+        return False
+    return grant_review_reward(user_id, pages)
 
 
 def grant_review_reward(user_id: str, pages: int = REVIEW_REWARD_PAGES) -> bool:

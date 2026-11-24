@@ -229,8 +229,8 @@ export default function ScannerPage() {
 
   const closeFeedback = useCallback(() => setFeedbackOpen(false), []);
 
-  // Review reward: once a signed-in user is down to REVIEW_PROMPT_AT_PAGES, offer pages for a
-  // G2 review. Waits for any other popup or a running scan; one card at a time.
+  // Review reward: once a signed-in user has run a few scans or is running low on pages, offer
+  // pages for a G2 review (see reviewRewardDue). Waits for any other popup or a running scan; one card at a time.
   const [reviewOpen, setReviewOpen] = useState(false);
   const reviewDue = isLoggedIn && reviewRewardDue(usage);
   const otherPopupOpen = feedbackOpen || feedbackDue || emailPopupOpen || showPasswordModal || chatOpen;
