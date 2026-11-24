@@ -32,7 +32,7 @@ The difference lies not just in who does the work, but in where errors originate
 | **Handling Edge Cases** | High flexibility; humans interpret unusual notes | Moderate; edge cases require post-export edits |
 | **Suitability for Large Volumes** | Becomes cost-prohibitive and fatigue-prone | Scales efficiently across multi-page statements |
 
-For a deeper look into the technical mechanics of software extraction, read our breakdown of [PDF to Excel conversion methods for accounting workflows](/blog/pdf-to-excel-methods-accounting-guide).
+For a deeper look into the technical mechanics of software extraction, read our breakdown of [PDF to Excel conversion methods for accounting workflows](/blog/convert-bank-statement-pdf-to-excel).
 
 ## Time Investment: Retyping Bank Statements vs Automated Extraction
 

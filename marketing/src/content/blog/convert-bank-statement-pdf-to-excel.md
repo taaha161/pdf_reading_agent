@@ -32,7 +32,7 @@ Moving your financial data into an editable spreadsheet format unlocks essential
 - **Compatibility with Accounting Systems:** Spreadsheets can be saved as CSV files and mapped directly to fields in bookkeeping platforms, eliminating manual data entry.
 - **Audit Readiness:** Having standardized tables allows auditors and tax preparers to verify claims quickly without re-keying historical paper receipts or messy visual documents.
 
-For a deeper look at file structure options, see our comprehensive guide on [from PDF bank statement to CSV or Excel](/blog/pdf-bank-statement-to-csv-or-excel).
+For a deeper look at choosing between the two formats, see [how to convert bank statements to CSV](/blog/convert-bank-statements-to-csv).
 
 ## How PDF Bank Statement Conversion Actually Works
 

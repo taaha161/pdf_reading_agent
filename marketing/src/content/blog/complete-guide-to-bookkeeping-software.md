@@ -129,7 +129,7 @@ Enforce two-factor authentication (2FA) across every user account using hardware
 ### Maintaining an Unbroken Audit Trail
 Under tax laws in most jurisdictions, the burden of proof rests on the taxpayer. Modern accounting platforms keep an unalterable audit log documenting every single time a transaction is created, modified, voided, or deleted. Regularly review this log for unusual activity, such as journal entries made outside normal business hours or significant modifications to closed periods.
 
-Furthermore, keep digital copies of original source documents linked directly to ledger entries. When external auditors review entries, being able to pull the source statement immediately prevents extensive inquiry cycles. Adopting automated workflows to [speed up month-end with automation](/blog/speed-up-month-end-with-bank-statement-automation) ensures that reconciliations happen on time and source documents are preserved systematically alongside your digital books.
+Furthermore, keep digital copies of original source documents linked directly to ledger entries. When external auditors review entries, being able to pull the source statement immediately prevents extensive inquiry cycles. Adopting automated workflows to [speed up month-end with automation](/blog/bank-statement-automation) ensures that reconciliations happen on time and source documents are preserved systematically alongside your digital books.
 
 ## Streamline Your Bookkeeping Workflow
 

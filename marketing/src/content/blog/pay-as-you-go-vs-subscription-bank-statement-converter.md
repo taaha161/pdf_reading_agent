@@ -129,7 +129,7 @@ Certain vendors market their platform as "pay-as-you-go" while burying an expira
 In a per-page billing setup, a bank statement that ends with three blank pages or corporate marketing notices will consume your credits. If you use a per-page tool, either delete unnecessary pages using a PDF editing tool before uploading, or switch to a converter that charges strictly per document.
 
 ### Export Format Paywalls
-Some platforms allow you to upload and parse statements for free or at a low unit cost, but lock standard export formats behind higher subscription tiers. For instance, exporting to raw text might be included, while exporting to structured `.xlsx` or `.csv` triggers an upgrade prompt. Clarify whether your chosen destination format is supported at the baseline pay-as-you-go rate. For an overview of format compatibility, read [from PDF bank statement to CSV or Excel](/blog/pdf-bank-statement-to-csv-or-excel).
+Some platforms allow you to upload and parse statements for free or at a low unit cost, but lock standard export formats behind higher subscription tiers. For instance, exporting to raw text might be included, while exporting to structured `.xlsx` or `.csv` triggers an upgrade prompt. Clarify whether your chosen destination format is supported at the baseline pay-as-you-go rate. For an overview of format compatibility, read [from PDF bank statement to CSV or Excel](/blog/convert-bank-statement-pdf-to-excel).
 
 ### Assuming API or Automation Access Is Included
 Pay-as-you-go consumer portals generally provide web-based file upload interfaces. If your goal is to build an automated webhook that pipes statements directly from email into your accounting software, vendors usually require enterprise-tier subscriptions or custom contract pricing.

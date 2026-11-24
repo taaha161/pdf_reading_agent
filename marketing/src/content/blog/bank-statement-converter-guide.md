@@ -141,7 +141,7 @@ When evaluating different software solutions, assess your requirements across th
 | **Output Formats** | Basic text or unformatted CSV | Clean Excel (XLSX), CSV, and accounting formats |
 | **Security & Privacy** | Public cloud storage, varying policies | Zero-retention options, SOC/GDPR-aligned data handling |
 
-If you deal with irregular file types or high monthly volumes, make sure your software handles multi-column layouts, splits combined debits and credits, and processes multi-page documents without dropping rows. For organizations managing tight reporting deadlines, implementing dedicated tools helps teams [speed up month-end with bank statement automation](/blog/speed-up-month-end-with-bank-statement-automation).
+If you deal with irregular file types or high monthly volumes, make sure your software handles multi-column layouts, splits combined debits and credits, and processes multi-page documents without dropping rows. For organizations managing tight reporting deadlines, implementing dedicated tools helps teams [speed up month-end with bank statement automation](/blog/bank-statement-automation).
 
 ## Streamline Your Statement Processing Today
 

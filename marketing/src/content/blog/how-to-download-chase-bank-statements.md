@@ -26,7 +26,7 @@ image: "/blog/images/how-to-download-chase-bank-statements.jpg"
   <li>Customizable data analysis with sorting, filtering, and pivot tables</li>
   <li>Simplified transaction tracking and categorization</li>
 </ul>
-<p>Because CSV files are plain text, they slot into almost any financial tool. If your goal is bookkeeping or taxes rather than a one-off look, a spreadsheet export is what your accounting software wants—see our guide on <a href="/blog/pdf-bank-statement-to-csv-or-excel">choosing between CSV and Excel for bank statement exports</a>.</p>
+<p>Because CSV files are plain text, they slot into almost any financial tool. If your goal is bookkeeping or taxes rather than a one-off look, a spreadsheet export is what your accounting software wants—see our guide on <a href="/blog/convert-bank-statement-pdf-to-excel">choosing between CSV and Excel for bank statement exports</a>.</p>
 
 <h2>Step-by-step: download your Chase statements</h2>
 <p>Downloading from Chase online banking is straightforward once you know where to look.</p>

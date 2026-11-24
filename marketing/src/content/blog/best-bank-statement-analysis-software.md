@@ -124,7 +124,7 @@ To maximize efficiency when using extraction and analysis software, implement th
 
 * **Standardize Your Intake Process:** Encourage clients to upload digital, system-generated PDFs directly from their banking portals whenever possible. While modern OCR handles scanned receipts and paper statements, native PDFs process faster and offer the highest level of accuracy.
 * **Establish Pre-Export Review Rules:** Always double-check flagged rows before sending data downstream. If a coffee spill or poor scan quality makes a number unreadable, resolve the issue within the software interface first rather than troubleshooting it in your general ledger later.
-* **Automate Reconciliations for Routine Closes:** Month-end financial closes often stall while waiting for client statements. Accounting teams can use automated extraction to quickly turn quarterly and year-end packages into balanced general ledger imports; see how this works in our guide on how to [speed up month-end with bank statement automation](/blog/speed-up-month-end-with-bank-statement-automation).
+* **Automate Reconciliations for Routine Closes:** Month-end financial closes often stall while waiting for client statements. Accounting teams can use automated extraction to quickly turn quarterly and year-end packages into balanced general ledger imports; see how this works in our guide on how to [speed up month-end with bank statement automation](/blog/bank-statement-automation).
 * **Build Reusable Analysis Templates:** Once your data is cleanly formatted in Excel, build standardized financial templates with pre-configured formulas for debt service ratios, monthly burn rates, and discretionary cash flows to evaluate accounts in minutes.
 
 ## Why Modern Teams Choose Bank Statement Scanner
