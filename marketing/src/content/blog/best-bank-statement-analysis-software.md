@@ -1,6 +1,6 @@
 ---
 title: "Best Bank Statement Analysis Software: Features, Workflows, and Tools"
-seoTitle: "Best Bank Statement Analysis Software: Guide"
+seoTitle: "Best Bank Statement Analysis Software by Use Case"
 excerpt: "Looking for the best bank statement analysis software? Compare top features, automated OCR workflows, and data extraction tools for finance teams."
 date: 2026-10-09
 category: "Comparisons"
@@ -64,6 +64,16 @@ Major accounting suites offer automated bank feeds using Open Banking APIs. Whil
 | **Scanned/Photo Support** | High (Specialized OCR engines) | High (Specialized OCR engines) | Poor or Non-existent | 
 | **Cost Model** | Flexible pay-as-you-go or light subscription | Enterprise tiers, monthly minimums | Included in software subscription | 
 | **Ideal Audience** | Accountants, bookkeepers, SMEs, legal teams | Commercial lenders, fintech underwriters | In-house business operators | 
+
+### Tools in each category
+
+Prices are from each vendor's pricing page, checked in November 2026. The linked comparisons have sources and say where each tool is the better pick.
+
+- **Transaction extractors:** Bank Statement Scanner ($10/month for 100 pages, first month free), [DocuClipper](/compare/docuclipper-alternative) (from $20.30/month billed annually), [Bankstatemently](/compare/bankstatemently-alternative) (10 free pages a month), [MoneyThumb](/compare/moneythumb-alternative) (from $599.95/year, QBO and QFX output), [ProperConvert](/compare/properconvert-alternative) (desktop, $19.99/month).
+- **Lending and document AI platforms:** [Docsumo](/compare/docsumo-alternative) (custom quote plus setup fee, built for lenders), [Nanonets](/compare/nanonets-alternative) ($100/month for 100 credits).
+- **Accounting data capture:** [Dext](/compare/dext-alternative) (from $25.21/month), [AutoEntry](/compare/autoentry-alternative) (from $13/month for 50 credits), [Hubdoc](/compare/hubdoc-alternative) ($12/month).
+
+For a side-by-side table with free options, see [bank statement extraction software compared](/blog/bank-statement-extraction-software-guide).
 
 ## Step-by-Step: How to Analyze Bank Statements Using Modern Extraction Tools
 

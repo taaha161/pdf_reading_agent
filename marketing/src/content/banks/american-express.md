@@ -3,7 +3,7 @@ name: "American Express"
 shortName: "Amex"
 slug: "amex-statement-to-excel"
 seoTitle: "Convert Amex Statements to Excel or CSV"
-description: "Convert American Express card statement PDFs to Excel or CSV, including archived statements and multi-cardmember accounts."
+description: "Turn Amex statement PDFs into Excel or CSV in seconds, including archived statements and additional cardmembers. First 10 pages free, no account."
 country: "US"
 statementTypes: ["Personal card", "Business card"]
 intro: "American Express offers several downloads, including recent activity, recent billing statements, and a longer transaction history. Each covers a different period, and none of them match a closed billing cycle exactly. When you need what the statement shows, such as for expense reports or a year of business card spending, converting the statement PDF keeps your rows aligned with the billing period."
