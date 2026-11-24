@@ -1,4 +1,5 @@
 ---
+converter: true
 title: "How to Convert Bank Statements to CSV: Complete Step-by-Step Guide"
 seoTitle: "Convert Bank Statements to CSV: Complete Guide"
 excerpt: "Learn how to convert bank statements to CSV quickly and accurately. Extract transaction data from digital or scanned PDFs for Excel, QuickBooks, and Xero."

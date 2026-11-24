@@ -1,4 +1,5 @@
 ---
+converter: true
 title: "Free Bank Statement Converter: PDF to CSV or Excel Guide"
 seoTitle: "Free Bank Statement Converter: PDF to Excel & CSV"
 excerpt: "Looking for a free bank statement converter? Learn how to extract bank data to CSV or Excel, navigate privacy risks, and avoid common conversion errors."

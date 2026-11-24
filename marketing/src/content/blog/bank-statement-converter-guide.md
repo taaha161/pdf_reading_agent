@@ -1,4 +1,5 @@
 ---
+converter: true
 title: "Bank Statement Converter: Convert Statements to Excel or CSV"
 seoTitle: "Bank Statement Converter: Convert to Excel & CSV"
 excerpt: "Looking for a reliable bank statement converter? Turn PDF and scanned statements into structured Excel or CSV files quickly with automated OCR extraction."

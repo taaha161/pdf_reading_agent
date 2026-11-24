@@ -1,4 +1,5 @@
 ---
+converter: true
 title: "How to Convert Bank Statement PDF to Excel Accurately"
 seoTitle: "Convert Bank Statement PDF to Excel: Complete Guide"
 excerpt: "Learn how to convert bank statement PDF to Excel spreadsheets cleanly. Avoid copy-paste errors, handle scanned PDFs, and streamline your bookkeeping."
