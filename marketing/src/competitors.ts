@@ -691,6 +691,117 @@ export const competitors: Competitor[] = [
     ],
     checked: CHECKED,
   },
+  // ───────────── Added 2026-11-24 ─────────────
+  {
+    slug: 'properconvert-alternative',
+    category: 'Desktop & PDF tools',
+    card: 'Desktop converter for QBO, QFX and IIF at $19.99/month, vs a $10/month browser tool.',
+    seoTitle: 'ProperConvert Alternative: Compare Price and Features',
+    description: 'Bank Statement Scanner vs ProperConvert (ProperSoft, maker of Bank2CSV) on price, formats, and setup. Browser-based from $10/month, 100 pages free.',
+    crumb: 'ProperConvert alternative',
+    eyebrow: 'ProperConvert (Bank2CSV) alternative',
+    h1: 'Bank Statement Scanner vs ProperConvert',
+    intro: [
+      'ProperConvert, from ProperSoft (the maker of the older Bank2CSV and PDF2CSV tools), is desktop software for Windows and Mac. It reads PDF, CSV, and Excel statements and writes QuickBooks, Quicken, Xero, and Sage formats, with unlimited pages on its paid plan. Your files stay on your computer.',
+      'Bank Statement Scanner runs in the browser with nothing to install, checks every statement against its printed balances, and costs $10 a month for 100 pages after a free first month. Here’s how they compare, including where ProperConvert is the better pick.',
+    ],
+    themName: 'ProperConvert',
+    rows: [
+      { label: 'Starting price', us: US.price, them: 'Complete $19.99/month or $179.99/year (1 device); Team $49.98/month (3 devices)' },
+      { label: 'How you pay', us: US.perStatement, them: 'Subscription with unlimited pages; no perpetual licences since 2023' },
+      { label: 'Free use', us: US.free, them: 'Free trial that never expires, but saved files are limited to 10 transactions' },
+      { label: 'Export formats', us: US.exports, them: 'QBO, IIF, QFX, QIF, OFX, CSV, Excel' },
+      { label: 'Scanned PDFs', us: US.scanned, them: 'Text-based and scanned PDF statements' },
+      { label: 'Runs', us: 'In the browser, nothing to install', them: 'Desktop app for Windows and Mac' },
+      { label: 'Data handling', us: US.data, them: 'Converts locally; files are never uploaded' },
+    ],
+    tableNote: 'ProperConvert prices are from ProperSoft’s purchase page in USD and may have changed.',
+    sections: [
+      {
+        heading: 'Where ProperConvert is stronger',
+        bullets: [
+          'Writes QBO, IIF, QFX, and QIF files directly, so it fits QuickBooks Desktop and Quicken workflows.',
+          'Unlimited pages on one subscription, which wins if you convert hundreds of statements a month.',
+          'Everything runs on your own machine, which some firms require.',
+          'Also converts between formats, such as CSV or Excel into QBO.',
+        ],
+      },
+      {
+        heading: 'Where Bank Statement Scanner is stronger',
+        bullets: [
+          'Nothing to install or update, on any computer or phone.',
+          'Every statement is checked against its own opening and closing balances, with the rows to look at when they don’t add up.',
+          'Cheaper when you convert up to a few hundred pages a month.',
+          'A full free first month, with no 10-transaction cap on exports.',
+        ],
+      },
+    ],
+    fit: {
+      us: ['You convert a few statements a month', 'You want CSV or Excel for QuickBooks Online, Xero, or a spreadsheet', 'You don’t want to install software', 'You want each statement checked against its balances'],
+      them: ['You need QBO, IIF, QFX, or QIF files', 'You use QuickBooks Desktop or Quicken', 'Files must never leave your computer', 'You convert hundreds of statements a month'],
+    },
+    faqs: [
+      { q: 'Is ProperConvert the same as Bank2CSV?', a: 'ProperConvert is ProperSoft’s current product. Its pages for the older Bank2CSV and PDF2CSV converters now lead to ProperConvert.' },
+      { q: 'How much does ProperConvert cost?', a: 'Complete is $19.99 a month or $179.99 a year for one device. Team is $49.98 a month for three devices. ProperSoft no longer sells perpetual licences.' },
+      { q: 'Is there a ProperConvert free trial?', a: 'Yes. The trial doesn’t expire and parses full statements, but saved files are limited to 10 transactions.' },
+      QB_FAQ,
+    ],
+    sources: [
+      { label: 'ProperSoft: ProperConvert', url: 'https://www.propersoft.net/pdf2csv' },
+      { label: 'ProperSoft: ProperConvert pricing', url: 'https://www.propersoft.net/pdf2csv/purchase' },
+    ],
+    checked: '2026-11-24',
+  },
+  {
+    slug: 'docsumo-alternative',
+    category: 'Document AI & parsers',
+    card: 'A quote-based document AI platform for lenders, vs a self-serve converter from $10/month.',
+    seoTitle: 'Docsumo Alternative for Bank Statements',
+    description: 'Docsumo vs Bank Statement Scanner for bank statements: pricing, setup fees, exports, and who each is for. Self-serve from $10/month, 100 pages free.',
+    crumb: 'Docsumo alternative',
+    eyebrow: 'Docsumo alternative',
+    h1: 'Docsumo vs Bank Statement Scanner for bank statements',
+    intro: [
+      'Docsumo is a document AI platform built for lenders, insurers, and finance teams processing documents at volume. Its bank statement product extracts transactions and analysis into a loan system, CRM, or data warehouse through an API and webhooks, with SOC 2 Type 2 and ISO 27001.',
+      'Paid plans are by custom quote with setup fees on top. Bank Statement Scanner is self-serve: upload a statement, review the rows, and export CSV or Excel, for $10 a month after a free first month.',
+    ],
+    themName: 'Docsumo',
+    rows: [
+      { label: 'Price', us: US.price, them: 'Business and Enterprise by custom quote, based on volume' },
+      { label: 'Setup', us: US.setup, them: 'Setup fee on top of the subscription, depending on document complexity' },
+      { label: 'Free use', us: US.free, them: '14-day trial with up to 1,000 pages' },
+      { label: 'Export formats', us: US.exports, them: 'JSON via API and webhook, Excel, CSV' },
+      { label: 'Integrations', us: 'None', them: 'API and webhooks on every plan; Salesforce, Google Sheets, cloud storage and more' },
+      { label: 'Security', us: US.data, them: 'SOC 2 Type 2, ISO 27001, HIPAA, GDPR' },
+      { label: 'Cancellation', us: 'Cancel anytime', them: '30 days’ notice to support' },
+    ],
+    tableNote: 'Docsumo details are from its pricing and bank statement pages; it doesn’t publish paid plan prices.',
+    sections: [
+      {
+        heading: 'Where Docsumo is stronger',
+        bullets: [
+          'Built for lending: statement analysis and data straight into a loan origination system.',
+          'API, webhooks, and integrations on every plan.',
+          'Enterprise security certifications and a dedicated account manager.',
+          'Handles many document types beyond bank statements.',
+        ],
+      },
+    ],
+    fit: {
+      us: ['You want statements in Excel or CSV today', 'You don’t want a sales call or setup fee', 'You convert a few statements a month', 'You want a price you can see up front'],
+      them: ['You’re a lender automating underwriting', 'You need an API into your loan or CRM system', 'You need SOC 2 Type 2 or ISO 27001', 'You process thousands of documents a month'],
+    },
+    faqs: [
+      { q: 'How much does Docsumo cost?', a: 'Docsumo doesn’t publish paid plan prices. Business and Enterprise are quoted by volume, with a setup fee on top.' },
+      { q: 'Is there a Docsumo free trial?', a: 'Yes: 14 days with up to 1,000 pages. Bank Statement Scanner gives 10 pages without an account and 100 pages free for your first month.' },
+      TRIAL_FAQ,
+    ],
+    sources: [
+      { label: 'Docsumo pricing', url: 'https://www.docsumo.com/pricing' },
+      { label: 'Docsumo bank statement extraction', url: 'https://www.docsumo.com/solutions/documents/bank-statements' },
+    ],
+    checked: '2026-11-24',
+  },
 ];
 
 export const competitorBySlug = (slug: string) => competitors.find((c) => c.slug === slug);
