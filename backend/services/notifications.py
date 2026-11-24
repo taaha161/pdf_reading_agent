@@ -12,6 +12,7 @@ Env:
 """
 
 import base64
+import html
 import logging
 import os
 import threading
@@ -36,6 +37,24 @@ def _from_addr() -> str:
         "NOTIFY_EMAIL_FROM",
         "BankStatementScanner <notifications@bankstatementscanner.com>",
     ).strip()
+
+
+def _trustpilot_bcc() -> list[str]:
+    """Trustpilot's invite address (TRUSTPILOT_BCC). A customer email BCC'd to it makes Trustpilot
+    send that customer a review invitation (no incentive attached). Unset = no BCC."""
+    addr = os.environ.get("TRUSTPILOT_BCC", "").strip()
+    return [addr] if addr else []
+
+
+def _bcc_field() -> dict:
+    bcc = _trustpilot_bcc()
+    return {"bcc": bcc} if bcc else {}
+
+
+def _customer_to(email: str, name: str | None = None) -> str:
+    """'Name <email>' so Trustpilot's invitation can greet the customer by name."""
+    clean = (name or "").replace('"', "").replace("<", "").replace(">", "").strip()
+    return f'"{clean}" <{email}>' if clean else email
 
 
 def _send(subject: str, text: str, reply_to: str | None = None) -> None:
@@ -99,6 +118,7 @@ def send_spreadsheet_email(to: str, content: bytes, filename: str = "statement.c
                 "from": _from_addr(),
                 "to": [to],
                 "reply_to": _to_addr(),
+                **_bcc_field(),
                 "subject": "Your converted bank statement",
                 "text": _SPREADSHEET_EMAIL_TEXT.format(filename=filename, signup_url=f"{_app_url()}/signup"),
                 "attachments": [
@@ -207,6 +227,7 @@ def send_paid_welcome_email(to: str, link: str, pages: int = 100) -> None:
                     "from": _from_addr(),
                     "to": [to],
                     "reply_to": _to_addr(),
+                    **_bcc_field(),
                     "subject": "You're subscribed: set your password",
                     "text": _PAID_WELCOME_TEXT.format(pages=pages, link=link),
                     "html": _PAID_WELCOME_HTML.format(pages=pages, link=link),
@@ -217,6 +238,94 @@ def send_paid_welcome_email(to: str, link: str, pages: int = 100) -> None:
                 logger.warning("paid welcome email failed (%s): %s", resp.status_code, resp.text[:300])
         except Exception as e:  # noqa: BLE001
             logger.warning("paid welcome email error (continuing): %s", e)
+
+    threading.Thread(target=_go, daemon=True).start()
+
+
+CHECKIN_AFTER_SCANS = 3
+_G2_REVIEW_URL = "https://www.g2.com/products/bank-statement-scanner/take_survey"
+_SUPPORT_PHONE = "+1 (847) 834-4295"
+
+_CHECKIN_TEXT = """Hi {first},
+
+You've converted {scans} statements with Bank Statement Scanner so far. Quick check-in: is everything coming out right?
+
+If a bank's layout gave you trouble or a balance didn't match, reply and tell us which bank. We read every reply.
+
+If it's been useful, a short G2 review helps a lot. We'll add 100 pages to your account for any honest review, good or bad. They never expire.
+Write a G2 review: {g2}
+Then click "Already reviewed us on G2?" in the app, or reply with the link.
+
+You may also get a short email from Trustpilot asking about your experience.
+
+{support}
+{phone}
+
+Best regards,
+The Bank Statement Scanner Team
+https://bankstatementscanner.com
+"""
+
+_P = '<p style="margin:0 0 16px;font-size:16px;line-height:1.6;">{}</p>'
+
+_CHECKIN_HTML = """<!doctype html><html><body style="margin:0;padding:0;background:#f4f6fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2937;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6fb;padding:32px 16px;"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(16,24,40,.06);">
+  <tr><td style="background:#1e3a8a;padding:22px 32px;"><span style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:.2px;">Bank Statement Scanner</span></td></tr>
+  <tr><td style="padding:32px 32px 8px;">{body}</td></tr>
+  <tr><td align="center" style="padding:4px 32px 24px;"><a href="{g2}" style="display:inline-block;background:#1e3a8a;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 24px;border-radius:8px;">Write a G2 review</a></td></tr>
+  <tr><td style="padding:0 32px 8px;">
+    <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#374151;">Then click &ldquo;Already reviewed us on G2?&rdquo; in the app, or reply with the link. You may also get a short email from Trustpilot asking about your experience.</p>
+    <p style="margin:0 0 6px;font-size:15px;line-height:1.6;">&#9993;&nbsp; <a href="mailto:{support}" style="color:#1e3a8a;text-decoration:none;font-weight:600;">{support}</a></p>
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.6;">&#9742;&nbsp; <a href="tel:+18478344295" style="color:#1e3a8a;text-decoration:none;font-weight:600;">{phone}</a></p>
+    <p style="margin:16px 0 28px;font-size:16px;line-height:1.6;">Best regards,<br><strong>The Bank Statement Scanner Team</strong></p>
+  </td></tr>
+  <tr><td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #eef0f4;font-size:12px;color:#9ca3af;text-align:center;"><a href="https://bankstatementscanner.com" style="color:#9ca3af;">bankstatementscanner.com</a></td></tr>
+</table></td></tr></table></body></html>"""
+
+
+def _first_name(name: str | None) -> str:
+    first = (name or "").strip().split(" ")[0] if name else ""
+    return first or "there"
+
+
+def send_checkin_email(to: str, name: str | None, scans: int) -> None:
+    """Fire-and-forget check-in after a user's 3rd scan: ask for problems, offer the G2 review
+    reward, and BCC Trustpilot so it sends its own (unrewarded) review invitation."""
+    first = _first_name(name)
+    support = _to_addr()
+    body = "".join(_P.format(t) for t in [
+        f"Hi {html.escape(first)},",
+        f"You've converted {scans} statements with Bank Statement Scanner so far. Quick check-in: is everything coming out right?",
+        "If a bank's layout gave you trouble or a balance didn't match, reply and tell us which bank. We read every reply.",
+        "If it's been useful, a short G2 review helps a lot. We'll add 100 pages to your account for any honest review, good or bad. They never expire.",
+    ])
+
+    def _go() -> None:
+        key = _api_key()
+        if not key:
+            logger.info("RESEND_API_KEY not set; skip check-in email")
+            return
+        try:
+            resp = httpx.post(
+                _RESEND_ENDPOINT,
+                headers={"Authorization": f"Bearer {key}"},
+                json={
+                    "from": _from_addr(),
+                    "to": [_customer_to(to, name)],
+                    "reply_to": support,
+                    **_bcc_field(),
+                    "subject": "How's Bank Statement Scanner working for you?",
+                    "text": _CHECKIN_TEXT.format(first=first, scans=scans, g2=_G2_REVIEW_URL, support=support, phone=_SUPPORT_PHONE),
+                    "html": _CHECKIN_HTML.format(body=body, g2=_G2_REVIEW_URL, support=support, phone=_SUPPORT_PHONE),
+                    "tags": [{"name": "category", "value": "checkin"}],
+                },
+                timeout=10.0,
+            )
+            if resp.status_code >= 300:
+                logger.warning("check-in email failed (%s): %s", resp.status_code, resp.text[:300])
+        except Exception as e:  # noqa: BLE001
+            logger.warning("check-in email error (continuing): %s", e)
 
     threading.Thread(target=_go, daemon=True).start()
 
