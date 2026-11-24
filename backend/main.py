@@ -87,6 +87,8 @@ from services.notifications import (
     notify_email_capture,
     notify_feedback,
     notify_team,
+    send_checkin_email,
+    CHECKIN_AFTER_SCANS,
     name_from_metadata,
     notify_login,
     notify_scan,
@@ -937,6 +939,7 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
         job_id, user_id, transactions, csv_content, raw_text, currency,
         incognito=req.incognito, conversion_mode=req.conversion_mode, statement_meta=statement_meta,
     )
+    _maybe_send_checkin(user_id, scan_user)
     logger.info("scan: [3/3] finished successfully, job_id=%s, pages=%d, left=%d (total %.2f s)", job_id, req.cost_pages, left, time.perf_counter() - t0)
     return ProcessPdfResponse(
         job_id=job_id,
@@ -949,6 +952,18 @@ def _run_scan_inner(req: _ScanRequest, progress: ProgressFn) -> ProcessPdfRespon
         pages_charged=req.cost_pages,
         **_billing_fields(billing),
     )
+
+
+def _maybe_send_checkin(user_id: str, user: dict | None) -> None:
+    """After a user's 3rd scan (exactly), send the one-time check-in email. Never fails the scan."""
+    try:
+        if not user or not user.get("email"):
+            return
+        status, scans = get_review_prompt_state(user_id)
+        if scans == CHECKIN_AFTER_SCANS and status is None:
+            send_checkin_email(user["email"], user.get("full_name"), scans)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("check-in email skipped: %s", e)
 
 
 @app.post("/api/process-pdf", response_model=ProcessPdfResponse)
