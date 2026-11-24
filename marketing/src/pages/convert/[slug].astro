@@ -6,6 +6,7 @@ import SecurityStrip from '../../components/SecurityStrip.astro';
 import AskStatement from '../../components/AskStatement.astro';
 import SampleExport from '../../components/SampleExport.astro';
 import StickyCta from '../../components/StickyCta.astro';
+import HeroDropzone from '../../components/HeroDropzone.astro';
 import { SITE_NAME, FREE_LABEL, canonical } from '../../consts';
 
 export async function getStaticPaths() {
@@ -94,8 +95,8 @@ const jsonLd = [
       <p class="bank-eyebrow">{b.name} statement converter</p>
       <h1>Convert {b.name} statements to Excel and CSV</h1>
       <p class="bank-intro">{b.intro}</p>
-      <div class="bank-cta-row">
-        <a class="bank-btn" href="/scanner" data-cta="bank_hero">Convert a {b.shortName} statement free</a>
+      <div class="bank-tool">
+        <HeroDropzone cta="bank_hero" hint={`Drop a ${b.shortName} statement PDF and get the rows in seconds. No account needed.`} />
         <span class="bank-cta-note">{FREE_LABEL} · No credit card · <a href="#sample" data-open-sample="bank_hero" data-cta="bank_sample">See a sample export</a></span>
       </div>
       <dl class="bank-facts">
@@ -239,7 +240,7 @@ const jsonLd = [
   }
   .bank-hero h1 { font-size: clamp(30px, 5vw, 44px); margin: 0; }
   .bank-intro { font-size: 19px; line-height: 1.65; color: #1e293b; margin: 0; }
-  .bank-cta-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .bank-tool { display: flex; flex-direction: column; gap: 10px; max-width: 560px; }
   .bank-btn {
     display: inline-block; font-weight: 600; font-size: 16px; padding: 12px 22px;
     border-radius: var(--radius-md); text-align: center; text-decoration: none;

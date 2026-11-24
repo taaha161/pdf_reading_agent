@@ -1,4 +1,5 @@
 ---
+converter: true
 title: "How to Convert Credit Card Statement to Excel (Step-by-Step)"
 seoTitle: "Convert Credit Card Statement to Excel | Complete Guide"
 excerpt: "Learn how to convert credit card statement to Excel cleanly and accurately. Eliminate manual data entry and turn complex PDF statements into clean spreadsheets."

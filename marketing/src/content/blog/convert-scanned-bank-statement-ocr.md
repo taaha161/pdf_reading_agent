@@ -1,4 +1,5 @@
 ---
+converter: true
 title: "How to Scan Bank Statements to Excel and CSV Accurately"
 seoTitle: "Scan Bank Statements to Excel: Complete Step-by-Step Guide"
 excerpt: "Learn how to scan bank statements and convert PDF or paper records into accurate Excel and CSV files. Speed up reconciliation and eliminate manual entry."

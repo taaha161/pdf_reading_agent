@@ -16,6 +16,8 @@ const blog = defineCollection({
     keyword: z.string().optional(),
     /** SEO keyword tags for the post; optional so hand-written posts stay valid. */
     tags: z.array(z.string()).optional(),
+    /** Show the upload box under the title. For posts where the searcher wants to convert a file now. */
+    converter: z.boolean().optional(),
   }),
 });
 
