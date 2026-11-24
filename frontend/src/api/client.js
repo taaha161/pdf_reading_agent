@@ -526,3 +526,19 @@ export async function submitFeedback({ jobId, rating, comment, contactOk = false
   }
   return res.json();
 }
+
+/** Claim the review reward. `proof` = review link or the name it was posted under. One claim per account. */
+export async function submitReviewClaim(proof, platform = "g2") {
+  const res = await fetch(`${API_BASE}/api/review-claim`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    credentials: "include",
+    body: JSON.stringify({ platform, proof }),
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many requests. Please try again later.");
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(typeof err.detail === "string" ? err.detail : "Couldn't send your claim");
+  }
+  return res.json();
+}

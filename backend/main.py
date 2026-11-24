@@ -41,6 +41,7 @@ from slowapi.errors import RateLimitExceeded
 
 from auth import get_current_claims, get_current_user, get_current_user_optional
 from models.schemas import (
+    ReviewClaimRequest,
     AffiliateCreateRequest,
     AffiliatePayoutRequest,
     AffiliateUpdateRequest,
@@ -85,6 +86,7 @@ from services.xlsx_export import XLSX_MIME, summary_to_xlsx, transactions_to_xls
 from services.notifications import (
     notify_email_capture,
     notify_feedback,
+    notify_team,
     name_from_metadata,
     notify_login,
     notify_scan,
@@ -127,6 +129,9 @@ from store import (
     count_email_captures_for_job,
     record_email_capture,
     record_feedback,
+    create_review_claim,
+    get_review_claim_status,
+    REVIEW_REWARD_PAGES,
     trial_run_exists,
     set_job,
     update_job_transactions,
@@ -509,6 +514,7 @@ _RATE_LIMIT_CHAT = os.environ.get("RATE_LIMIT_CHAT", "30/minute")
 _RATE_LIMIT_EMAIL_SPREADSHEET = os.environ.get("RATE_LIMIT_EMAIL_SPREADSHEET", "5/hour")
 _RATE_LIMIT_EXPORT = os.environ.get("RATE_LIMIT_EXPORT", "30/minute")
 _RATE_LIMIT_FEEDBACK = os.environ.get("RATE_LIMIT_FEEDBACK", "10/hour")
+_RATE_LIMIT_REVIEW_CLAIM = os.environ.get("RATE_LIMIT_REVIEW_CLAIM", "5/hour")
 _RATE_LIMIT_FETCH_URL = os.environ.get("RATE_LIMIT_FETCH_URL", "10/minute")
 _RATE_LIMIT_SCAN_STATUS = os.environ.get("RATE_LIMIT_SCAN_STATUS", "120/minute")
 
@@ -1219,6 +1225,42 @@ def submit_feedback(
     return {"ok": True}
 
 
+@app.post("/api/review-claim")
+@limiter.limit(_RATE_LIMIT_REVIEW_CLAIM)
+def submit_review_claim(request: Request, body: ReviewClaimRequest, user_id: str = Depends(get_current_user)):
+    """Claim the review reward (pack pages for a G2 review, any rating). One per account; granted by hand."""
+    proof = body.proof.strip()
+    if len(proof) < 2:
+        raise HTTPException(400, "Paste your review link or the name you reviewed under.")
+    if not create_review_claim(user_id, body.platform, proof):
+        raise HTTPException(409, "You've already claimed the review reward.")
+    who = None
+    try:
+        who = get_auth_user(user_id=user_id)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("review claim user lookup failed (continuing): %s", e)
+    email = (who or {}).get("email") or "unknown"
+    try:
+        notify_team(
+            f"Review claim ({body.platform.upper()}) from {email}",
+            "\n".join([
+                f"Platform: {body.platform.upper()}",
+                f"Proof: {proof}",
+                "",
+                f"From: {(who or {}).get('full_name') or ''} <{email}>",
+                f"User ID: {user_id}",
+                "",
+                f"Check the review is live, then grant {REVIEW_REWARD_PAGES} pages from backend/:",
+                f"  python scripts/grant_review_reward.py {user_id}",
+                "Or, if no review exists:",
+                f"  python scripts/grant_review_reward.py {user_id} --reject",
+            ]),
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("review claim notification failed (continuing): %s", e)
+    return {"ok": True, "status": "pending"}
+
+
 @app.delete("/api/jobs/{job_id}/data")
 def delete_job_data(job_id: uuid.UUID, user_id: str = Depends(get_current_user)):
     """Purge payload data for one job. Job row is kept."""
@@ -1358,8 +1400,18 @@ def get_usage(
         trial_remaining=0,
         subscription_active=_subscription_active(billing),
         max_file_bytes=_max_file_size(user_id, billing),
+        review_claim=_review_claim_status(user_id),
         **_billing_fields(billing),
     )
+
+
+def _review_claim_status(user_id: str) -> str | None:
+    """Usage must not fail on this; an unknown status just keeps the review card hidden."""
+    try:
+        return get_review_claim_status(user_id)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("review claim lookup failed (continuing): %s", e)
+        return "unknown"
 
 
 @app.post("/api/billing/checkout-session", response_model=CheckoutSessionResponse)

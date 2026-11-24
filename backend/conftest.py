@@ -65,3 +65,15 @@ def no_live_statement_meta():
 
     with patch("main.extract_statement_meta", return_value=None) as mock:
         yield mock
+
+
+@pytest.fixture(autouse=True)
+def no_db_review_claim():
+    """/api/usage looks up the review-reward claim; keep tests off the database.
+
+    Request this fixture by name to set the status a test sees.
+    """
+    from unittest.mock import patch
+
+    with patch("main.get_review_claim_status", return_value=None) as mock:
+        yield mock

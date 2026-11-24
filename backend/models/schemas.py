@@ -204,6 +204,7 @@ class UsageResponse(BaseModel):
     pack_pages: Optional[int] = None
     subscription_active: bool = False
     max_file_bytes: int = 20 * 1024 * 1024  # upload limit for this caller's tier
+    review_claim: Optional[str] = None  # authenticated only: None | pending | granted | rejected
 
 
 class CheckoutSessionRequest(BaseModel):
@@ -284,6 +285,12 @@ class FeedbackRequest(BaseModel):
     rating: Optional[int] = Field(None, ge=1, le=5)
     comment: Optional[str] = Field(None, max_length=2000)
     contact_ok: bool = False
+
+
+class ReviewClaimRequest(BaseModel):
+    """Claim the review reward. proof = link to the review or the name it was posted under."""
+    platform: Literal["g2"] = "g2"
+    proof: str = Field(..., min_length=2, max_length=500)
 
 
 # --- Affiliates ---
