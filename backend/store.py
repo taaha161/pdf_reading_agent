@@ -359,6 +359,66 @@ def record_feedback(
         )
 
 
+REVIEW_REWARD_PAGES = 100
+
+
+def get_review_claim_status(user_id: str) -> str | None:
+    """'pending' | 'granted' | 'rejected', or None if this account never claimed the review reward."""
+    with _cursor() as cur:
+        cur.execute("SELECT status FROM review_claims WHERE user_id = %s", (user_id,))
+        row = cur.fetchone()
+    return row[0] if row else None
+
+
+def create_review_claim(user_id: str, platform: str, proof: str) -> bool:
+    """Record a review-reward claim. False if the account already has one (one per account)."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO review_claims (user_id, platform, proof, status, created_at)
+            VALUES (%s, %s, %s, 'pending', NOW())
+            ON CONFLICT (user_id) DO NOTHING
+            """,
+            (user_id, platform, proof),
+        )
+        return cur.rowcount == 1
+
+
+def grant_review_reward(user_id: str, pages: int = REVIEW_REWARD_PAGES) -> bool:
+    """Mark a pending claim granted and add the pack pages in one transaction. False if no pending claim."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            UPDATE review_claims SET status = 'granted', pages_granted = %s, decided_at = NOW()
+            WHERE user_id = %s AND status = 'pending'
+            """,
+            (pages, user_id),
+        )
+        if cur.rowcount != 1:
+            return False
+        cur.execute(
+            """
+            INSERT INTO user_billing (user_id, pack_pages, updated_at)
+            VALUES (%s, GREATEST(0, %s), NOW())
+            ON CONFLICT (user_id) DO UPDATE SET
+              pack_pages = GREATEST(0, user_billing.pack_pages + %s),
+              updated_at = NOW()
+            """,
+            (user_id, pages, pages),
+        )
+        return True
+
+
+def reject_review_claim(user_id: str) -> bool:
+    """Mark a pending claim rejected (no review found). False if no pending claim."""
+    with _cursor() as cur:
+        cur.execute(
+            "UPDATE review_claims SET status = 'rejected', decided_at = NOW() WHERE user_id = %s AND status = 'pending'",
+            (user_id,),
+        )
+        return cur.rowcount == 1
+
+
 def update_job_transactions(job_id: str, user_id: str, transactions: list[dict[str, Any]]) -> None:
     """Update stored transactions for a job owned by the user. No-op for incognito/purged jobs (no payload row)."""
     payload_json = json.dumps(transactions)

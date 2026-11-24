@@ -10,6 +10,8 @@ import ReconciliationPanel from "../components/ReconciliationPanel";
 import ChatPanel from "../components/ChatPanel";
 import EmailSpreadsheet from "../components/EmailSpreadsheet";
 import FeedbackPrompt from "../components/FeedbackPrompt";
+import ReviewRewardCard from "../components/ReviewRewardCard";
+import { reviewRewardDue, snoozeReviewReward } from "../lib/reviews";
 import { useAuth } from "../contexts/AuthContext";
 import { useUsage } from "../contexts/UsageContext";
 import { runScan, getJob, updateJobTransactions } from "../api/client";
@@ -226,6 +228,26 @@ export default function ScannerPage() {
   }, [feedbackDue, jobId, emailPopupOpen, showPasswordModal]);
 
   const closeFeedback = useCallback(() => setFeedbackOpen(false), []);
+
+  // Review reward: once a signed-in user is down to REVIEW_PROMPT_AT_PAGES, offer pages for a
+  // G2 review. Waits for any other popup or a running scan; one card at a time.
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const reviewDue = isLoggedIn && reviewRewardDue(usage);
+  const otherPopupOpen = feedbackOpen || feedbackDue || emailPopupOpen || showPasswordModal || chatOpen;
+  useEffect(() => {
+    if (!reviewDue || reviewOpen || otherPopupOpen || loading) return;
+    const timer = setTimeout(() => setReviewOpen(true), FEEDBACK_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [reviewDue, reviewOpen, otherPopupOpen, loading]);
+
+  const closeReview = useCallback(
+    (claimed) => {
+      setReviewOpen(false);
+      if (claimed) refreshUsage();
+      else snoozeReviewReward();
+    },
+    [refreshUsage],
+  );
 
   // Out of anonymous free pages: send to signup when they click to upload (not on page load).
   // The server's 401 trial-limit response in handleUpload covers stale usage.
@@ -898,6 +920,10 @@ export default function ScannerPage() {
       )}
 
       {feedbackOpen && <FeedbackPrompt jobId={jobId} isLoggedIn={isLoggedIn} onClose={closeFeedback} />}
+
+      {reviewOpen && !feedbackOpen && (
+        <ReviewRewardCard pagesLeft={Math.max(0, usage?.pages_remaining ?? 0)} onClose={closeReview} />
+      )}
 
       {showPasswordModal && (
         <div className="scanner-password-modal-backdrop" onClick={checkingPassword ? undefined : handlePasswordModalClose} aria-hidden />

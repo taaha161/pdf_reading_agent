@@ -1,0 +1,42 @@
+/* Review-reward card: reuses the feedback card shell (FeedbackPrompt.css); only the extras live here. */
+
+.review-card-body {
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}
+
+.review-card-input {
+  min-height: 2.75rem;
+  resize: none;
+}
+
+/* The CTA is a link (opens G2 in a new tab) styled as the primary button. */
+.review-card-cta {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.review-card-foot {
+  margin-top: 0.625rem;
+}
+
+.review-card-foot + .review-card-foot {
+  margin-top: 0.25rem;
+}
+
+.review-card-linkbtn {
+  padding: 0;
+  font: inherit;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.review-card-linkbtn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
