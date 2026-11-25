@@ -30,14 +30,18 @@ export const FREE_ANON_PAGES = 10; // without an account
 export const FREE_SIGNUP_PAGES = 100; // free for the first month after signup, no card
 export const FREE_SIGNUP_DAYS = 30;
 export const PLAN_PRICE = 10; // USD per month
-export const PLAN_PAGES = 100; // pages per month on the plan
+export const PLAN_PAGES = 150; // pages per month on the plan (reset each cycle)
 export const ACCURATE_MULTIPLIER = 2;
+/** Add-on packs, for monthly subscribers only. Never expire. */
 export const PAGE_PACKS = [
   { pages: 10, price: 2 },
   { pages: 30, price: 5 },
   { pages: 100, price: 10 },
 ] as const;
 export const PACKS_TEXT = PAGE_PACKS.map((p) => `${p.pages} pages for $${p.price}`).join(', ');
+/** Without a subscription, pages are sold only as this one-time bulk pack. Never expires. */
+export const BULK_PACK = { pages: 450, price: 49.99 } as const;
+export const BULK_PACK_TEXT = `${BULK_PACK.pages} pages for $${BULK_PACK.price}`;
 
 /** Short free-offer label for CTAs and badges. */
 export const FREE_LABEL = `${FREE_SIGNUP_PAGES} pages free your first month`;
@@ -45,7 +49,8 @@ export const FREE_LABEL = `${FREE_SIGNUP_PAGES} pages free your first month`;
 export const PRICING_SUMMARY =
   `You pay per PDF page. Try ${FREE_ANON_PAGES} pages free without an account. Sign up and your first month includes ` +
   `${FREE_SIGNUP_PAGES} pages free, no credit card required. After that, the plan is $${PLAN_PRICE} a month for ` +
-  `${PLAN_PAGES} pages, and page packs top you up anytime: ${PACKS_TEXT}. Pack pages never expire. Cancel anytime.`;
+  `${PLAN_PAGES} pages, and subscribers can add page packs anytime: ${PACKS_TEXT} (paused if you cancel, back when you resubscribe). Not ready to subscribe? Buy ` +
+  `${BULK_PACK_TEXT} once. Pack pages never expire. Cancel anytime.`;
 
 /**
  * Official profiles of the site/company (LinkedIn page, X, Crunchbase, Product Hunt, Wikidata…).

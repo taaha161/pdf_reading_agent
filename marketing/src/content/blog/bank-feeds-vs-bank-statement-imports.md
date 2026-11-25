@@ -137,7 +137,7 @@ However, it is important to understand what the tool does and does not do:
 * **It outputs standard spreadsheets:** It produces CSV and Excel files, but it does not directly generate proprietary `.QBO` or `.OFX` files, nor does it push directly into accounting software via an automated sync.
 * **It extracts data; it does not reconcile:** The software extracts what is printed on the PDF with high fidelity, but the bookkeeper must still execute the reconciliation step.
 
-For privacy-conscious teams, Bank Statement Scanner includes an incognito mode that processes files without saving your underlying transaction records on the server. If you only need to process an occasional statement to fix a dropped feed, 10 pages are available for free without creating an account. Signing up provides 100 free pages for the first month with no credit card required, followed by an ongoing plan of $10 per month for 100 pages, alongside non-expiring page add-on packs.
+For privacy-conscious teams, Bank Statement Scanner includes an incognito mode that processes files without saving your underlying transaction records on the server. If you only need to process an occasional statement to fix a dropped feed, 10 pages are available for free without creating an account. Signing up provides 100 free pages for the first month with no credit card required, followed by an ongoing plan of $10 per month for 150 pages. Subscribers can add page packs, and if you'd rather not subscribe, 450 pages cost $49.99 once and never expire.
 
 ## Frequently asked questions
 

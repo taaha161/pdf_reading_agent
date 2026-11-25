@@ -30,7 +30,7 @@ faqs:
   - q: "My converted file has shifted columns in Excel. Why?"
     a: "Citi descriptions often contain commas (for example \"SEATTLE, WA\"). Our CSV quotes those fields so Excel keeps them in one column. If you copy-paste from the PDF instead, they tend to split."
   - q: "Is there a free option?"
-    a: "Your first month includes 100 pages free, with no card required. After that, it's $10 a month for 100 pages, or a page pack from $2."
+    a: "Your first month includes 100 pages free, with no card required. After that, it's $10 a month for 150 pages, or 450 pages for $49.99 once if you'd rather not subscribe."
 sources:
   - label: "ImageToTable: Citibank statement layouts"
     url: "https://imagetotable.ai/blog/convert-citibank-statement-to-excel"

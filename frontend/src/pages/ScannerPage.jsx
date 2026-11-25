@@ -449,7 +449,7 @@ export default function ScannerPage() {
       }
       if (e.insufficientCredits) {
         setOutOfCredits(true);
-        setError(e.message || "You're out of pages. Subscribe or buy a page pack to keep scanning.");
+        setError(e.message || "You're out of pages. Subscribe to the monthly plan or buy a page pack to keep scanning.");
       } else {
         setError(e.message || "Upload failed");
       }

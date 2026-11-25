@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
 import { createCheckoutSession, deleteAccount, getBillingBalance } from "../api/client";
 import { OFFERS, getOffer } from "../lib/offer";
 import { describeDiscount, discountedPrice, formatPrice } from "../lib/referral";
-import { ACCURATE_MULTIPLIER, FREE_SIGNUP_PAGES, PAGE_PACKS, PLAN_PAGES, PLAN_PRICE, formatExpiry } from "../lib/pricing";
+import { ACCURATE_MULTIPLIER, BULK_PACK, FREE_SIGNUP_PAGES, PAGE_PACKS, PLAN_PAGES, PLAN_PRICE, formatExpiry } from "../lib/pricing";
 import "./AccountSettingsPage.css";
 import "./AuthPage.css";
 import PasswordInput from "../components/PasswordInput";
@@ -246,7 +246,7 @@ export default function AccountSettingsPage() {
         <section className="account-settings-section" id="billing">
           <h2 className="account-settings-section-title">Billing</h2>
           <p className="account-settings-description">
-            You pay per PDF page. Your first month includes {FREE_SIGNUP_PAGES} free pages. The plan is ${PLAN_PRICE}/month for {PLAN_PAGES} pages, and page packs top you up whenever you need more. High accuracy mode uses {ACCURATE_MULTIPLIER} pages per PDF page.
+            You pay per PDF page. Your first month includes {FREE_SIGNUP_PAGES} free pages. The monthly plan is ${PLAN_PRICE}/month for {PLAN_PAGES} pages, and subscribers can add page packs from ${PAGE_PACKS[0].price} whenever they need more. Without a subscription, you can buy {BULK_PACK.pages} pages for ${BULK_PACK.price}. High accuracy mode uses {ACCURATE_MULTIPLIER} pages per PDF page.
           </p>
           {billingBalance !== null && (
             <>
@@ -262,6 +262,9 @@ export default function AccountSettingsPage() {
                 )}
                 {billingBalance.subscription_active && <li>{billingBalance.plan_pages ?? 0} of {PLAN_PAGES} plan pages left this month</li>}
                 {billingBalance.pack_pages > 0 && <li>{billingBalance.pack_pages} page-pack pages (never expire)</li>}
+                {billingBalance.frozen_pages > 0 && (
+                  <li>{billingBalance.frozen_pages} subscriber pack pages paused. Subscribe again to use them.</li>
+                )}
               </ul>
               <div className="account-settings-billing-actions">
                 {referral && (planDiscount || referral.packs) && (
@@ -285,9 +288,13 @@ export default function AccountSettingsPage() {
                 )}
               </div>
               <h3 className="account-settings-subtitle">Page packs</h3>
-              <p className="account-settings-description">One-time purchase. Pack pages never expire and are used after your free and plan pages.</p>
+              <p className="account-settings-description">
+                {billingBalance.subscription_active
+                  ? "One-time add-on for subscribers. Pack pages never expire and are used after your plan pages. If you cancel, they pause until you subscribe again."
+                  : `Not ready to subscribe? Buy pages once. They never expire. Subscribers can add packs from $${PAGE_PACKS[0].price} instead.`}
+              </p>
               <div className="account-settings-packs">
-                {PAGE_PACKS.map((p) => (
+                {(billingBalance.subscription_active ? PAGE_PACKS : [BULK_PACK]).map((p) => (
                   <button
                     key={p.id}
                     type="button"

@@ -11,12 +11,12 @@ import ComparePage from '../../components/ComparePage.astro';
   h1="A DocuClipper alternative with no annual contract"
   intro={[
     'DocuClipper is a capable tool, built for accounting firms that convert statements every day and need QuickBooks or Xero sync and SOC 2 paperwork. If you convert statements in bursts, such as at tax season, in a catch-up job, or for a single loan file, a page plan that renews whether you use it or not can be more than you need.',
-    'Bank Statement Scanner gives you 100 pages free for your first month, then $10 a month for 100 pages. There is no annual plan and you can cancel anytime. Here is an honest comparison, including where DocuClipper is the better choice.',
+    'Bank Statement Scanner gives you 100 pages free for your first month, then $10 a month for 150 pages. There is no annual plan and you can cancel anytime. Here is an honest comparison, including where DocuClipper is the better choice.',
   ]}
   themName="DocuClipper"
   rows={[
-    { label: 'Starting price', us: '$10/month for 100 pages', them: 'Starter from $20.30/month billed annually (60 pages); monthly billing costs about 30% more' },
-    { label: 'How you pay', us: 'Per page: 100 plan pages a month, plus page packs (10 for $2, 30 for $5, 100 for $10) that never expire', them: 'A monthly page allowance; unused pages don’t carry over to the next cycle' },
+    { label: 'Starting price', us: '$10/month for 150 pages', them: 'Starter from $20.30/month billed annually (60 pages); monthly billing costs about 30% more' },
+    { label: 'How you pay', us: 'Per page: 150 plan pages a month, plus add-on page packs for subscribers (10 for $2, 30 for $5, 100 for $10), or 450 pages for $49.99 without a plan. Pack pages never expire', them: 'A monthly page allowance; unused pages don’t carry over to the next cycle' },
     { label: 'Commitment', us: 'Monthly only. Cancel anytime', them: 'Monthly or annual billing' },
     { label: 'Free trial', us: '100 pages free for your first month, no card', them: '14 days, no card, up to 120 pages' },
     { label: 'Export formats', us: 'CSV, Excel (XLSX)', them: 'Excel, CSV, QuickBooks, Xero' },
@@ -37,8 +37,8 @@ import ComparePage from '../../components/ComparePage.astro';
       heading: 'How Bank Statement Scanner handles billing',
       bullets: [
         'Your first month is free: 100 pages, no card.',
-        'Then one monthly subscription of $10 for 100 pages each billing cycle. Accurate mode uses 2 pages per PDF page.',
-        'Page packs if you need more in a busy month (10 pages for $2, 30 for $5, 100 for $10), with or without the subscription. Pack pages never expire.',
+        'Then one monthly subscription of $10 for 150 pages each billing cycle. Accurate mode uses 2 pages per PDF page.',
+        'Subscribers can add page packs in a busy month (10 pages for $2, 30 for $5, 100 for $10). Without a subscription, buy 450 pages for $49.99. Pack pages never expire.',
         'No annual plan. Cancel anytime, and payments run through Stripe, so we never see your card number.',
       ],
     },
@@ -59,7 +59,7 @@ import ComparePage from '../../components/ComparePage.astro';
     ],
   }}
   faqs={[
-    { q: 'Is Bank Statement Scanner cheaper than DocuClipper?', a: 'For occasional use, usually yes: there is no annual plan, the first month is free, and pages cost $0.10 each on the $10 plan. At high volume, DocuClipper’s larger page plans can work out cheaper per page.' },
+    { q: 'Is Bank Statement Scanner cheaper than DocuClipper?', a: 'For occasional use, usually yes: there is no annual plan, the first month is free, and pages cost about 7¢ each on the $10 plan. At high volume, DocuClipper’s larger page plans can work out cheaper per page.' },
     { q: 'Can I export to QuickBooks or Xero?', a: 'Export to CSV and use the bank-statement import in QuickBooks or Xero. Direct QBO and Xero export isn’t available yet. DocuClipper offers it.' },
     { q: 'Is there a contract?', a: 'No. The subscription is monthly and you can cancel anytime. There is no annual plan.' },
     { q: 'Can I try it before paying?', a: 'Yes. Your first month includes 100 pages free, and you don’t need a credit card.' },

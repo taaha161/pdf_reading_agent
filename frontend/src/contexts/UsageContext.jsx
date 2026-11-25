@@ -31,7 +31,7 @@ export function UsageProvider({ children }) {
       ...prev,
       ...pick(["trial_used", "trial_limit", "trial_remaining"]),
       ...(data.pages_remaining != null
-        ? { pages_remaining: data.pages_remaining, free_pages: data.free_pages ?? 0, free_expires_at: data.free_expires_at ?? null, plan_pages: data.plan_pages ?? 0, pack_pages: data.pack_pages ?? 0 }
+        ? { pages_remaining: data.pages_remaining, free_pages: data.free_pages ?? 0, free_expires_at: data.free_expires_at ?? null, plan_pages: data.plan_pages ?? 0, pack_pages: data.pack_pages ?? 0, frozen_pages: data.frozen_pages ?? 0 }
         : {}),
     }));
   }, []);

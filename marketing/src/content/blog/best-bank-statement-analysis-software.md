@@ -69,7 +69,7 @@ Major accounting suites offer automated bank feeds using Open Banking APIs. Whil
 
 Prices are from each vendor's pricing page, checked in November 2026. The linked comparisons have sources and say where each tool is the better pick.
 
-- **Transaction extractors:** Bank Statement Scanner ($10/month for 100 pages, first month free), [DocuClipper](/compare/docuclipper-alternative) (from $20.30/month billed annually), [Bankstatemently](/compare/bankstatemently-alternative) (10 free pages a month), [MoneyThumb](/compare/moneythumb-alternative) (from $599.95/year, QBO and QFX output), [ProperConvert](/compare/properconvert-alternative) (desktop, $19.99/month).
+- **Transaction extractors:** Bank Statement Scanner ($10/month for 150 pages, first month free), [DocuClipper](/compare/docuclipper-alternative) (from $20.30/month billed annually), [Bankstatemently](/compare/bankstatemently-alternative) (10 free pages a month), [MoneyThumb](/compare/moneythumb-alternative) (from $599.95/year, QBO and QFX output), [ProperConvert](/compare/properconvert-alternative) (desktop, $19.99/month).
 - **Lending and document AI platforms:** [Docsumo](/compare/docsumo-alternative) (custom quote plus setup fee, built for lenders), [Nanonets](/compare/nanonets-alternative) ($100/month for 100 credits).
 - **Accounting data capture:** [Dext](/compare/dext-alternative) (from $25.21/month), [AutoEntry](/compare/autoentry-alternative) (from $13/month for 50 credits), [Hubdoc](/compare/hubdoc-alternative) ($12/month).
 

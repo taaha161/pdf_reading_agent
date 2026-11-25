@@ -18,7 +18,7 @@ import ProductVideo from '../../components/ProductVideo.astro';
 import SampleExport from '../../components/SampleExport.astro';
 import AskStatement from '../../components/AskStatement.astro';
 import logo from '../../assets/pdf_to_excel_logo.png';
-import { SITE_NAME, LEGAL_ENTITY, FREE_ANON_PAGES, FREE_SIGNUP_PAGES, PLAN_PAGES, PLAN_PRICE, PACKS_TEXT } from '../../consts';
+import { SITE_NAME, LEGAL_ENTITY, FREE_ANON_PAGES, FREE_SIGNUP_PAGES, PLAN_PAGES, PLAN_PRICE, BULK_PACK_TEXT } from '../../consts';
 
 const OFFER = 'linkedin1m';
 const CTA_HREF = `/login?mode=signup&offer=${OFFER}`;
@@ -92,7 +92,7 @@ const faqs = [
   },
   {
     q: 'What does the free month include?',
-    a: `${FREE_SIGNUP_PAGES} statement pages, free for your first 30 days. That covers about 16 six-page statements. After that, keep going for $${PLAN_PRICE} a month for ${PLAN_PAGES} pages, or buy a page pack (${PACKS_TEXT}). Nothing renews unless you choose a plan.`,
+    a: `${FREE_SIGNUP_PAGES} statement pages, free for your first 30 days. That covers about 16 six-page statements. After that, keep going for $${PLAN_PRICE} a month for ${PLAN_PAGES} pages, or buy ${BULK_PACK_TEXT} once with no subscription. Nothing renews unless you choose a plan.`,
   },
   {
     q: 'Do I need a credit card?',

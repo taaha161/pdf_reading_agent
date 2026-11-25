@@ -28,7 +28,7 @@ faqs:
   - q: "Does it handle long business statements?"
     a: "Yes. Pages are processed in order with repeated headers left out, and the rows are checked against the statement totals."
   - q: "What does it cost?"
-    a: "Try 10 pages free without an account, and get 100 pages free in your first month after signing up. After that it's $10 a month for 100 pages, or one-off page packs."
+    a: "Try 10 pages free without an account, and get 100 pages free in your first month after signing up. After that it's $10 a month for 150 pages, or 450 pages for $49.99 once with no subscription."
 sources:
   - label: "M&T: eStatements and notices"
     url: "https://www.mtb.com/personal/online-and-mobile/estatements-notices"
