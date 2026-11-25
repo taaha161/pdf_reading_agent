@@ -373,3 +373,19 @@
     gap: 1.4rem;
   }
 }
+
+/* Placeholder while the page balance loads. */
+.account-settings-billing-skeleton {
+  height: 220px;
+  margin-top: 1rem;
+  background: linear-gradient(90deg, var(--color-primary-subtle) 0%, #fafaf8 50%, var(--color-primary-subtle) 100%);
+  background-size: 200% 100%;
+  animation: billing-skeleton 1.2s ease-in-out infinite;
+}
+@keyframes billing-skeleton {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .account-settings-billing-skeleton { animation: none; }
+}
