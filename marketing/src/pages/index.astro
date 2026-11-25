@@ -243,7 +243,8 @@ const features = [
             </ul>
             <a class="line-btn fee-btn" href="/signup" data-cta="pricing_free">Create a free account</a>
           </article>
-          <article class="fee fee--plan">
+          <article class="fee fee--plan" aria-label="Monthly plan, recommended">
+            <span class="fee-badge">Recommended · best value</span>
             <h3 class="fee-label">Monthly</h3>
             <p class="fee-value"><span class="hl">${PLAN_PRICE}</span><span>/mo</span><span class="fee-pencil pencil" aria-hidden="true">≈ 7¢ a page</span></p>
             <p class="fee-tagline">{PLAN_PAGES} pages every month. What that gets you:</p>
@@ -440,6 +441,31 @@ const features = [
   .fee-btn { width: 100%; }
   .fee-fine { margin: 10px 0 0; font-size: 14px; color: var(--ink-soft); }
   .fee-value { position: relative; }
+  /* Recommended plan: a boxed card that sits proud of the fee schedule. */
+  .fee:first-child { border-right: 0; }
+  .fee--plan {
+    position: relative;
+    margin: -14px 0 -14px;
+    padding: 40px 28px 28px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    box-shadow: 6px 6px 0 var(--ink);
+    z-index: 1;
+  }
+  .fee--plan .fee-label { color: var(--ink); }
+  .fee-badge {
+    position: absolute;
+    top: -14px;
+    left: 24px;
+    padding: 4px 10px;
+    background: var(--hi);
+    border: 1px solid var(--ink);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
   .fee-pencil { display: inline-block; margin-left: 12px; font-size: 20px; letter-spacing: 0; vertical-align: middle; transform: rotate(-4deg); }
   /* Lower sheets lie on the desk too: slightly turned, never flat cards */
   .summary-sheet { transform: rotate(0.35deg); }
@@ -493,6 +519,7 @@ const features = [
     .fees-grid { grid-template-columns: 1fr; }
     .fee { padding: 24px 0; border-right: 0; border-bottom: 1px solid var(--ink); }
     .fee:last-child { border-bottom: 0; }
+    .fee--plan { order: -1; margin: 18px 6px 28px 0; padding: 36px 20px 24px; border: 2px solid var(--ink); }
     .res-grid { grid-template-columns: 1fr; gap: 24px; }
   }
   @media (max-width: 600px) {
