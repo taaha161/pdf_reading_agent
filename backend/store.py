@@ -1,6 +1,9 @@
 """Job store: DB-backed (Supabase Postgres). Jobs are scoped by user_id."""
 import json
+import logging
 import os
+import threading
+import time
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -41,25 +44,97 @@ def _aggregate_transactions(transactions: list[dict]) -> tuple[float, float, dic
     return total_income, total_expenses, by_category
 
 
-def _get_conn():
+logger = logging.getLogger("pdf_processor_app.store")
+
+# --- Connection pool ---
+# Opening a Postgres connection (TCP + TLS + auth to the Supabase pooler) costs
+# several round trips, ~7x a simple query. Reuse a few open connections instead.
+# Kept small: the Supabase session pooler (port 5432) caps client connections.
+# Connections open lazily, up to _POOL_MAX; callers beyond that wait for a free one.
+_POOL_MAX = max(1, int(os.environ.get("DB_POOL_MAX", "5")))
+_POOL_WAIT_SECONDS = 30  # how long a request waits for a free connection
+_IDLE_PING_SECONDS = 60  # ping a connection idle this long before reusing it
+_pool_slots = threading.BoundedSemaphore(_POOL_MAX)  # one per open-or-openable connection
+_idle: list[tuple[Any, float]] = []  # (connection, last used), most recent last
+_idle_lock = threading.Lock()
+
+
+def _connect():
     url = os.environ.get("DATABASE_URL", "").strip()
     if not url:
         raise RuntimeError("DATABASE_URL is not set")
-    return psycopg2.connect(url, cursor_factory=RealDictCursor)
+    return psycopg2.connect(
+        url, cursor_factory=RealDictCursor,
+        # Notice dead connections instead of hanging on them.
+        keepalives=1, keepalives_idle=30, keepalives_interval=10, keepalives_count=3,
+    )
+
+
+def _close_quietly(conn) -> None:
+    try:
+        conn.close()
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _alive(conn, last_used: float) -> bool:
+    """False if the server dropped this connection. Pings only after it sat idle a while."""
+    if conn.closed:
+        return False
+    if time.monotonic() - last_used < _IDLE_PING_SECONDS:
+        return True
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+        conn.rollback()
+        return True
+    except psycopg2.Error:
+        return False
+
+
+def _checkout():
+    """An idle live connection if there is one, else a new one. Caller holds a slot."""
+    while True:
+        with _idle_lock:
+            item = _idle.pop() if _idle else None
+        if item is None:
+            return _connect()
+        conn, last_used = item
+        if _alive(conn, last_used):
+            return conn
+        logger.info("db pool: dropping dead connection")
+        _close_quietly(conn)
 
 
 @contextmanager
 def _cursor():
-    conn = _get_conn()
+    if not _pool_slots.acquire(timeout=_POOL_WAIT_SECONDS):
+        raise RuntimeError("Database busy: no free connection")
+    conn = None
+    reusable = False
     try:
-        with conn.cursor() as cur:
-            yield cur
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
+        conn = _checkout()
+        try:
+            with conn.cursor() as cur:
+                yield cur
+            conn.commit()
+            reusable = True
+        except Exception as e:
+            if not conn.closed and not isinstance(e, (psycopg2.OperationalError, psycopg2.InterfaceError)):
+                try:
+                    conn.rollback()
+                    reusable = True
+                except psycopg2.Error:
+                    pass
+            raise
     finally:
-        conn.close()
+        if conn is not None:
+            if reusable and not conn.closed:
+                with _idle_lock:
+                    _idle.append((conn, time.monotonic()))
+            else:
+                _close_quietly(conn)
+        _pool_slots.release()
 
 
 def _json_value(value: Any) -> Any:

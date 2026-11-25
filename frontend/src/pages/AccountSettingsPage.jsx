@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import { useAuth } from "../contexts/AuthContext";
+import { useUsage } from "../contexts/UsageContext";
 import { supabase } from "../lib/supabase";
 import { createCheckoutSession, deleteAccount, getBillingBalance } from "../api/client";
 import { OFFERS, getOffer } from "../lib/offer";
@@ -119,6 +120,10 @@ export default function AccountSettingsPage() {
   };
 
   const offer = getOffer(user);
+  // Show the balance the sidebar already loaded right away; /api/billing/balance
+  // (which adds the referral discount) replaces it when it arrives.
+  const { usage } = useUsage();
+  const balance = billingBalance ?? (usage?.authenticated && usage.pages_remaining != null ? usage : null);
   // Affiliate referral discount (server-side terms; checkout applies it).
   const referral = billingBalance?.referral_discount ?? null;
   const planDiscount = referral?.plan_eligible ? referral : null;
@@ -248,22 +253,23 @@ export default function AccountSettingsPage() {
           <p className="account-settings-description">
             You pay per PDF page. Your first month includes {FREE_SIGNUP_PAGES} free pages.
           </p>
-          {billingBalance !== null && (
+          {balance === null && <div className="account-settings-billing-skeleton" aria-hidden="true" />}
+          {balance !== null && (
             <>
               <p className="account-settings-billing-balance">
-                <strong>{(billingBalance.pages_remaining ?? 0).toLocaleString()}</strong> pages left
+                <strong>{(balance.pages_remaining ?? 0).toLocaleString()}</strong> pages left
               </p>
               <ul className="account-settings-billing-breakdown">
-                {billingBalance.free_pages > 0 && (
+                {balance.free_pages > 0 && (
                   <li>
-                    {billingBalance.free_pages} free pages
-                    {formatExpiry(billingBalance.free_expires_at) ? `, valid until ${formatExpiry(billingBalance.free_expires_at)}` : ""}
+                    {balance.free_pages} free pages
+                    {formatExpiry(balance.free_expires_at) ? `, valid until ${formatExpiry(balance.free_expires_at)}` : ""}
                   </li>
                 )}
-                {billingBalance.subscription_active && <li>{billingBalance.plan_pages ?? 0} of {PLAN_PAGES} plan pages left this month</li>}
-                {billingBalance.pack_pages > 0 && <li>{billingBalance.pack_pages} page-pack pages (never expire)</li>}
-                {billingBalance.frozen_pages > 0 && (
-                  <li>{billingBalance.frozen_pages} subscriber pack pages paused. Subscribe again to use them.</li>
+                {balance.subscription_active && <li>{balance.plan_pages ?? 0} of {PLAN_PAGES} plan pages left this month</li>}
+                {balance.pack_pages > 0 && <li>{balance.pack_pages} page-pack pages (never expire)</li>}
+                {balance.frozen_pages > 0 && (
+                  <li>{balance.frozen_pages} subscriber pack pages paused. Subscribe again to use them.</li>
                 )}
               </ul>
               {referral && (planDiscount || referral.packs) && (
@@ -272,7 +278,7 @@ export default function AccountSettingsPage() {
                   {referral.packs && formatExpiry(referral.packs_ends_at) ? ` (packs until ${formatExpiry(referral.packs_ends_at)})` : ""}.
                 </p>
               )}
-              {billingBalance.subscription_active ? (
+              {balance.subscription_active ? (
                 <>
                   <h3 className="account-settings-subtitle">Page packs</h3>
                   <p className="account-settings-description">
