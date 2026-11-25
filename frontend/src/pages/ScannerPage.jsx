@@ -303,6 +303,13 @@ export default function ScannerPage() {
       },
     });
   }, [navigate]);
+  const goToSignupForBulk = useCallback(
+    () =>
+      navigate("/signup", {
+        state: { from: { pathname: "/scanner" }, notice: BULK_NOTICE, reason: "bulk" },
+      }),
+    [navigate]
+  );
   const goToSignupForFileSize = useCallback(
     () =>
       navigate("/signup", {
@@ -725,6 +732,7 @@ export default function ScannerPage() {
             <FileUpload
               onUpload={handleUpload}
               onUploadMany={handleUploadMany}
+              onBulkClick={goToSignupForBulk}
               disabled={loading}
               blocked={trialExhausted}
               onBlocked={goToSignup}
@@ -802,7 +810,7 @@ export default function ScannerPage() {
         {isGuest && bulkGuestCount > 1 && (
           <p className="scanner-trial-note" role="status">
             You dropped {bulkGuestCount} statements, so we scanned the first one.{" "}
-            <button type="button" className="scanner-alert-link" onClick={() => goToSignup(BULK_NOTICE)}>
+            <button type="button" className="scanner-alert-link" onClick={goToSignupForBulk}>
               Create a free account
             </button>{" "}
             to upload them all at once and download one combined spreadsheet.
@@ -881,6 +889,20 @@ export default function ScannerPage() {
                   </svg>
                   Upload new statement
                 </button>}
+                {!bulk && isLoggedIn && (
+                  <button
+                    type="button"
+                    className="scanner-new-upload-btn scanner-bulk-btn"
+                    onClick={() => newUploadInputRef.current?.click()}
+                    disabled={loading}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M8 6V4a1 1 0 0 1 1-1h7l4 4v11a1 1 0 0 1-1 1h-2" />
+                      <path d="M4 8a1 1 0 0 1 1-1h7l4 4v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" />
+                    </svg>
+                    Bulk upload
+                  </button>
+                )}
                 <input
                   ref={newUploadInputRef}
                   type="file"

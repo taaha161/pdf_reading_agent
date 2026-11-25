@@ -261,6 +261,12 @@
   cursor: pointer;
 }
 
+.scanner-bulk-btn {
+  color: var(--color-text);
+  background: var(--hi-soft);
+  border-color: var(--rule-strong);
+}
+
 .scanner-new-upload-btn svg {
   width: 1.15rem;
   height: 1.15rem;
