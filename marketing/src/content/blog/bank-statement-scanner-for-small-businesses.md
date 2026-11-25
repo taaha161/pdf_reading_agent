@@ -3,6 +3,7 @@ title: "Small Business Bookkeeping Without the Headache"
 seoTitle: "Bank Statement Scanner for Small Businesses"
 excerpt: "Turn small business statement PDFs into categorized CSV or Excel for cash flow, tax prep, and your CPA, without rebuilding spreadsheets monthly."
 date: 2025-03-08
+updated: 2026-11-25
 category: "For small business"
 readTime: "8 min read"
 image: "/blog/images/bank-statement-scanner-for-small-businesses.jpg"

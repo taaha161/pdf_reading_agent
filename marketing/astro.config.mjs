@@ -6,14 +6,19 @@ import { readdirSync, readFileSync } from 'node:fs';
 
 const SITE = process.env.PUBLIC_SITE_URL || 'https://bankstatementscanner.com';
 
-// lastmod for content pages: blog `date` and bank-page `reviewed` frontmatter.
+// lastmod for content pages: blog `updated` (else `date`) and bank-page `reviewed` frontmatter.
 // Google uses lastmod when it is consistently accurate, so only dated pages get one.
-function frontmatterDates(dir, field, prefix, slugField) {
+function frontmatterDates(dir, fields, prefix, slugField) {
   const out = new Map();
   for (const f of readdirSync(new URL(dir, import.meta.url))) {
     if (!f.endsWith('.md')) continue;
     const src = readFileSync(new URL(dir + f, import.meta.url), 'utf8');
-    const date = src.match(new RegExp(`^${field}:\\s*"?([0-9-]{10})`, 'm'))?.[1];
+    // The latest of the listed date fields.
+    const date = fields
+      .map((field) => src.match(new RegExp(`^${field}:\\s*"?([0-9-]{10})`, 'm'))?.[1])
+      .filter(Boolean)
+      .sort()
+      .pop();
     const slug = slugField
       ? src.match(new RegExp(`^${slugField}:\\s*"?([^"\\n]+)`, 'm'))?.[1]
       : f.replace(/\.md$/, '');
@@ -22,8 +27,8 @@ function frontmatterDates(dir, field, prefix, slugField) {
   return out;
 }
 const LASTMOD = new Map([
-  ...frontmatterDates('./src/content/blog/', 'date', '/blog/'),
-  ...frontmatterDates('./src/content/banks/', 'reviewed', '/convert/', 'slug'),
+  ...frontmatterDates('./src/content/blog/', ['date', 'updated'], '/blog/'),
+  ...frontmatterDates('./src/content/banks/', ['reviewed'], '/convert/', 'slug'),
 ]);
 
 // https://astro.build/config

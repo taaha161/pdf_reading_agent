@@ -4,6 +4,7 @@ title: "How to Convert Multiple Bank Statements in Bulk Without Losing Accuracy"
 seoTitle: "Convert Multiple Bank Statements in Bulk"
 excerpt: "A repeatable workflow to convert a stack of bank statement PDFs to CSV or Excel while keeping accounts separate and totals reconciled."
 date: 2026-08-08
+updated: 2026-11-25
 category: "For professionals"
 readTime: "8 min read"
 image: "/blog/images/convert-multiple-bank-statements-in-bulk.jpg"

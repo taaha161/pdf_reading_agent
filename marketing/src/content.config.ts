@@ -9,6 +9,8 @@ const blog = defineCollection({
     seoTitle: z.string().optional(),
     excerpt: z.string(),
     date: z.coerce.date(),
+    /** Last meaningful content change; drives dateModified and sitemap lastmod. */
+    updated: z.coerce.date().optional(),
     category: z.string(),
     readTime: z.string(),
     image: z.string(),

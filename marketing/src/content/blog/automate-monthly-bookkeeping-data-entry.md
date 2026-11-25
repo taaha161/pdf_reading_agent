@@ -3,6 +3,7 @@ title: "How to Automate Monthly Bookkeeping Data Entry"
 seoTitle: "Automate Monthly Bookkeeping Data Entry: Complete Guide"
 excerpt: "Learn how to automate monthly bookkeeping data entry, convert PDF bank statements to CSV, eliminate manual typing, and streamline your reconciliations."
 date: 2026-10-26
+updated: 2026-11-25
 category: "How-to"
 readTime: "9 min read"
 image: "/blog/images/automate-monthly-bookkeeping-data-entry.jpg"

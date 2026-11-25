@@ -4,6 +4,7 @@ title: "Bank Statement Extraction Software: 12 Tools Compared, Including Free Op
 seoTitle: "Bank Statement Extraction Software: 12 Tools Compared"
 excerpt: "Bank statement extraction software compared on price, free plans, and who each tool suits, from free open-source tools to lending platforms. Prices checked November 2026."
 date: 2026-09-10
+updated: 2026-11-25
 category: "OCR & Extraction"
 readTime: "11 min read"
 image: "/blog/images/bank-statement-extraction-software-guide.jpg"
