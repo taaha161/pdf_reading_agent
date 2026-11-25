@@ -157,6 +157,20 @@ Converting credit card statements should not be an arduous, error-prone manual t
 
 [Bank Statement Scanner](/) is specifically engineered to handle complex financial documents, automatically converting messy credit card and bank statement PDFs into accurate, cleanly categorized Excel spreadsheets. Upload your statements today and turn hours of manual data entry into a 30-second task.
 
+## Frequently asked questions
+
+### Can I convert a credit card statement to Excel?
+
+Yes. Credit card statement PDFs convert the same way as bank statements: purchases, payments, fees, and interest come out as rows with dates, descriptions, and amounts.
+
+### How are payments and refunds shown in the spreadsheet?
+
+They appear as credits, separate from purchases, so they reduce the balance rather than adding to spending. Check the direction of any row that looks wrong before totaling.
+
+### Does it work with scanned credit card statements?
+
+Yes. Bank Statement Scanner reads scanned PDFs with OCR, and an accurate mode helps with low-quality scans.
+
 ## Sources
 
 - [CFPB: How do I read my credit card statement?](https://www.consumerfinance.gov/ask-cfpb/how-do-i-read-my-credit-card-statement-en-61/)

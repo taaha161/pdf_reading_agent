@@ -50,6 +50,20 @@ Upload a bank or credit card statement PDF, review the extracted transactions an
 
 Onboarding a client with months of history? See [how to convert multiple statements in bulk](/blog/convert-multiple-bank-statements-in-bulk) without losing accuracy.
 
+## Frequently asked questions
+
+### Can QuickBooks import a PDF bank statement?
+
+Not as a PDF. Convert the statement to CSV first, then use the bank statement upload in QuickBooks and map the date, description, and amount columns.
+
+### What causes a CSV import to fail in QuickBooks or Xero?
+
+Common causes are a date format the software doesn't expect, amounts with currency symbols or the wrong sign, extra summary rows, and blank lines. Clean these before importing.
+
+### Does Bank Statement Scanner export QBO or OFX files?
+
+No. It exports CSV and Excel. CSV works with the bank statement import in QuickBooks, Xero, and most accounting tools.
+
 ## Sources
 
 - [Wikipedia: Open Financial Exchange (OFX)](https://en.wikipedia.org/wiki/Open_Financial_Exchange)

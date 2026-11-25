@@ -166,6 +166,20 @@ Manually retyping bank statements is tedious, inefficient, and prone to costly e
 
 With [Bank Statement Scanner](/), you can convert bank statement PDF to Excel documents cleanly and reliably. The platform automatically handles multi-line transaction descriptions, complex debit and credit columns, and multi-page layouts—providing you with structured, error-free spreadsheets ready for instant financial analysis and reconciliation.
 
+## Frequently asked questions
+
+### How do I convert a bank statement PDF to Excel?
+
+Upload the PDF to a bank statement converter, check the extracted rows, and download an Excel file. Bank Statement Scanner's Excel export puts debits and credits in separate columns with numeric cells.
+
+### Why does copy-paste from a PDF into Excel go wrong?
+
+PDF text isn't stored as a table, so pasted rows often merge columns, split descriptions, or lose minus signs.
+
+### Can I convert password-protected statement PDFs?
+
+Yes. Bank Statement Scanner asks for the PDF password and then converts the statement as usual.
+
 ## Sources
 
 - [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)

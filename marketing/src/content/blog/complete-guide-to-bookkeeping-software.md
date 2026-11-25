@@ -137,6 +137,20 @@ Choosing the right bookkeeping software is only half the battle; keeping it popu
 
 Using [Bank Statement Scanner](/) eliminates manual data entry by extracting transactions directly from locked bank and credit card PDF statements into clean, structured CSV or Excel spreadsheets. Whether you are catching up on months of backlogged records or importing monthly statements into QuickBooks or Xero, automated extraction ensures your bookkeeping software always has the accurate, timely data it needs.
 
+## Frequently asked questions
+
+### What is the difference between bookkeeping software and a spreadsheet?
+
+Bookkeeping software keeps a structured ledger with accounts, reconciliation, and reports. A spreadsheet is flexible but relies on you to keep formulas and categories consistent.
+
+### How do I get old transactions into new bookkeeping software?
+
+Bank feeds usually reach back only a limited time. For earlier periods, convert the PDF statements to CSV and use the software's bank statement import.
+
+### Can bookkeeping software read PDF bank statements?
+
+Most import CSV, QBO, or OFX files rather than PDFs. Convert the PDF first; Bank Statement Scanner exports CSV and Excel.
+
 ## Sources
 
 - [Wikipedia: Bookkeeping](https://en.wikipedia.org/wiki/Bookkeeping)

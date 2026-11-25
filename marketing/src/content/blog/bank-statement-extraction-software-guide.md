@@ -152,6 +152,20 @@ Standard accounting software like QuickBooks Online, Xero, and Sage requires cle
 
 Bank Statement Scanner is the browser option in the table above: upload a digital or scanned PDF, review the rows, and export CSV or Excel. After converting, it checks the rows against the statement's own opening balance, running balances, and closing balance, and shows which rows to look at when they don't add up. It's built for people converting a handful to a few hundred pages a month. If you need QBO files, an API into a loan system, or software that never touches the cloud, one of the other tools above is a better fit. [Try it on a statement](/scanner): the first 10 pages need no account.
 
+## Frequently asked questions
+
+### What should I look for in bank statement extraction software?
+
+Support for your banks and for scanned PDFs, clean CSV or Excel output, a way to check totals against the statement, clear data retention rules, and pricing that fits how often you convert.
+
+### Is free bank statement extraction software good enough?
+
+For occasional use it can be. Check output quality on one of your own statements and make sure you understand how the tool handles your data before uploading sensitive files.
+
+### Can extraction software process many statements at once?
+
+Some can. Bank Statement Scanner's bulk upload takes up to 50 PDFs at once and produces one combined workbook, with each row tagged by the statement it came from.
+
 ## Sources
 
 - [Wikipedia: Intelligent document processing](https://en.wikipedia.org/wiki/Intelligent_document_processing)

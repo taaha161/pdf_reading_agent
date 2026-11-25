@@ -91,6 +91,20 @@ image: "/blog/images/how-to-download-chase-bank-statements.jpg"
 <h2>Conclusion: take control of your Chase account data</h2>
 <p>Downloading your Chase statements is the first step to understanding your money. Grab the PDF for records, use the CSV/Excel activity export for a quick recent look, and <a href="/scanner">convert your statement PDFs to CSV or Excel</a> whenever you need clean, spreadsheet-ready transactions across any period. With structured data in hand, budgeting, bookkeeping, and tax prep all get faster.</p>
 
+## Frequently asked questions
+
+### Where do I find statements in Chase online banking?
+
+Sign in, open the account, and look for the statements or documents section. Menu labels change over time, so search the site's help if you can't find it.
+
+### Can I download Chase statements as Excel?
+
+Statements download as PDFs. Chase's activity export is separate and may cover a limited period. To get a full statement into Excel, convert the PDF.
+
+### How do I convert a Chase statement PDF to Excel?
+
+Upload the PDF to Bank Statement Scanner and download Excel or CSV. See the guide to [converting Chase statements to Excel](/convert/chase-bank-statement-to-excel) for details.
+
 ## Sources
 
 - [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)

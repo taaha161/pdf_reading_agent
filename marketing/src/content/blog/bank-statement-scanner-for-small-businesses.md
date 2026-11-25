@@ -34,6 +34,20 @@ Pick a recurring day after statements post: download PDFs, run them through the 
 
 Try it on your next statement cycle: one business checking or card PDF is enough to see the time savings versus manual entry.
 
+## Frequently asked questions
+
+### How can a small business turn bank statements into a spreadsheet?
+
+Upload the statement PDF to a converter like Bank Statement Scanner and download the transactions as categorized CSV or Excel, ready for cash flow review or your accountant.
+
+### How do I separate business and personal transactions?
+
+Convert the statement, then sort or filter by category and description in the spreadsheet. Mark personal rows clearly before you hand the file to your accountant.
+
+### What should I send my accountant each month?
+
+The original statement PDFs plus a clean spreadsheet of the transactions. Spreadsheets with consistent columns are much faster for them to review and import.
+
 ## Sources
 
 - [Wikipedia: Optical character recognition](https://en.wikipedia.org/wiki/Optical_character_recognition)

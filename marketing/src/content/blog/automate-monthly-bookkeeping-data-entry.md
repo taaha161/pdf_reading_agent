@@ -122,6 +122,20 @@ Adopting tools like [Bank Statement Scanner](https://bankstatementscanner.com/sc
 
 This article is for general informational purposes only and does not constitute professional accounting, financial, or legal advice.
 
+## Frequently asked questions
+
+### What part of monthly bookkeeping is easiest to automate?
+
+Getting transactions out of PDF statements. Converting statements to CSV or Excel removes the retyping step, and categorization rules or AI categories cover most of the sorting that follows.
+
+### Can I convert a whole month of client statements at once?
+
+Yes. With a free Bank Statement Scanner account you can upload up to 50 statement PDFs at once and download one combined Excel workbook, with a Statement column on every row and a sheet per statement.
+
+### Do I still need to reconcile after automating data entry?
+
+Yes. Automation produces the rows; reconciliation confirms they match your books. Check that each statement's opening and closing balances tie out before you import, then reconcile in your accounting software as usual.
+
 ## Sources
 
 - [Wikipedia: Data entry](https://en.wikipedia.org/wiki/Data_entry)
