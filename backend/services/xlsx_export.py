@@ -5,6 +5,7 @@ openpyxl 3.1 writes inline strings instead; that is valid, but many phone viewer
 (e.g. Android file/document previewers) ignore them and show only the number cells.
 """
 import io
+import re
 from typing import Any
 
 import xlsxwriter
@@ -27,6 +28,9 @@ from services.csv_export import (
     group_totals,
     has_balances,
     has_groups,
+    STATEMENT_FIELD,
+    bulk_fields,
+    bulk_rows,
     statement_row,
     with_balance_rows,
 )
@@ -35,9 +39,12 @@ XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 _HEADERS = {
     "date": "Date", "description": "Description", DEBIT: "Debit", CREDIT: "Credit", BALANCE: "Balance",
-    "category": "Category", GROUP_FIELD: "Sub-category",
+    "category": "Category", GROUP_FIELD: "Sub-category", STATEMENT_FIELD: "Statement",
 }
-_WIDTHS = {"date": 12, "description": 48, DEBIT: 14, CREDIT: 14, BALANCE: 14, "category": 20, GROUP_FIELD: 20}
+_WIDTHS = {
+    "date": 12, "description": 48, DEBIT: 14, CREDIT: 14, BALANCE: 14, "category": 20, GROUP_FIELD: 20,
+    STATEMENT_FIELD: 28,
+}
 _MONEY_FIELDS = (DEBIT, CREDIT, BALANCE)
 _MONEY_FORMAT = "#,##0.00"
 
@@ -215,23 +222,10 @@ def transactions_to_xlsx(
     fields = export_fields(include_categories, has_groups(transactions), has_balances(transactions))
     out, wb, ws, header, money = _new_workbook("Transactions")
 
-    for col, field in enumerate(fields):
-        ws.write_string(0, col, _HEADERS[field], header)
-        ws.set_column(col, col, _WIDTHS[field])
-
     rows = [statement_row(t) for t in transactions]
     if not include_totals:  # the totals formulas cover the data rows, so they keep transactions only
         rows = with_balance_rows(rows, transactions)
-    for row, cells in enumerate(rows, start=1):
-        for col, field in enumerate(fields):
-            value = cells.get(field) if field in _MONEY_FIELDS else str(cells.get(field) or "")
-            if isinstance(value, float):
-                ws.write_number(row, col, value, money)
-            elif value:
-                ws.write_string(row, col, value)
-
-    ws.freeze_panes(1, 0)
-    ws.autofilter(0, 0, max(len(rows), 1), len(fields) - 1)
+    _write_rows(ws, fields, rows, header, money)
     if include_totals and transactions:
         _write_totals(wb, ws, transactions, fields, header)
     if reconciliation:
@@ -251,5 +245,57 @@ def summary_to_xlsx(summary: list[tuple[str, float]]) -> bytes:
     ws.set_column(0, 0, 28)
     ws.set_column(1, 1, 16)
     ws.freeze_panes(1, 0)
+    wb.close()
+    return out.getvalue()
+
+
+def _write_rows(ws, fields: list[str], rows: list[dict[str, Any]], header, money) -> None:
+    """Header row + one row per dict: numeric money cells, sized columns, frozen header, autofilter."""
+    for col, field in enumerate(fields):
+        ws.write_string(0, col, _HEADERS[field], header)
+        ws.set_column(col, col, _WIDTHS[field])
+    for row, cells in enumerate(rows, start=1):
+        for col, field in enumerate(fields):
+            value = cells.get(field) if field in _MONEY_FIELDS else str(cells.get(field) or "")
+            if isinstance(value, float):
+                ws.write_number(row, col, value, money)
+            elif value:
+                ws.write_string(row, col, value)
+    ws.freeze_panes(1, 0)
+    ws.autofilter(0, 0, max(len(rows), 1), len(fields) - 1)
+
+
+_SHEET_NAME_BAD = re.compile(r"[\[\]:*?/\\]")
+
+
+def _sheet_names(names: list[str]) -> list[str]:
+    """Valid, unique Excel sheet names (max 31 chars, no []:*?/\\, not "All statements") for each statement."""
+    taken = {ALL_STATEMENTS_SHEET.lower()}
+    out = []
+    for name in names:
+        base = re.sub(r"\.pdf$", "", name, flags=re.I)
+        base = _SHEET_NAME_BAD.sub(" ", base).strip().strip("'") or "Statement"
+        candidate, n = base[:31], 2
+        while candidate.lower() in taken:
+            suffix = f" ({n})"
+            candidate, n = base[: 31 - len(suffix)] + suffix, n + 1
+        taken.add(candidate.lower())
+        out.append(candidate)
+    return out
+
+
+ALL_STATEMENTS_SHEET = "All statements"
+
+
+def bulk_to_xlsx(statements: list[tuple[str, list[dict[str, Any]]]], include_categories: bool = True) -> bytes:
+    """One workbook for a bulk upload: an "All statements" sheet with every row and a Statement column
+    naming its source file, then one sheet per statement laid out like a single download."""
+    out, wb, ws, header, money = _new_workbook(ALL_STATEMENTS_SHEET)
+    _write_rows(ws, bulk_fields(statements, include_categories), bulk_rows(statements), header, money)
+    for sheet_name, (_, transactions) in zip(_sheet_names([n for n, _ in statements]), statements):
+        sheet = wb.add_worksheet(sheet_name)
+        fields = export_fields(include_categories, False, has_balances(transactions))
+        rows = with_balance_rows([statement_row(t) for t in transactions], transactions)
+        _write_rows(sheet, fields, rows, header, money)
     wb.close()
     return out.getvalue()

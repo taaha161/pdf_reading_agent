@@ -113,6 +113,23 @@ TOPICS: list[dict] = [
      "secondary": ["bank statement tie out"], "angle": "verifying any converter or AI output: balance tie-out, row counts, sign checks"},
     {"slug": "how-to-download-capital-one-statements", "keyword": "how to download capital one statements",
      "secondary": ["capital one statement pdf"], "kind": "bank", "bank": "Capital One", "convert_path": "/convert/capital-one-statement-to-excel"},
+    # Bulk upload launched Nov 25 2026: queued next so the feature gets supporting posts.
+    {"slug": "combine-bank-statements-into-one-spreadsheet", "keyword": "combine bank statements into one spreadsheet",
+     "secondary": ["merge multiple bank statements into one excel", "consolidate bank statements"],
+     "angle": "merging several months or accounts into one workbook with a source column per row; avoiding duplicates where statement periods overlap",
+     "feature": "bulk"},
+    {"slug": "convert-12-months-of-bank-statements", "keyword": "convert 12 months of bank statements to excel",
+     "secondary": ["year of bank statements to excel", "annual bank statement spreadsheet"],
+     "angle": "getting a full year into one file for a loan, tax return or catch-up; checking every month is present and balances chain",
+     "feature": "bulk"},
+    {"slug": "batch-process-client-bank-statements", "keyword": "batch process bank statements for clients",
+     "secondary": ["bulk bank statement processing", "bank statement intake for accounting firms"],
+     "angle": "a firm's intake workflow: file naming, one batch per client, review queue, and what to check before import",
+     "feature": "bulk"},
+    {"slug": "track-multiple-bank-accounts-in-one-spreadsheet", "keyword": "track multiple bank accounts in one spreadsheet",
+     "secondary": ["multiple bank accounts excel template"],
+     "angle": "one sheet for every account with an account column, transfers between accounts, and a monthly roll-up",
+     "feature": "bulk"},
     {"slug": "bank-statements-for-mortgage-application", "keyword": "bank statements for mortgage application",
      "secondary": [], "angle": "what lenders check and how to prepare statements"},
     {"slug": "desktop-vs-online-bank-statement-converter", "keyword": "desktop vs online bank statement converter",
@@ -194,6 +211,7 @@ TOPICS: list[dict] = [
 STATIC_PAGES: dict[str, str] = {
     "/": "Bank Statement Scanner: upload a PDF, export CSV or Excel",
     "/convert": "Supported banks",
+    "/bulk-bank-statement-converter": "Bulk bank statement converter: many PDFs to Excel at once",
     "/convert/chase-bank-statement-to-excel": "Convert Chase bank statements to Excel",
     "/convert/bank-of-america-statement-to-excel": "Convert Bank of America statements to Excel",
     "/convert/wells-fargo-statement-to-excel": "Convert Wells Fargo statements to Excel",
@@ -497,6 +515,18 @@ when Bank Statement Scanner is not the right choice.
 }
 
 
+# Topics written to support a product feature: the post must link the feature's page.
+BULK_PAGE = "/bulk-bank-statement-converter"
+_FEATURE_RULES = {
+    "bulk": f"""
+This post supports Bank Statement Scanner's bulk upload. Teach the general method first
+(it must be useful without the product), then show where bulk upload helps, using only
+the bulk facts below. You MUST link {BULK_PAGE} once, with anchor text about converting
+multiple bank statements at once.
+""",
+}
+
+
 def _build_prompt(topic: dict, posts: dict[str, dict]) -> str:
     links = "\n".join(f"- {path} — {label}" for path, label in _internal_links(posts).items())
     existing = "\n".join(f"- {m.get('title') or s}" for s, m in sorted(posts.items()))
@@ -504,7 +534,7 @@ def _build_prompt(topic: dict, posts: dict[str, dict]) -> str:
     angle = topic.get("angle") or "the most useful practical angle for this keyword"
     kind_rules = _KIND_RULES.get(topic.get("kind", ""), "").format(
         bank=topic.get("bank", ""), convert_path=topic.get("convert_path") or "/convert"
-    )
+    ) + _FEATURE_RULES.get(topic.get("feature", ""), "")
     return f"""Write ONE in-depth SEO blog post targeting the primary keyword: "{topic['keyword']}".
 Angle: {angle}.
 {kind_rules}
@@ -539,11 +569,18 @@ Quality rules (Google's helpful-content standard: written for people, not rankin
   "in conclusion", "it's important to note", "whether you're a".
 
 Product facts (do not claim anything beyond these): Bank Statement Scanner converts
-one PDF bank or credit card statement at a time (digital, scanned, or
-password-protected) into CSV or Excel with columns date, description, amount,
-credit/debit type, and an AI category. It has an incognito mode that stores no
-transaction data. It does NOT export QBO/OFX/Xero files, does NOT reconcile
-balances automatically, and does NOT batch-upload multiple files.
+PDF bank and credit card statements (digital, scanned, or password-protected) into
+CSV or Excel with columns date, description, debit, credit, balance (when printed),
+and an AI category. Each statement is checked against its own printed running
+balances and summary totals, and rows that may be missing or doubled are flagged.
+Bulk upload: with a free account, up to 50 statement PDFs can be uploaded at once;
+they are converted two at a time, and one combined download is offered (Excel: an
+"All statements" sheet with a Statement column naming the source PDF, plus one sheet
+per statement; or one CSV with a Statement column). Bulk costs the same per page.
+Users can ask a converted statement questions in plain English and export just the
+matching rows. It has an incognito mode that stores no transaction data. It does NOT
+export QBO/OFX/Xero files, does NOT sync to accounting software, and does NOT
+reconcile statements against a ledger or books.
 Pricing (only if relevant, state exactly): priced per PDF page. 10 pages free
 without an account; 100 pages free for the first month after signup, no credit
 card; then $10/month for 150 pages; subscribers can add page packs of 10 for $2,
@@ -703,6 +740,17 @@ def _build_markdown(data: dict, image_path: str, today: date, keyword: str) -> s
 
 # --- Public entrypoint --------------------------------------------------------
 
+def _ensure_feature_link(topic: dict, data: dict) -> None:
+    """Bulk-upload posts must point at the bulk converter page; add it if the model didn't."""
+    if topic.get("feature") != "bulk" or f"]({BULK_PAGE})" in data["body_markdown"]:
+        return
+    data["body_markdown"] = (
+        data["body_markdown"].rstrip()
+        + "\n\nHave a stack of statements? [Convert multiple bank statements to Excel at once]"
+        + f"({BULK_PAGE}) and download one combined workbook.\n"
+    )
+
+
 def _ensure_bank_link(topic: dict, data: dict) -> None:
     """Bank guides must point readers at the matching /convert page; add it if the model didn't."""
     if topic.get("kind") != "bank":
@@ -750,6 +798,7 @@ def generate_and_publish() -> dict:
         return {"status": "skipped", "reason": f"title too close to /blog/{clash}", "slug": slug}
 
     _ensure_bank_link(topic, data)
+    _ensure_feature_link(topic, data)
     data["body_markdown"] = ensure_sources(data["body_markdown"], slug, topic["keyword"], data["title"])
     image_path = f"/blog/images/{slug}.jpg"
     img_bytes = _fetch_finance_image()

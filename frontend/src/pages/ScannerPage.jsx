@@ -3,6 +3,7 @@ import { ACCURATE_MULTIPLIER, FREE_ANON_PAGES, FREE_SIGNUP_PAGES } from "../lib/
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import FileUpload from "../components/FileUpload";
+import BulkUpload from "../components/BulkUpload";
 import Loader from "../components/Loader";
 import SummaryTable from "../components/SummaryTable";
 import ResultsTable from "../components/ResultsTable";
@@ -124,6 +125,7 @@ function matchRowIndices(transactions, rows) {
 
 const TRIAL_LIMIT_NOTICE = `You've used your ${FREE_ANON_PAGES} free pages. Create a free account to get ${FREE_SIGNUP_PAGES} free pages for your first month.`;
 const CHAT_NOTICE = `Create a free account to ask questions about your statement. Your first month includes ${FREE_SIGNUP_PAGES} pages free.`;
+const BULK_NOTICE = `Create a free account to upload many statements at once. Your first month includes ${FREE_SIGNUP_PAGES} pages free.`;
 const FILE_SIZE_NOTICE = `Free accounts can upload PDFs up to ${formatMB(MAX_FILE_BYTES_SIGNED_IN)}.`;
 
 const FEEDBACK_SCAN_COUNT_KEY = "bss_scan_count";
@@ -186,6 +188,10 @@ export default function ScannerPage() {
   const emailPopupShownFor = useRef(null);
   const [feedbackDue, setFeedbackDue] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  // Bulk upload (signed-in): { files, options } while the batch panel is shown, else null.
+  const [bulk, setBulk] = useState(null);
+  // Guest dropped several PDFs: we scan the first and suggest an account for the rest.
+  const [bulkGuestCount, setBulkGuestCount] = useState(0);
   const isLoggedIn = !!user;
   const isGuest = !authLoading && !isLoggedIn;
   const isSample = jobId === SAMPLE_JOB_ID;
@@ -235,10 +241,10 @@ export default function ScannerPage() {
   const reviewDue = isLoggedIn && reviewRewardDue(usage);
   const otherPopupOpen = feedbackOpen || feedbackDue || emailPopupOpen || showPasswordModal || chatOpen;
   useEffect(() => {
-    if (!reviewDue || reviewOpen || otherPopupOpen || loading) return;
+    if (!reviewDue || reviewOpen || otherPopupOpen || loading || bulk) return;
     const timer = setTimeout(() => setReviewOpen(true), FEEDBACK_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [reviewDue, reviewOpen, otherPopupOpen, loading]);
+  }, [reviewDue, reviewOpen, otherPopupOpen, loading, bulk]);
 
   const closeReview = useCallback(
     (claimed) => {
@@ -402,15 +408,7 @@ export default function ScannerPage() {
           onProgress: setScanProgress,
         },
       );
-      scrollToResultsRef.current = true;
-      setJobId(data.job_id);
-      setTransactions(data.transactions || []);
-      setSummaryByCategory(data.summary_by_category || []);
-      setCurrency(data.currency ?? null);
-      setReconciliation(data.reconciliation ?? null);
-      setReconciliationStale(false);
-      setDataStatus(null);
-      setTrialCsvContent(data.csv_content ?? null);
+      showScanResult(data);
       // Keep the URL on the job being shown: signed-in jobs reopen at /scanner/:jobId;
       // guests can't open stored jobs, so drop a stale id instead.
       if (isLoggedIn && data.job_id) {
@@ -459,6 +457,62 @@ export default function ScannerPage() {
       setScanProgress(null);
       setCheckingPassword(false);
     }
+  };
+
+  /** Put a finished scan's results on the page (single upload, or a statement opened from a bulk batch). */
+  const showScanResult = (data) => {
+    scrollToResultsRef.current = true;
+    setJobId(data.job_id);
+    setTransactions(data.transactions || []);
+    setSummaryByCategory(data.summary_by_category || []);
+    setCurrency(data.currency ?? null);
+    setReconciliation(data.reconciliation ?? null);
+    setReconciliationStale(false);
+    setDataStatus(null);
+    setTrialCsvContent(data.csv_content ?? null);
+  };
+
+  const clearResults = () => {
+    setError(null);
+    setOutOfCredits(false);
+    setTooLargeUpgrade(null);
+    setDownloadError(null);
+    setJobId(null);
+    setTransactions([]);
+    setSummaryByCategory([]);
+    setCurrency(null);
+    setReconciliation(null);
+    setReconciliationStale(false);
+    setDataStatus(null);
+    setTrialCsvContent(null);
+  };
+
+  // Several PDFs at once. Signed in: scan them all as a batch. Guests: scan the first one
+  // (the free pages cover about one statement) and offer an account for the rest.
+  const handleUploadMany = (files) => {
+    if (!isLoggedIn) {
+      setBulkGuestCount(files.length);
+      handleUpload(files[0]);
+      return;
+    }
+    clearResults();
+    if (routeJobId) navigate("/scanner", { replace: true });
+    setBulk({ files, options: { incognitoMode, conversionMode } });
+    pushDataLayer({ event: "bulk_scan_started", files: files.length, mode: conversionMode });
+  };
+
+  const handleBulkScanned = useCallback(
+    (data) => {
+      applyUsage(data);
+      refreshUsage();
+      trackEvent("scan_completed", { rows: (data.transactions || []).length, logged_in: true, bulk: true });
+    },
+    [applyUsage, refreshUsage],
+  );
+
+  const closeBulk = () => {
+    setBulk(null);
+    clearResults();
   };
 
   const handlePasswordSubmit = (password) => {
@@ -546,10 +600,10 @@ export default function ScannerPage() {
     newUploadInputRef.current?.click();
   };
   const handleNewUploadChange = (e) => {
-    const file = e.target?.files?.[0];
+    const pdfs = Array.from(e.target?.files || []).filter((f) => f.type === "application/pdf");
     e.target.value = "";
-    if (!file || file.type !== "application/pdf") return;
-    handleUpload(file);
+    if (pdfs.length > 1) handleUploadMany(pdfs);
+    else if (pdfs.length) handleUpload(pdfs[0]);
   };
 
   const handleTransactionChange = async (index, field, value) => {
@@ -645,7 +699,18 @@ export default function ScannerPage() {
         <div className="scanner-main">
         {/* While a scan runs, the loader takes the upload card's place. Otherwise a file handed
             off from the landing page scans below the fold under an idle-looking dropzone. */}
-        {!loading && (
+        {bulk && (
+          <BulkUpload
+            files={bulk.files}
+            options={bulk.options}
+            maxBytes={fileLimit}
+            onScanned={handleBulkScanned}
+            onOpen={showScanResult}
+            onClose={closeBulk}
+            openJobId={jobId}
+          />
+        )}
+        {!loading && !bulk && (
         <div className="scanner-upload-card">
           {isGuest && trialExhausted && (
             <p className="scanner-trial-note" role="status">
@@ -659,6 +724,7 @@ export default function ScannerPage() {
           {isGuest && (
             <FileUpload
               onUpload={handleUpload}
+              onUploadMany={handleUploadMany}
               disabled={loading}
               blocked={trialExhausted}
               onBlocked={goToSignup}
@@ -710,6 +776,7 @@ export default function ScannerPage() {
           {!isGuest && (
             <FileUpload
               onUpload={handleUpload}
+              onUploadMany={handleUploadMany}
               disabled={loading}
               blocked={trialExhausted}
               onBlocked={goToSignup}
@@ -730,6 +797,16 @@ export default function ScannerPage() {
 
         {loadingJob && (
           <div className="scanner-loading-job">Loading job…</div>
+        )}
+
+        {isGuest && bulkGuestCount > 1 && (
+          <p className="scanner-trial-note" role="status">
+            You dropped {bulkGuestCount} statements, so we scanned the first one.{" "}
+            <button type="button" className="scanner-alert-link" onClick={() => goToSignup(BULK_NOTICE)}>
+              Create a free account
+            </button>{" "}
+            to upload them all at once and download one combined spreadsheet.
+          </p>
         )}
 
         {(error || downloadError) && (
@@ -791,7 +868,7 @@ export default function ScannerPage() {
           <>
             <div className="scanner-results" ref={resultsRef}>
               <div className="scanner-results-actions">
-                <button
+                {!bulk && <button
                   type="button"
                   className="scanner-new-upload-btn"
                   onClick={handleNewUploadClick}
@@ -803,11 +880,12 @@ export default function ScannerPage() {
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
                   Upload new statement
-                </button>
+                </button>}
                 <input
                   ref={newUploadInputRef}
                   type="file"
                   accept="application/pdf"
+                  multiple={isLoggedIn}
                   onChange={handleNewUploadChange}
                   hidden
                 />

@@ -55,7 +55,7 @@ Once pre-processed, modern AI document tools can accurately [convert scanned fin
 
 ## Step 3: Batch Process and Convert PDF Bank Statements to CSV
 
-Once documents are digitized and organized, the next phase is parsing the transaction tables. Doing this one file at a time is an improvement over manual entry, but the real leverage comes when you can [batch convert bank statements to csv](https://bankstatementscanner.com/scanner).
+Once documents are digitized and organized, the next phase is parsing the transaction tables. Doing this one file at a time is an improvement over manual entry, but the real leverage comes when you can [batch convert bank statements to csv](/bulk-bank-statement-converter).
 
 Automated extraction software parses complex multi-page PDF statements by identifying repetitive tabular structures: date columns, payee identifiers, transaction types, check numbers, debit/credit values, and rolling account balances. When processing credit facilities, the engine will similarly [extract credit card transactions from pdf](https://bankstatementscanner.com/scanner) accounts, recognizing differences in finance charges, foreign exchange adjustments, and fee breakdowns.
 

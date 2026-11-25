@@ -1,0 +1,209 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE_NAME, FREE_SIGNUP_PAGES, FREE_SIGNUP_DAYS, PRICING_SUMMARY, canonical } from '../consts';
+
+const PATH = '/bulk-bank-statement-converter';
+const MAX_FILES = 50; // frontend MAX_BULK_FILES / backend MAX_BULK_STATEMENTS
+
+const steps = [
+  { title: 'Drop the whole stack', body: `Select or drag up to ${MAX_FILES} statement PDFs at once: a year of one account, or a month across every client. Different banks in one batch are fine.` },
+  { title: 'Watch them convert', body: 'Statements convert two at a time. Each row in the list shows its progress, how many transactions it found, and whether the rows add up to the statement’s own balances.' },
+  { title: 'Download one workbook', body: 'One Excel file with every transaction on an “All statements” sheet, plus a sheet per statement. Or one CSV with a Statement column.' },
+];
+
+const features = [
+  { title: 'One combined spreadsheet', body: 'The “All statements” sheet tags every row with the PDF it came from, so you can filter, pivot or import the whole year at once without losing track of which account is which.' },
+  { title: 'A sheet per statement', body: 'Each statement also gets its own sheet, laid out like a single download with opening and closing balance rows, ready to tick against the PDF.' },
+  { title: 'Every statement checked', body: 'Each file is checked against its printed running balances and summary box. The list flags any statement whose rows don’t add up, so you know which ones to look at.' },
+  { title: 'Password-protected PDFs', body: 'Locked statements ask for their password right in the list. The rest of the batch keeps going while you type it.' },
+  { title: 'Retry without starting over', body: 'If one file fails, retry it on its own. Add more PDFs to a running batch whenever you find them.' },
+  { title: 'Saved as separate jobs', body: 'Every statement is saved to your dashboard as its own job, so you can reopen it, fix a row or ask it a question later. Use incognito mode to convert the batch without saving anything.' },
+];
+
+const uses = [
+  { title: 'Onboarding a new client', body: 'Twelve months of history from several accounts, in the books the same afternoon.' },
+  { title: 'Tax season', body: 'Turn the shoebox of statements a client emails over into one categorized workbook.' },
+  { title: 'Loan and mortgage files', body: 'Two to twelve months of statements, converted and checked, in one file for the underwriter.' },
+  { title: 'Catch-up bookkeeping', body: 'Months of backlog across checking, savings and credit cards, cleared in one sitting.' },
+];
+
+const faqs = [
+  { q: 'How many bank statements can I upload at once?', a: `Up to ${MAX_FILES} PDFs per batch. Each file can be up to your account’s file-size limit. For more, start a second batch when the first finishes.` },
+  { q: 'Do I need an account for bulk upload?', a: `Yes, a free one. New accounts get ${FREE_SIGNUP_PAGES} pages free for the first ${FREE_SIGNUP_DAYS} days, no credit card. Without an account you can convert one statement at a time.` },
+  { q: 'Does bulk upload cost extra?', a: `No. You pay per PDF page, the same as converting one statement at a time. ${PRICING_SUMMARY}` },
+  { q: 'Can I mix banks and accounts in one batch?', a: 'Yes. Every row in the combined file carries a Statement column with the source file name, and each statement also has its own sheet, so accounts stay separate. Naming files like “chase-checking-2026-01.pdf” makes the combined sheet easy to filter.' },
+  { q: 'What happens if I run out of pages mid-batch?', a: 'The remaining statements pause instead of failing. Get more pages, click resume, and the batch picks up where it stopped. Statements already converted are kept.' },
+  { q: 'Do I have to keep the tab open?', a: 'Yes, while the batch is converting. Statements that have finished are already saved to your dashboard, so closing the tab only stops the ones that haven’t started.' },
+  { q: 'Which file formats can I download?', a: 'Excel (XLSX) with an “All statements” sheet plus one sheet per statement, or a single CSV with a Statement column. You can also open any statement on its own and download it separately.' },
+];
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: 'Bulk bank statement converter',
+    url: canonical(PATH),
+    isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: canonical('/') },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: 'How to convert multiple bank statements to Excel at once',
+    step: steps.map((s, i) => ({ '@type': 'HowToStep', position: i + 1, name: s.title, text: s.body })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+  { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: canonical('/') },
+    { '@type': 'ListItem', position: 2, name: 'Bulk converter', item: canonical(PATH) },
+  ] },
+];
+---
+
+<Base
+  title="Bulk Bank Statement Converter: Many PDFs to Excel"
+  description={`Convert multiple bank statement PDFs to Excel or CSV at once. Upload up to ${MAX_FILES} statements and download one combined workbook, checked against each statement's balances.`}
+  path={PATH}
+  jsonLd={jsonLd}
+>
+  <section class="container bulk-hero">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / Bulk converter</nav>
+    <p class="eyebrow">Bulk upload</p>
+    <h1>Convert multiple bank statements to Excel <span class="hl">at once</span></h1>
+    <p class="lede">
+      Drop up to {MAX_FILES} statement PDFs in one go. Every statement is converted, categorized and checked
+      against its own balances, and you download one workbook with all of them.
+    </p>
+    <div class="actions">
+      <a class="ink-btn" href="/signup" data-cta="bulk_signup">Start a bulk upload free</a>
+      <a class="line-btn" href="/scanner" data-cta="bulk_scanner">Already have an account? Open the scanner</a>
+    </div>
+    <p class="note">{FREE_SIGNUP_PAGES} pages free for your first month · No credit card</p>
+  </section>
+
+  <section class="container block" aria-labelledby="steps-h">
+    <h2 id="steps-h">How bulk conversion works</h2>
+    <ol class="steps" role="list">
+      {steps.map((s, i) => (
+        <li class="sheet step">
+          <span class="step-n" aria-hidden="true">{i + 1}</span>
+          <h3>{s.title}</h3>
+          <p>{s.body}</p>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <section class="container block" aria-labelledby="file-h">
+    <div class="sheet workbook">
+      <div>
+        <h2 id="file-h">What’s in the combined file</h2>
+        <p>One Excel workbook per batch. The first sheet holds everything; the rest hold one statement each.</p>
+      </div>
+      <div class="tabs" aria-hidden="true">
+        <span class="tab on">All statements</span><span class="tab">chase-checking-jan</span><span class="tab">chase-checking-feb</span><span class="tab">amex-feb</span>
+      </div>
+      <div class="mini-wrap"><table class="mini">
+        <caption class="sr-only">Example rows from the All statements sheet (illustrative)</caption>
+        <thead><tr><th>Statement</th><th>Date</th><th>Description</th><th class="num">Debit</th><th class="num">Credit</th><th>Category</th></tr></thead>
+        <tbody>
+          <tr><td>chase-checking-jan.pdf</td><td>01/03</td><td>Payroll deposit</td><td></td><td class="num">3,200.00</td><td>Income</td></tr>
+          <tr><td>chase-checking-jan.pdf</td><td>01/05</td><td>Rent</td><td class="num">1,450.00</td><td></td><td>Housing</td></tr>
+          <tr><td>chase-checking-feb.pdf</td><td>02/02</td><td>Electric co.</td><td class="num">96.40</td><td></td><td>Utilities</td></tr>
+          <tr><td>amex-feb.pdf</td><td>02/04</td><td>Office supplies</td><td class="num">58.12</td><td></td><td>Office</td></tr>
+        </tbody>
+      </table></div>
+      <p class="fine">Illustrative rows. CSV downloads have the same Statement column in one table.</p>
+    </div>
+  </section>
+
+  <section class="container block" aria-labelledby="feat-h">
+    <h2 id="feat-h">Built for a stack of statements</h2>
+    <div class="grid">
+      {features.map((f) => (
+        <article class="card"><h3>{f.title}</h3><p>{f.body}</p></article>
+      ))}
+    </div>
+  </section>
+
+  <section class="container block" aria-labelledby="use-h">
+    <h2 id="use-h">When batch conversion pays off</h2>
+    <div class="grid">
+      {uses.map((u) => (
+        <article class="card"><h3>{u.title}</h3><p>{u.body}</p></article>
+      ))}
+    </div>
+    <p class="more">
+      Doing it by hand today? Read <a href="/blog/convert-multiple-bank-statements-in-bulk">how to convert multiple bank statements without losing accuracy</a>,
+      or see how it fits <a href="/for/accountants">accountants</a>, <a href="/for/bookkeepers">bookkeepers</a> and <a href="/for/tax-preparers">tax preparers</a>.
+    </p>
+  </section>
+
+  <section class="container block" aria-labelledby="faq-h">
+    <h2 id="faq-h">Bulk upload questions</h2>
+    <div class="sheet faq">
+      {faqs.map((f) => (
+        <details><summary>{f.q}</summary><p>{f.a}</p></details>
+      ))}
+    </div>
+  </section>
+
+  <section class="container block close">
+    <h2>Stop converting statements one by one.</h2>
+    <div class="actions">
+      <a class="ink-btn" href="/signup" data-cta="bulk_close">Create a free account</a>
+      <a class="line-btn" href="/#pricing">See pricing</a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .bulk-hero { max-width: 1040px; padding-block: 40px 16px; }
+  .crumbs { font-size: 14px; margin-bottom: 20px; color: var(--color-text-muted); }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 13px; font-weight: 600; margin: 0 0 10px; }
+  h1 { font-size: clamp(32px, 5.5vw, 54px); line-height: 1.05; margin: 0; max-width: 18ch; }
+  .lede { font-size: 19px; color: var(--color-text-muted); max-width: 60ch; margin: 18px 0 24px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .note { font-size: 14px; color: var(--color-text-muted); margin-top: 12px; }
+
+  .block { max-width: 1040px; padding-block: 36px; }
+  .block > h2, .workbook h2 { font-size: clamp(24px, 3.5vw, 32px); margin: 0 0 18px; }
+
+  .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .step { padding: 22px; }
+  .step-n { font-family: var(--font-heading, inherit); font-weight: 800; font-size: 28px; }
+  .step h3 { margin: 6px 0 8px; font-size: 19px; }
+  .step p { margin: 0; color: var(--color-text-muted); line-height: 1.6; }
+
+  .workbook { padding: 24px; }
+  .workbook > div > p { color: var(--color-text-muted); margin: -8px 0 16px; }
+  .tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 2px solid var(--color-text); }
+  .tab { padding: 6px 12px; font-size: 13px; white-space: nowrap; background: var(--color-primary-subtle, #f1f1ee); border-radius: 3px 3px 0 0; }
+  .tab.on { background: var(--color-text); color: #fff; font-weight: 600; }
+  .mini-wrap { overflow-x: auto; }
+  .mini { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .mini th, .mini td { padding: 8px 10px; border-bottom: 1px solid var(--color-border); text-align: left; white-space: nowrap; }
+  .mini th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .mini th:first-child, .mini td:first-child { background: #fff3a6; }
+  .mini .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .fine { font-size: 13px; color: var(--color-text-muted); margin: 10px 0 0; }
+
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 22px; }
+  .card h3 { margin: 0 0 8px; font-size: 18px; }
+  .card p { margin: 0; color: var(--color-text-muted); line-height: 1.6; font-size: 15px; }
+  .more { margin-top: 20px; color: var(--color-text-muted); }
+
+  .faq { padding: 8px 22px; }
+  .faq details { border-bottom: 1px solid var(--color-border); padding: 14px 0; }
+  .faq details:last-child { border-bottom: none; }
+  .faq summary { cursor: pointer; font-weight: 600; }
+  .faq p { margin: 10px 0 0; color: var(--color-text-muted); line-height: 1.6; }
+
+  .close { text-align: center; padding-bottom: 64px; }
+  .close .actions { justify-content: center; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>

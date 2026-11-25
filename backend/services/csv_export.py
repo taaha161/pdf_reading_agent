@@ -204,3 +204,40 @@ def summary_to_csv(summary: list[tuple[str, float]]) -> str:
     for category, total in summary:
         writer.writerow([category, f"{total:.2f}"])
     return out.getvalue()
+
+
+STATEMENT_FIELD = "statement"
+
+
+def bulk_rows(statements: list[tuple[str, list[dict[str, Any]]]]) -> list[dict[str, Any]]:
+    """Every statement's rows (statement_row shape) in upload order, each tagged with its statement's name.
+    No opening/closing balance rows: they belong to one statement and would read as transactions here."""
+    return [
+        {**statement_row(t), STATEMENT_FIELD: name}
+        for name, transactions in statements
+        for t in transactions
+    ]
+
+
+def bulk_fields(statements: list[tuple[str, list[dict[str, Any]]]], include_categories: bool = True) -> list[str]:
+    """Columns of the combined file: Statement, then the usual Date … Category columns."""
+    every = [t for _, transactions in statements for t in transactions]
+    return [STATEMENT_FIELD, *export_fields(include_categories, False, has_balances(every))]
+
+
+def bulk_to_csv(statements: list[tuple[str, list[dict[str, Any]]]], include_categories: bool = True) -> str:
+    """One CSV with every statement's transactions and a leading `statement` column naming the source file."""
+    fields = bulk_fields(statements, include_categories)
+    out = io.StringIO()
+    writer = csv.DictWriter(out, fieldnames=fields, extrasaction="ignore")
+    writer.writerow({f: _HEADER_LABELS.get(f, f) for f in fields})
+    for row in bulk_rows(statements):
+        cells = {f: _cell(row.get(f)) for f in fields}
+        cells[STATEMENT_FIELD] = _csv_safe(cells[STATEMENT_FIELD])
+        writer.writerow(cells)
+    return out.getvalue()
+
+
+def _csv_safe(text: str) -> str:
+    """File names are user-chosen: keep one starting with = + - @ from running as a formula."""
+    return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text

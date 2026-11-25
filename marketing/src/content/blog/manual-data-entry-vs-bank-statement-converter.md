@@ -129,7 +129,6 @@ To maintain simplicity and speed, Bank Statement Scanner does not attempt to do 
 
 * You need direct file exports formatted specifically in proprietary accounting formats like QBO or OFX. Bank Statement Scanner exports directly to CSV and Excel.
 * You want an automated engine that recalculates, balances, and matches your ledger accounts inside the software. It provides the structured transaction data, but you perform the actual reconciliation in your spreadsheet or bookkeeping platform.
-* You need to drag and drop batches of fifty statement PDFs at once. Bank Statement Scanner processes documents one statement at a time to maintain high visibility and extraction precision.
 
 If your daily challenge is simply turning locked, messy PDF statements into clean, organized spreadsheets ready for review, automating the conversion saves hours of tedious manual typing.
 

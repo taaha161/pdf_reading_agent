@@ -63,7 +63,7 @@ To [extract bank statement tables without manual typing](/blog/bank-statement-sc
 6.  **Credits / Deposits**
 7.  **Ending Balance**
 
-If you manage high transaction volume or multiple client accounts, processing statements one file at a time creates severe administrative drag. The ability to [batch convert bank statements to csv](/convert) lets you process an entire year's worth of statements—across multiple checking accounts and credit lines—in a single run. This uniform spreadsheet output makes subsequent reconciliation significantly faster.
+If you manage high transaction volume or multiple client accounts, processing statements one file at a time creates severe administrative drag. The ability to [batch convert bank statements to csv](/bulk-bank-statement-converter) lets you process an entire year's worth of statements—across multiple checking accounts and credit lines—in a single run. This uniform spreadsheet output makes subsequent reconciliation significantly faster.
 
 ## The Fastest Way to Reconcile Bank Statements Against the Ledger
 
