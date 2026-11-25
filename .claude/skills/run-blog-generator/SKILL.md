@@ -129,8 +129,8 @@ A clean build ends with `[build] Complete!` and renders `/blog/<slug>/index.html
   title is too close to an existing one. When every topic is covered the endpoint returns
   `{"status": "skipped"}` (HTTP 200): add new, distinct topics to the end of `TOPICS`.
 - **The prompt lists every existing title** and tells the model not to repeat their scope,
-  plus a "product facts" block so posts don't promise features the app lacks (no batch
-  upload, no QBO/Xero export, no automatic reconciliation).
+  plus a "product facts" block so posts don't promise features the app lacks (no QBO/Xero
+   export, no accounting-software sync, no ledger reconciliation; bulk upload IS supported).
 - **Topic kinds.** `kind: "bank"` topics target "how to download <bank> statements" (the
   `/convert/<bank>` pages own "<bank> statement to Excel"); the prompt forbids
   bank-specific menu names, history limits, fees, or phone numbers, and
