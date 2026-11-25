@@ -3,6 +3,7 @@ title: "How to Prepare Bank Statements for Year End Accounting"
 seoTitle: "Prepare Bank Statements for Year-End Accounting: Steps"
 excerpt: "Learn how to prepare bank statements for year end accounting. Step-by-step guidance on gathering, converting, reconciling, and categorizing financial data."
 date: 2026-10-26
+updated: 2026-11-25
 category: "Guides"
 readTime: "11 min read"
 image: "/blog/images/prepare-bank-statements-for-year-end-accounting.jpg"

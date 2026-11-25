@@ -3,6 +3,7 @@ title: "Bank Statement Automation: Guide to Streamlined Bookkeeping"
 seoTitle: "Bank Statement Automation: Complete Guide for Modern Teams"
 excerpt: "How bank statement automation removes manual data entry, prevents reconciliation errors, and turns PDFs into analysis-ready spreadsheets."
 date: 2026-10-08
+updated: 2026-11-25
 category: "Guides"
 readTime: "11 min read"
 image: "/blog/images/bank-statement-automation.jpg"

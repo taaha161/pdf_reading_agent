@@ -22,6 +22,9 @@ const related = relatedPosts(post, await getCollection('blog'));
 const fmt = (d: Date) =>
   d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 const isoDate = data.date.toISOString().slice(0, 10);
+// Only show/emit a modified date that is actually later than publishing.
+const updated = data.updated && data.updated > data.date ? data.updated : null;
+const isoUpdated = updated ? updated.toISOString().slice(0, 10) : isoDate;
 const url = canonical(`/blog/${post.id}`);
 const imageAbs = `${SITE_URL}${data.image}`;
 const faqs = postFaqs(post.body);
@@ -33,7 +36,7 @@ const jsonLd = [
     headline: data.title,
     description: data.excerpt,
     datePublished: isoDate,
-    dateModified: isoDate,
+    dateModified: isoUpdated,
     image: imageAbs,
     author: {
       '@type': 'Person',
@@ -92,6 +95,7 @@ const jsonLd = [
     <div class="post-meta">
       <span class="post-cat">{data.category}</span>
       <time datetime={isoDate}>{fmt(data.date)}</time>
+      {updated && <span>Updated <time datetime={isoUpdated}>{fmt(updated)}</time></span>}
       <span class="post-read">{data.readTime}</span>
     </div>
 

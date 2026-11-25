@@ -3,6 +3,7 @@ title: "How to Download Chase Bank Statements (PDF, CSV & Excel)"
 seoTitle: "Download Chase Bank Statements as PDF, CSV or Excel"
 excerpt: "Where to find Chase statements, why they download as PDF, the limits of the CSV activity export, and how to convert a Chase PDF to Excel or CSV."
 date: 2026-08-08
+updated: 2026-11-25
 category: "Guides"
 readTime: "9 min read"
 image: "/blog/images/how-to-download-chase-bank-statements.jpg"

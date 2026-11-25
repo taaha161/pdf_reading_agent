@@ -4,6 +4,7 @@ seoTitle: "Bank Feeds vs Bank Statements: Bookkeeping Comparison"
 excerpt: "Compare bank feeds vs bank statements for bookkeeping. Learn how to handle bank feed missing transactions, history limits, and when you need statement imports."
 keyword: "bank feeds vs bank statements"
 date: 2026-11-15
+updated: 2026-11-25
 category: "Comparisons"
 readTime: "12 min read"
 image: "/blog/images/bank-feeds-vs-bank-statement-imports.jpg"

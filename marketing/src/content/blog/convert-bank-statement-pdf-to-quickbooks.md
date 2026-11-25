@@ -3,6 +3,7 @@ title: "How to Convert a Bank Statement PDF for QuickBooks, Xero, and Other Acco
 seoTitle: "Convert Bank Statement PDF to QuickBooks & Xero"
 excerpt: "Convert PDF bank statements into files QuickBooks, Xero, and NetSuite can import: column mapping, date formats, signs, and pre-import checks."
 date: 2026-08-06
+updated: 2026-11-25
 category: "Guides"
 readTime: "9 min read"
 image: "/blog/images/convert-bank-statement-pdf-to-quickbooks.jpg"
