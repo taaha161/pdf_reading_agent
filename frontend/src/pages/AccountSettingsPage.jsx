@@ -246,7 +246,7 @@ export default function AccountSettingsPage() {
         <section className="account-settings-section" id="billing">
           <h2 className="account-settings-section-title">Billing</h2>
           <p className="account-settings-description">
-            You pay per PDF page. Your first month includes {FREE_SIGNUP_PAGES} free pages. The monthly plan is ${PLAN_PRICE}/month for {PLAN_PAGES} pages, and subscribers can add page packs from ${PAGE_PACKS[0].price} whenever they need more. Without a subscription, you can buy {BULK_PACK.pages} pages for ${BULK_PACK.price}. High accuracy mode uses {ACCURATE_MULTIPLIER} pages per PDF page.
+            You pay per PDF page. Your first month includes {FREE_SIGNUP_PAGES} free pages.
           </p>
           {billingBalance !== null && (
             <>
@@ -266,50 +266,102 @@ export default function AccountSettingsPage() {
                   <li>{billingBalance.frozen_pages} subscriber pack pages paused. Subscribe again to use them.</li>
                 )}
               </ul>
-              <div className="account-settings-billing-actions">
-                {referral && (planDiscount || referral.packs) && (
-                  <p className="account-settings-offer">
-                    Referral code {referral.code.toUpperCase()}: {planDiscount ? describeDiscount(referral) : `${referral.pct}% off page packs`}
-                    {referral.packs && formatExpiry(referral.packs_ends_at) ? ` (packs until ${formatExpiry(referral.packs_ends_at)})` : ""}.
+              {referral && (planDiscount || referral.packs) && (
+                <p className="account-settings-offer">
+                  Referral code {referral.code.toUpperCase()}: {planDiscount ? describeDiscount(referral) : `${referral.pct}% off page packs`}
+                  {referral.packs && formatExpiry(referral.packs_ends_at) ? ` (packs until ${formatExpiry(referral.packs_ends_at)})` : ""}.
+                </p>
+              )}
+              {billingBalance.subscription_active ? (
+                <>
+                  <h3 className="account-settings-subtitle">Page packs</h3>
+                  <p className="account-settings-description">
+                    One-time add-on for subscribers. Pack pages never expire and are used after your plan pages. If you cancel, they pause until you subscribe again. High accuracy mode uses {ACCURATE_MULTIPLIER} pages per PDF page.
                   </p>
-                )}
-                {!billingBalance.subscription_active && offer && (
-                  <p className="account-settings-offer">{OFFERS[offer].label}. {PLAN_PAGES} pages a month, then ${PLAN_PRICE}/month. Cancel anytime.</p>
-                )}
-                {!billingBalance.subscription_active && (
-                  <button
-                    type="button"
-                    className="auth-btn auth-btn-primary"
-                    onClick={handleSubscribe}
-                    disabled={billingLoading}
-                  >
-                    {billingLoading ? "Redirecting…" : offer ? `${OFFERS[offer].cta} — then ${planPriceLabel}` : `Subscribe — ${planPriceLabel} for ${PLAN_PAGES} pages`}
-                  </button>
-                )}
-              </div>
-              <h3 className="account-settings-subtitle">Page packs</h3>
-              <p className="account-settings-description">
-                {billingBalance.subscription_active
-                  ? "One-time add-on for subscribers. Pack pages never expire and are used after your plan pages. If you cancel, they pause until you subscribe again."
-                  : `Not ready to subscribe? Buy pages once. They never expire. Subscribers can add packs from $${PAGE_PACKS[0].price} instead.`}
-              </p>
-              <div className="account-settings-packs">
-                {(billingBalance.subscription_active ? PAGE_PACKS : [BULK_PACK]).map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    className="account-settings-pack"
-                    onClick={() => handleBuyPack(p.id)}
-                    disabled={billingLoading}
-                  >
-                    <span className="account-settings-pack-pages">{p.pages} pages</span>
-                    <span className="account-settings-pack-price">
-                      {packPrice(p.price) !== p.price && <s className="account-settings-pack-was">${p.price}</s>}{" "}
-                      {formatPrice(packPrice(p.price))}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                  <div className="account-settings-packs">
+                    {PAGE_PACKS.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="account-settings-pack"
+                        onClick={() => handleBuyPack(p.id)}
+                        disabled={billingLoading}
+                      >
+                        <span className="account-settings-pack-pages">{p.pages} pages</span>
+                        <span className="account-settings-pack-price">
+                          {packPrice(p.price) !== p.price && <s className="account-settings-pack-was">${p.price}</s>}{" "}
+                          {formatPrice(packPrice(p.price))}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3 className="account-settings-subtitle">Choose how to get more pages</h3>
+                  <div className="billing-plans">
+                    <article className="billing-plan billing-plan--recommended" aria-labelledby="plan-monthly">
+                      <span className="billing-plan-badge">Recommended · best value</span>
+                      <h4 className="billing-plan-name" id="plan-monthly">Monthly plan</h4>
+                      <p className="billing-plan-price">
+                        {planDiscount ? (
+                          <>
+                            <s className="account-settings-pack-was">${PLAN_PRICE}</s>{" "}
+                            {formatPrice(discountedPrice(PLAN_PRICE, planDiscount.pct))}
+                          </>
+                        ) : (
+                          `$${PLAN_PRICE}`
+                        )}
+                        <span>/month</span>
+                      </p>
+                      <p className="billing-plan-rate">
+                        {PLAN_PAGES} pages a month · about {Math.round((PLAN_PRICE / PLAN_PAGES) * 100)}¢ a page
+                      </p>
+                      <ul className="billing-plan-list" role="list">
+                        <li>{PLAN_PAGES} pages every billing cycle</li>
+                        <li>Add page packs from ${PAGE_PACKS[0].price} in busy months</li>
+                        <li>Larger uploads, up to 50 MB</li>
+                        <li>Cancel anytime</li>
+                      </ul>
+                      {offer && <p className="billing-plan-note">{OFFERS[offer].label}.</p>}
+                      <button
+                        type="button"
+                        className="billing-plan-cta billing-plan-cta--primary"
+                        onClick={handleSubscribe}
+                        disabled={billingLoading}
+                      >
+                        {billingLoading ? "Redirecting…" : offer ? OFFERS[offer].cta : `Subscribe for ${planPriceLabel}`}
+                      </button>
+                    </article>
+                    <article className="billing-plan" aria-labelledby="plan-once">
+                      <h4 className="billing-plan-name" id="plan-once">Pay once</h4>
+                      <p className="billing-plan-price">
+                        {packPrice(BULK_PACK.price) !== BULK_PACK.price && <s className="account-settings-pack-was">${BULK_PACK.price}</s>}{" "}
+                        {formatPrice(packPrice(BULK_PACK.price))}
+                      </p>
+                      <p className="billing-plan-rate">
+                        {BULK_PACK.pages} pages · about {Math.round((packPrice(BULK_PACK.price) / BULK_PACK.pages) * 100)}¢ a page
+                      </p>
+                      <ul className="billing-plan-list" role="list">
+                        <li>{BULK_PACK.pages} pages, one payment</li>
+                        <li>Pages never expire</li>
+                        <li>No subscription</li>
+                      </ul>
+                      <button
+                        type="button"
+                        className="billing-plan-cta"
+                        onClick={() => handleBuyPack(BULK_PACK.id)}
+                        disabled={billingLoading}
+                      >
+                        {billingLoading ? "Redirecting…" : `Buy ${BULK_PACK.pages} pages`}
+                      </button>
+                    </article>
+                  </div>
+                  <p className="billing-plans-fine">
+                    Payments are handled securely by Stripe. High accuracy mode uses {ACCURATE_MULTIPLIER} pages per PDF page.
+                  </p>
+                </>
+              )}
             </>
           )}
           {billingMessage.text && (
