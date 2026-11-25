@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { fetchPdfFromUrl } from "../api/client";
 import { isGoogleDriveConfigured, pickPdfFromGoogleDrive } from "../lib/googleDrive";
 import { formatMB, MAX_FILE_BYTES_ANON } from "../lib/fileSize";
@@ -10,7 +10,8 @@ import "./FileUpload.css";
  * `maxBytes`: the user's upload limit. onUpload checks size for every file; Drive/URL
  * imports that are over the limit before download call `onTooLarge(sizeBytes)` instead.
  * `onUploadMany`: when set, the picker and drop zone accept several PDFs at once; two or more
- * go to onUploadMany(files) (bulk upload), a single one still goes to onUpload.
+ * go to onUploadMany(files) (bulk upload), a single one still goes to onUpload. It also shows a
+ * "Bulk upload" button; `onBulkClick` replaces what that button does (e.g. guests go to signup).
  */
 export default function FileUpload({
   onUpload,
@@ -20,7 +21,9 @@ export default function FileUpload({
   maxBytes = MAX_FILE_BYTES_ANON,
   onTooLarge,
   onUploadMany,
+  onBulkClick,
 }) {
+  const bulkInputRef = useRef(null);
   const [drag, setDrag] = useState(false);
   const [showUrl, setShowUrl] = useState(false);
   const [url, setUrl] = useState("");
@@ -142,6 +145,42 @@ export default function FileUpload({
           </span>
         </label>
       </div>
+
+      {onUploadMany && (
+        <>
+          <button
+            type="button"
+            className="file-upload-bulk"
+            disabled={busy}
+            onClick={(e) => {
+              if (intercept(e)) return;
+              if (onBulkClick) onBulkClick();
+              else bulkInputRef.current?.click();
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M8 6V4a1 1 0 0 1 1-1h7l4 4v11a1 1 0 0 1-1 1h-2" />
+              <path d="M4 8a1 1 0 0 1 1-1h7l4 4v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" />
+            </svg>
+            <span className="file-upload-bulk-text">
+              <strong>Bulk upload</strong>
+              <span>
+                Up to 50 statements at once, one combined spreadsheet
+                {onBulkClick ? " · free account" : ""}
+              </span>
+            </span>
+            <span className="file-upload-bulk-cta" aria-hidden>Choose PDFs</span>
+          </button>
+          <input
+            ref={bulkInputRef}
+            type="file"
+            accept="application/pdf"
+            multiple
+            hidden
+            onChange={onInputChange}
+          />
+        </>
+      )}
 
       <div className="file-upload-sources">
         <span className="file-upload-sources-label">Or import from</span>
