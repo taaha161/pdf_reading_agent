@@ -28,9 +28,30 @@ import LogoMark from './LogoMark.astro';
         <a class="mkt-nav-link" href="/security">Security</a>
       </div>
       <div class="mkt-nav-actions">
-        <a class="mkt-nav-login" href="/login">Log in</a>
+        <a class="mkt-nav-login" href="/login" data-nav-login>Log in</a>
         <a class="ink-btn mkt-nav-cta" href="/scanner" data-cta="nav">Convert a statement free</a>
       </div>
+      <!-- The app (proxied on this origin) keeps its Supabase session in localStorage.
+           If one exists, swap "Log in" for a link back into the app. Inline and right
+           after the link so the swap happens before first paint, with no flash. -->
+      <script is:inline>
+        (function () {
+          try {
+            for (var i = 0; i < localStorage.length; i++) {
+              var k = localStorage.key(i);
+              if (!/^sb-.+-auth-token$/.test(k)) continue;
+              var s = JSON.parse(localStorage.getItem(k) || "null");
+              s = s && (s.currentSession || s);
+              // A refresh token means the app can renew the session even if the access token expired.
+              if (s && s.refresh_token) {
+                var a = document.querySelector("[data-nav-login]");
+                if (a) { a.textContent = "Open app"; a.setAttribute("href", "/scanner"); }
+                return;
+              }
+            }
+          } catch (e) {}
+        })();
+      </script>
     </div>
   </nav>
 </header>
