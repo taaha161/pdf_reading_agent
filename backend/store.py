@@ -445,13 +445,13 @@ def get_review_prompt_state(user_id: str) -> tuple[str | None, int]:
     with _cursor() as cur:
         cur.execute(
             """
-            SELECT (SELECT status FROM review_claims WHERE user_id = %s),
-                   (SELECT COUNT(*) FROM jobs WHERE user_id::text = %s)
+            SELECT (SELECT status FROM review_claims WHERE user_id = %s) AS status,
+                   (SELECT COUNT(*) FROM jobs WHERE user_id = %s::uuid) AS scans
             """,
             (user_id, user_id),
         )
-        status, scans = cur.fetchone()
-    return status, int(scans or 0)
+        row = cur.fetchone()  # RealDictCursor: a dict, so read by name (unpacking would give the keys)
+    return row["status"], int(row["scans"] or 0)
 
 
 def create_review_claim(user_id: str, platform: str, proof: str) -> bool:

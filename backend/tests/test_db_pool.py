@@ -108,3 +108,22 @@ def test_pool_caps_open_connections(pool, monkeypatch):
             with store._cursor():
                 pass
     assert len(pool) == 2
+
+
+def test_review_prompt_state_reads_dict_rows(monkeypatch):
+    """store._cursor yields RealDictCursor rows; unpacking one gives its keys, not values."""
+    from contextlib import contextmanager
+
+    class Cur:
+        def execute(self, *a):
+            pass
+
+        def fetchone(self):
+            return {"status": "pending", "scans": 7}
+
+    @contextmanager
+    def fake_cursor():
+        yield Cur()
+
+    monkeypatch.setattr(store, "_cursor", fake_cursor)
+    assert store.get_review_prompt_state("u1") == ("pending", 7)
