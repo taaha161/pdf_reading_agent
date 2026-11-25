@@ -9,6 +9,8 @@ import "./FileUpload.css";
  * start an upload (click, drop, Drive, URL) calls onBlocked instead of opening a picker.
  * `maxBytes`: the user's upload limit. onUpload checks size for every file; Drive/URL
  * imports that are over the limit before download call `onTooLarge(sizeBytes)` instead.
+ * `onUploadMany`: when set, the picker and drop zone accept several PDFs at once; two or more
+ * go to onUploadMany(files) (bulk upload), a single one still goes to onUpload.
  */
 export default function FileUpload({
   onUpload,
@@ -17,6 +19,7 @@ export default function FileUpload({
   onBlocked,
   maxBytes = MAX_FILE_BYTES_ANON,
   onTooLarge,
+  onUploadMany,
 }) {
   const [drag, setDrag] = useState(false);
   const [showUrl, setShowUrl] = useState(false);
@@ -34,6 +37,19 @@ export default function FileUpload({
     [onUpload]
   );
 
+  const handleFiles = useCallback(
+    (fileList) => {
+      const pdfs = Array.from(fileList || []).filter((f) => f.type === "application/pdf");
+      if (pdfs.length > 1 && onUploadMany) {
+        setImportError(null);
+        onUploadMany(pdfs);
+      } else {
+        handleFile(pdfs[0]);
+      }
+    },
+    [handleFile, onUploadMany]
+  );
+
   // Returns true (and fires onBlocked) when uploads are blocked.
   const intercept = (e) => {
     if (!blocked) return false;
@@ -46,8 +62,7 @@ export default function FileUpload({
     e.preventDefault();
     setDrag(false);
     if (busy || intercept(e)) return;
-    const file = e.dataTransfer?.files?.[0];
-    handleFile(file);
+    handleFiles(e.dataTransfer?.files);
   };
 
   const onDragOver = (e) => {
@@ -58,8 +73,7 @@ export default function FileUpload({
   const onDragLeave = () => setDrag(false);
 
   const onInputChange = (e) => {
-    const file = e.target?.files?.[0];
-    handleFile(file);
+    handleFiles(e.target?.files);
     e.target.value = "";
   };
 
@@ -106,6 +120,7 @@ export default function FileUpload({
         <input
           type="file"
           accept="application/pdf"
+          multiple={Boolean(onUploadMany)}
           onChange={onInputChange}
           disabled={busy}
           id="pdf-input"
@@ -119,8 +134,12 @@ export default function FileUpload({
               <path d="M9 15l3 3 3-3" />
             </svg>
           </span>
-          <span className="file-upload-headline">Drop your bank statement PDF here</span>
-          <span className="file-upload-subtext">or click to choose · up to {formatMB(maxBytes)}</span>
+          <span className="file-upload-headline">
+            {onUploadMany ? "Drop your bank statement PDFs here" : "Drop your bank statement PDF here"}
+          </span>
+          <span className="file-upload-subtext">
+            {onUploadMany ? "one or many at once" : "or click to choose"} · up to {formatMB(maxBytes)} each
+          </span>
         </label>
       </div>
 

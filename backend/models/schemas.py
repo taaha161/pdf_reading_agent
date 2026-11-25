@@ -2,7 +2,7 @@ from datetime import datetime
 import uuid
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class Transaction(BaseModel):
@@ -269,6 +269,29 @@ class ExportRequest(BaseModel):
     include_totals: bool = False
     # Excel only: the scan's reconciliation, written to a separate "Reconciliation" sheet.
     reconciliation: Optional[Reconciliation] = None
+
+
+MAX_BULK_STATEMENTS = 50
+MAX_BULK_TRANSACTIONS = 100_000
+
+
+class BulkExportStatement(BaseModel):
+    """One scanned statement in a combined (bulk upload) download."""
+    name: str = Field(..., min_length=1, max_length=255)  # usually the PDF's file name
+    transactions: list[ExportTransaction] = Field(..., max_length=MAX_EXPORT_TRANSACTIONS)
+
+
+class BulkExportRequest(BaseModel):
+    """Several statements in one file: a combined sheet with a Statement column (+ a sheet each in Excel)."""
+    statements: list[BulkExportStatement] = Field(..., min_length=1, max_length=MAX_BULK_STATEMENTS)
+    format: ExportFormat = "xlsx"
+    include_categories: bool = True
+
+    @model_validator(mode="after")
+    def _total_rows(self):
+        if sum(len(s.transactions) for s in self.statements) > MAX_BULK_TRANSACTIONS:
+            raise ValueError(f"At most {MAX_BULK_TRANSACTIONS} transactions in one download")
+        return self
 
 
 class EmailSpreadsheetRequest(BaseModel):

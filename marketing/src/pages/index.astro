@@ -40,6 +40,10 @@ const faqs = [
     a: 'You can export your extracted, categorized transactions as CSV (ideal for importing into QuickBooks, Xero, or other tools) or Excel (XLSX) for review, annotation, and analysis.',
   },
   {
+    q: 'Can I convert multiple bank statements at once?',
+    a: 'Yes. With a free account, select or drop up to 50 statement PDFs at once. Each one is converted and checked, and you download one Excel workbook with an "All statements" sheet plus a sheet per statement, or one CSV with a Statement column. It costs the same per page as single uploads.',
+  },
+  {
     q: 'How much does Bank Statement Scanner cost?',
     a: PRICING_SUMMARY,
   },
@@ -114,7 +118,8 @@ const steps = [
 ];
 
 const features = [
-  { title: 'Checked against your statement', body: 'Every statement is checked against its printed balances and summary box. If a row is missing, doubled or on the wrong side, we point you to it. Saved statements are linked month to month, so a missing month stands out.', isNew: true },
+  { title: 'Bulk upload', body: 'Drop up to 50 statement PDFs at once and download one Excel workbook: every transaction on one sheet with the statement it came from, plus a sheet per statement.', isNew: true, link: { href: '/bulk-bank-statement-converter', label: 'How bulk upload works' } },
+  { title: 'Checked against your statement', body: 'Every statement is checked against its printed balances and summary box. If a row is missing, doubled or on the wrong side, we point you to it. Saved statements are linked month to month, so a missing month stands out.' },
   { title: 'Ask your statement', body: 'Ask for “all transactions from John” or “every ATM withdrawal” and download just those rows as Excel or CSV.' },
   { title: 'AI-powered extraction', body: 'Instantly pull line-item data from any computer-generated or scanned PDF with high accuracy.' },
   { title: 'Smart categorization', body: 'Automatically group transactions by merchant, type, and description using custom rules and AI categorization.' },

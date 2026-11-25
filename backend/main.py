@@ -41,6 +41,7 @@ from slowapi.errors import RateLimitExceeded
 
 from auth import get_current_claims, get_current_user, get_current_user_optional
 from models.schemas import (
+    BulkExportRequest,
     ReviewClaimRequest,
     AffiliateCreateRequest,
     AffiliatePayoutRequest,
@@ -82,8 +83,8 @@ from services import paid_signup
 from services.chat_service import get_reply
 from services.summary import _parse_amount, _summary_by_category  # noqa: F401
 from services.remote_pdf import RemotePdfError, RemotePdfTooLarge, fetch_pdf
-from services.csv_export import summary_to_csv, transactions_to_csv
-from services.xlsx_export import XLSX_MIME, summary_to_xlsx, transactions_to_xlsx
+from services.csv_export import bulk_to_csv, summary_to_csv, transactions_to_csv
+from services.xlsx_export import XLSX_MIME, bulk_to_xlsx, summary_to_xlsx, transactions_to_xlsx
 from services.notifications import (
     notify_email_capture,
     notify_feedback,
@@ -1149,6 +1150,28 @@ def export_transactions(request: Request, body: ExportRequest):
         body.include_totals,
         body.reconciliation.model_dump() if body.reconciliation else None,
     )
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.post("/api/export/bulk")
+@limiter.limit(_RATE_LIMIT_EXPORT)
+def export_bulk(request: Request, body: BulkExportRequest):
+    """One CSV or Excel file for several scanned statements (bulk upload).
+
+    Stateless like /api/export: it formats the rows the client sends. CSV is one table with a
+    Statement column; Excel adds a sheet per statement after the combined "All statements" sheet.
+    """
+    statements = [(s.name, [t.model_dump() for t in s.transactions]) for s in body.statements]
+    suffix = "" if body.include_categories else "-uncategorized"
+    if body.format == "xlsx":
+        content, media_type = bulk_to_xlsx(statements, body.include_categories), XLSX_MIME
+    else:
+        content, media_type = bulk_to_csv(statements, body.include_categories).encode("utf-8"), "text/csv; charset=utf-8"
+    filename = f"statements-combined{suffix}.{body.format}"
     return Response(
         content=content,
         media_type=media_type,

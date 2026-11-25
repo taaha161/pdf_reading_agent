@@ -89,7 +89,7 @@ Not all PDFs are built the same way. A digital-native PDF exported directly from
 Ensure the tool can parse both types without demanding separate add-on charges for OCR processing. If you regularly work with physical paperwork, review our manual on how to [convert scanned bank statement OCR](/blog/convert-scanned-bank-statement-ocr) to verify readability standards before purchasing credits.
 
 ### Step 2: Verify Single-Statement vs. Batch Upload Needs
-Some on-demand tools process one file at a time, while others support batch queues. If you run a high-volume tax office needing to upload 100 PDFs in a single drop, a single-statement processor will slow down your intake pipeline. In that situation, you would want a tool built specifically to [convert multiple bank statements in bulk](/blog/convert-multiple-bank-statements-in-bulk). If you only process a handful of files per client, a single-file uploader provides clean control and avoids upload errors.
+Some on-demand tools process one file at a time, while others support batch queues. If you run a high-volume tax office needing to upload 100 PDFs in a single drop, a single-statement processor will slow down your intake pipeline. In that situation, you would want a tool that can [convert multiple bank statements in bulk](/bulk-bank-statement-converter). If you only process a handful of files per client, a single-file uploader provides clean control and avoids upload errors.
 
 ### Step 3: Inspect the Data Schema and Column Outputs
 Ensure the tool extracts data into a clean, uniform table structure. You need distinct columns for:
@@ -142,9 +142,9 @@ If you run an accounting firm that reconciles dozens of active client books ever
 
 Furthermore, specialized accounting firms often require comprehensive workflow ecosystems. If you require direct two-way API syncing into QuickBooks Online or Xero, automated rule-based reconciliation, or proprietary `.QBO` and `.OFX` file exports, a lightweight pay-as-you-go converter will fall short. 
 
-For instance, [Bank Statement Scanner](/) is specifically engineered for focused, fast extraction: it converts one PDF bank or credit card statement at a time (digital, scanned, or password-protected) into clean CSV or Excel files with transaction dates, descriptions, amounts, credit/debit indicators, and an AI-assigned category. It also includes an incognito mode that stores no transaction data on our servers. 
+For instance, [Bank Statement Scanner](/) is specifically engineered for focused, fast extraction: it converts PDF bank and credit card statements (digital, scanned, or password-protected), one at a time or [up to 50 in a bulk upload](/bulk-bank-statement-converter), into clean CSV or Excel files with transaction dates, descriptions, amounts, credit/debit indicators, and an AI-assigned category. It also includes an incognito mode that stores no transaction data on our servers. 
 
-However, Bank Statement Scanner does **not** batch-upload multiple files at once, does **not** reconcile balances automatically, and does **not** generate `.QBO` or `.OFX` accounting software files. If your firm requires an end-to-end automated reconciliation engine that manages firm-wide client pipelines, an enterprise monthly subscription platform is the better operational choice.
+Each statement is checked against its own printed balances. However, Bank Statement Scanner does **not** reconcile against your ledger, and does **not** generate `.QBO` or `.OFX` accounting software files. If your firm requires an end-to-end automated reconciliation engine that manages firm-wide client pipelines, an enterprise monthly subscription platform is the better operational choice.
 
 ## Frequently asked questions
 

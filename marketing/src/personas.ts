@@ -25,7 +25,7 @@ export const PERSONAS: Persona[] = [
     h1: 'Spend tax season on advice, not retyping client statements.',
     sub: 'Upload a client’s bank or credit card statement. Get every transaction back in clean, categorized columns, ready for your workpapers or QuickBooks.',
     pains: [
-      { old: 'Clients send a stack of PDFs instead of a bank feed', new: 'Turn each PDF into rows in seconds' },
+      { old: 'Clients send a stack of PDFs instead of a bank feed', new: 'Bulk upload up to 50 PDFs and get one combined workbook' },
       { old: 'Staff hours lost to keying dates and amounts', new: 'Every transaction extracted and categorized' },
       { old: 'Hunting a statement for every payment to one payee', new: 'Ask for them in plain English and export just those rows' },
       { old: 'Scanned paper statements from older years', new: 'Scanned PDFs go through OCR' },
@@ -35,7 +35,7 @@ export const PERSONAS: Persona[] = [
     faqs: [
       {
         q: 'Can I use it for client statements from different banks?',
-        a: 'Yes. Upload statements from Chase, Wells Fargo, Amex, Bank of America and 100+ other banks and card issuers, including scanned PDFs.',
+        a: 'Yes. Upload statements from Chase, Wells Fargo, Amex, Bank of America and 100+ other banks and card issuers, including scanned PDFs. Bulk upload takes up to 50 PDFs at once, from any mix of banks, and gives you one combined workbook with a sheet per statement.',
       },
       {
         q: 'Does the export work with QuickBooks or Xero?',
@@ -61,7 +61,7 @@ export const PERSONAS: Persona[] = [
     h1: 'Catch-up bookkeeping without retyping a single statement.',
     sub: 'Upload the PDF. Get a categorized spreadsheet ready for QuickBooks or Xero in seconds, so you review a finished file instead of typing one.',
     pains: [
-      { old: 'Bank feeds only reach back a few months', new: 'Convert PDF statements from any year' },
+      { old: 'Bank feeds only reach back a few months', new: 'Bulk upload a year of PDF statements at once' },
       { old: 'Copy-paste from PDFs breaks the columns', new: 'Clean date, description, amount and type columns' },
       { old: 'Categorizing hundreds of rows by hand', new: 'Every row categorized automatically' },
       { old: 'Pulling every charge from one vendor', new: 'Ask for them in plain English and export just those rows' },
@@ -71,7 +71,7 @@ export const PERSONAS: Persona[] = [
     faqs: [
       {
         q: 'Can I convert old statements for catch-up work?',
-        a: 'Yes. Bank downloads often cover only recent months, but PDF statements go back years. Upload each PDF and export the rows.',
+        a: 'Yes. Bank downloads often cover only recent months, but PDF statements go back years. Bulk upload up to 50 PDFs at once and download one workbook with every row, tagged by statement.',
       },
       {
         q: 'What columns does the export have?',
@@ -97,7 +97,7 @@ export const PERSONAS: Persona[] = [
     h1: 'A year of client statements, sorted by category before you open the return.',
     sub: 'Clients hand you twelve PDFs and a shoebox. Upload the statements and get every transaction back categorized, so you total expenses instead of typing them.',
     pains: [
-      { old: 'Twelve monthly PDFs per account, per client', new: 'Convert each statement in seconds and combine the rows' },
+      { old: 'Twelve monthly PDFs per account, per client', new: 'Upload all twelve at once and download one combined workbook' },
       { old: 'Adding up expense categories with a calculator', new: 'Every row categorized, ready for a pivot table' },
       { old: 'Hunting for one deductible payee across a year', new: 'Ask "every payment to the landlord in 2026" and export just those rows' },
       { old: 'Not sure the conversion caught every row', new: 'Every statement checked against its printed balances and totals' },

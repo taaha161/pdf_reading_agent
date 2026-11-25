@@ -133,9 +133,9 @@ If you find missing transactions or need to rebuild periods beyond the reach of 
 
 However, it is important to understand what the tool does and does not do:
 
-* **It processes one PDF at a time:** It does not support batch-uploading multi-file folders at once.
+* **It handles one statement or a whole stack:** Drop a single PDF, or [bulk upload up to 50 statements](/bulk-bank-statement-converter) at once and download one combined Excel workbook with a sheet per statement.
 * **It outputs standard spreadsheets:** It produces CSV and Excel files, but it does not directly generate proprietary `.QBO` or `.OFX` files, nor does it push directly into accounting software via an automated sync.
-* **It extracts data; it does not reconcile:** The software extracts what is printed on the PDF with high fidelity, but the bookkeeper must still execute the reconciliation step.
+* **It checks the statement, not your ledger:** Each converted statement is checked against its own printed balances and totals, but matching those transactions to your books is still the bookkeeper's reconciliation step.
 
 For privacy-conscious teams, Bank Statement Scanner includes an incognito mode that processes files without saving your underlying transaction records on the server. If you only need to process an occasional statement to fix a dropped feed, 10 pages are available for free without creating an account. Signing up provides 100 free pages for the first month with no credit card required, followed by an ongoing plan of $10 per month for 150 pages. Subscribers can add page packs, and if you'd rather not subscribe, 450 pages cost $49.99 once and never expire.
 

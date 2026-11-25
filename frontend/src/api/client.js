@@ -40,7 +40,11 @@ function scanError(status, detail, fallback) {
     const text = typeof detail === "string" ? detail : detail?.detail || fallback;
     captureMessage(`API error ${status}: ${text}`, { tags: { area: "api", status_code: String(status) } });
   }
-  if (status === 429) return new Error("Too many requests. Please try again in a minute.");
+  if (status === 429) {
+    const e = new Error("Too many requests. Please try again in a minute.");
+    e.rateLimited = true;
+    return e;
+  }
   const obj = detail && typeof detail === "object" && !Array.isArray(detail) ? detail : null;
   if (status === 402) {
     const e = new Error(obj?.detail || "Not enough pages left");
@@ -442,6 +446,38 @@ export async function exportTransactions(
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function saveBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Download several scanned statements as one file (bulk upload). CSV is one table with a
+ * Statement column; Excel has an "All statements" sheet plus a sheet per statement.
+ * @param {Array<{name: string, transactions: object[]}>} statements
+ */
+export async function exportStatements(statements, { format = "xlsx", includeCategories = true } = {}) {
+  const res = await fetch(`${API_BASE}/api/export/bulk`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      statements: statements.map(({ name, transactions }) => ({ name, transactions: exportRows(transactions) })),
+      format,
+      include_categories: includeCategories,
+    }),
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
+    throw new Error("Failed to download file");
+  }
+  const disposition = res.headers.get("Content-Disposition") || "";
+  saveBlob(await res.blob(), /filename="([^"]+)"/.exec(disposition)?.[1] || `statements-combined.${format}`);
 }
 
 /**

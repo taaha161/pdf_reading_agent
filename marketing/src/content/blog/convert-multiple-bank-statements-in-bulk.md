@@ -55,7 +55,14 @@ The most damaging bulk error is a subtle one: two clients' transactions in a sin
 
 ## How Bank Statement Scanner handles the stack
 
-Bank Statement Scanner converts one statement at a time: upload a PDF, review the extracted transactions and smart categories, and export clean **CSV or Excel**. Every export uses the same columns (date, description, amount, credit or debit, category), so stacking a year of files for one account in a spreadsheet is a copy-paste job, and the reconciliation checks above go quickly. Name each export after its source file and the account stays easy to trace.
+Bank Statement Scanner has a [bulk upload](/bulk-bank-statement-converter): select or drop up to 50 statement PDFs at once (free account required). They convert two at a time, and the list shows each file's progress, its transaction count, and whether its rows add up to the statement's own balances. Password-protected files ask for their password right in the list, and a file that fails can be retried without restarting the batch.
+
+When the batch finishes, **Download all** gives you one file:
+
+- **Excel:** an *All statements* sheet with every transaction and a *Statement* column naming the source PDF, then one sheet per statement laid out like a single download (with opening and closing balance rows).
+- **CSV:** one table with the same *Statement* column, ready to filter or import.
+
+That *Statement* column is what keeps accounts separate: filter on it, or work from the per-statement sheets, and nothing gets mixed up. Each statement is also saved to your dashboard as its own job (unless you use incognito mode), so you can reopen, edit, or ask questions about any one of them later. Pricing is the same per page as single uploads.
 
 Feeding a GL specifically? See [converting statements for QuickBooks and Xero](/blog/convert-bank-statement-pdf-to-quickbooks) for format and column-mapping details.
 
