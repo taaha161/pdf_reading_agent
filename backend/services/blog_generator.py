@@ -577,8 +577,8 @@ Bulk upload: with a free account, up to 50 statement PDFs can be uploaded at onc
 they are converted two at a time, and one combined download is offered (Excel: an
 "All statements" sheet with a Statement column naming the source PDF, plus one sheet
 per statement; or one CSV with a Statement column). Bulk costs the same per page.
-Users can ask a converted statement questions in plain English and export just the
-matching rows. It has an incognito mode that stores no transaction data. It does NOT
+Users can ask one converted statement at a time questions in plain English and export
+just the matching rows (chat does not search across a whole batch). It has an incognito mode that stores no transaction data. It does NOT
 export QBO/OFX/Xero files, does NOT sync to accounting software, and does NOT
 reconcile statements against a ledger or books.
 Pricing (only if relevant, state exactly): priced per PDF page. 10 pages free
