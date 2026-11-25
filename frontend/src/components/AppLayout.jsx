@@ -6,7 +6,7 @@ import settingsGear from "../assets/settings-gear.svg";
 import { useAuth } from "../contexts/AuthContext";
 import { useUsage } from "../contexts/UsageContext";
 import { OFFERS, getOffer } from "../lib/offer";
-import { FREE_ANON_PAGES, FREE_SIGNUP_PAGES, PLAN_PAGES, PLAN_PRICE, formatExpiry } from "../lib/pricing";
+import { BULK_PACK, FREE_ANON_PAGES, FREE_SIGNUP_PAGES, PLAN_PAGES, PLAN_PRICE, formatExpiry } from "../lib/pricing";
 import "./AppLayout.css";
 
 export default function AppLayout({ children }) {
@@ -246,6 +246,7 @@ function PagesCard({ usage, isLoggedIn, onGetMore }) {
   const plan = usage.plan_pages ?? 0;
   const pack = usage.pack_pages ?? 0;
   const subscribed = !!usage.subscription_active;
+  const frozen = usage.frozen_pages ?? 0;
   const expiry = formatExpiry(usage.free_expires_at);
 
   return (
@@ -258,7 +259,7 @@ function PagesCard({ usage, isLoggedIn, onGetMore }) {
         <p className="pages-card-note">
           {subscribed
             ? "Your plan refills next billing cycle. Need pages sooner? Add a page pack."
-            : `Your free month has ended. Subscribe for $${PLAN_PRICE}/month or add a page pack.`}
+            : `Subscribe for $${PLAN_PRICE}/month (${PLAN_PAGES} pages a month), or buy ${BULK_PACK.pages} pages once for $${BULK_PACK.price}.`}
         </p>
       ) : (
         <ul className="pages-buckets">
@@ -269,11 +270,14 @@ function PagesCard({ usage, isLoggedIn, onGetMore }) {
           {pack > 0 && <PagesBucket name="Page packs" left={pack} hint="Never expire" />}
         </ul>
       )}
+      {frozen > 0 && !subscribed && (
+        <p className="pages-card-note">{frozen} pack pages paused. Subscribe again to use them.</p>
+      )}
       {total > 0 && !subscribed && free > 0 && (
         <p className="pages-card-note">After that: ${PLAN_PRICE}/month for {PLAN_PAGES} pages.</p>
       )}
       <button type="button" className="app-layout-summary-cta" onClick={onGetMore}>
-        {total === 0 ? "Get more pages" : subscribed ? "Add a page pack" : "Get more pages"}
+        {subscribed ? "Add a page pack" : total === 0 ? `Subscribe: $${PLAN_PRICE}/month` : "Get more pages"}
       </button>
     </div>
   );

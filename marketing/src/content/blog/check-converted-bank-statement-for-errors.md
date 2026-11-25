@@ -177,7 +177,7 @@ If you want clean, structured data from the start, use [Bank Statement Scanner](
 
 It also runs Steps 1 and 3 for you. Every converted statement is checked against the running balances it prints and its summary box (opening balance, total in, total out, closing balance). If the rows don't add up, it shows how far off they are and which rows to look at: a line that may be missing, read twice, or recorded on the wrong side. The Excel download includes a Reconciliation sheet with the same check. Saved statements for the same account are linked month to month, so a missing month shows up as a gap. Statements that print no balances or totals are marked as not checkable, so keep the manual checks above for those.
 
-You can test the platform with 10 free pages without creating an account. When you register, you receive 100 free pages for your first month with no credit card required, followed by predictable pricing at $10/month for 100 pages, with optional non-expiring page packs available as your processing needs grow.
+You can test the platform with 10 free pages without creating an account. When you register, you receive 100 free pages for your first month with no credit card required, followed by predictable pricing at $10/month for 150 pages, with optional page packs for subscribers as your processing needs grow. Without a subscription, 450 pages cost $49.99 once and never expire.
 
 ## Sources
 

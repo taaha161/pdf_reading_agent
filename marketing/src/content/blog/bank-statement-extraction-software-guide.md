@@ -26,7 +26,7 @@ Prices below come from each vendor's own pricing page, checked in November 2026.
 
 | Tool | Type | Starting price | Free option | Best for |
 |---|---|---|---|---|
-| Bank Statement Scanner | Browser converter | $10/month for 100 pages | 10 pages without an account; 100 pages free for your first month | A few statements a month, checked against their balances |
+| Bank Statement Scanner | Browser converter | $10/month for 150 pages | 10 pages without an account; 100 pages free for your first month | A few statements a month, checked against their balances |
 | [DocuClipper](/compare/docuclipper-alternative) | Statement converter | $20.30/month billed annually (60 pages) | 14-day trial, up to 120 pages | Accounting firms that want QuickBooks and Xero formats |
 | [Bankstatemently](/compare/bankstatemently-alternative) | Statement converter | Page plans (400 or 1,000 pages a month) | 10 pages a month | Linking months balance to balance, API access |
 | [BankStatementLab](/compare/bankstatementlab-alternative) | Statement converter | $9/month for 50 pages | 5 credits a month | OFX export and API access on a small budget |

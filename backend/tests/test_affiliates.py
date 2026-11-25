@@ -272,6 +272,7 @@ def _checkout(mode, discount, had_sub=False, pack=None):
     from types import SimpleNamespace
     with patch.object(billing, "_referral_discount", return_value=discount), \
          patch.object(billing, "_has_had_subscription", return_value=had_sub), \
+         patch.object(billing, "_is_subscribed", return_value=True), \
          patch.object(billing.stripe.Coupon, "create", return_value=SimpleNamespace(id="co_1")) as coupon, \
          patch.object(billing, "set_affiliate_coupon") as save_coupon, \
          patch.object(billing.stripe.checkout.Session, "create", return_value=_Session()) as create:

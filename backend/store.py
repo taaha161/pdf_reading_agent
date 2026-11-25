@@ -453,12 +453,14 @@ def update_job_transactions(job_id: str, user_id: str, transactions: list[dict[s
 
 
 # --- Billing ---
-# Pages are the billing unit. A user has three buckets, spent in this order:
+# Pages are the billing unit. A user has four buckets, spent in this order:
 #   free_pages (signup grant, expires at free_expires_at) -> plan_pages (monthly
-#   subscription allowance, reset each cycle) -> pack_pages (purchased, never expire).
+#   subscription allowance, reset each cycle) -> sub_pack_pages (subscriber-only add-on
+#   packs; never expire but frozen while there is no active subscription) ->
+#   pack_pages (bulk pack, promo/review bonuses, pre-Nov-25 packs; never expire).
 
 _BILLING_COLS = (
-    "user_id, balance_cents, free_pages, free_expires_at, plan_pages, pack_pages, "
+    "user_id, balance_cents, free_pages, free_expires_at, plan_pages, pack_pages, sub_pack_pages, "
     "stripe_customer_id, stripe_subscription_id, created_at, updated_at"
 )
 
@@ -512,11 +514,30 @@ def free_pages_available(row: dict | None, now: datetime | None = None) -> int:
     return max(0, int(row.get("free_pages") or 0)) if row["free_expires_at"] > now else 0
 
 
+def sub_pack_pages_available(row: dict | None) -> int:
+    """Subscriber pack pages usable now: all of them while subscribed, none (frozen) otherwise."""
+    if not row or not row.get("stripe_subscription_id"):
+        return 0
+    return max(0, int(row.get("sub_pack_pages") or 0))
+
+
+def frozen_pages(row: dict | None) -> int:
+    """Subscriber pack pages kept but unusable until the user subscribes again."""
+    if not row or row.get("stripe_subscription_id"):
+        return 0
+    return max(0, int(row.get("sub_pack_pages") or 0))
+
+
 def pages_available(row: dict | None) -> int:
     """Total pages this user can spend right now."""
     if not row:
         return 0
-    return free_pages_available(row) + max(0, int(row.get("plan_pages") or 0)) + max(0, int(row.get("pack_pages") or 0))
+    return (
+        free_pages_available(row)
+        + max(0, int(row.get("plan_pages") or 0))
+        + sub_pack_pages_available(row)
+        + max(0, int(row.get("pack_pages") or 0))
+    )
 
 
 def set_plan_pages(user_id: str, pages: int) -> None:
@@ -532,23 +553,24 @@ def set_plan_pages(user_id: str, pages: int) -> None:
         )
 
 
-def add_pack_pages(user_id: str, pages: int) -> None:
-    """Add purchased pages (never expire)."""
+def add_pack_pages(user_id: str, pages: int, sub_pages: int = 0) -> None:
+    """Add purchased pages in one write: `pages` never freeze, `sub_pages` (subscriber packs) freeze without a plan."""
     with _cursor() as cur:
         cur.execute(
             """
-            INSERT INTO user_billing (user_id, pack_pages, updated_at)
-            VALUES (%s, GREATEST(0, %s), NOW())
+            INSERT INTO user_billing (user_id, pack_pages, sub_pack_pages, updated_at)
+            VALUES (%s, GREATEST(0, %s), GREATEST(0, %s), NOW())
             ON CONFLICT (user_id) DO UPDATE SET
               pack_pages = GREATEST(0, user_billing.pack_pages + %s),
+              sub_pack_pages = GREATEST(0, user_billing.sub_pack_pages + %s),
               updated_at = NOW()
             """,
-            (user_id, pages, pages),
+            (user_id, pages, sub_pages, pages, sub_pages),
         )
 
 
 def deduct_pages(user_id: str, pages: int) -> dict | None:
-    """Spend `pages` (free -> plan -> pack), atomically. Returns the updated row, or None if not enough."""
+    """Spend `pages` (free -> plan -> subscriber pack -> pack), atomically. Returns the updated row, or None if not enough."""
     with _cursor() as cur:
         cur.execute(f"SELECT {_BILLING_COLS} FROM user_billing WHERE user_id = %s FOR UPDATE", (user_id,))
         row = cur.fetchone()
@@ -560,18 +582,21 @@ def deduct_pages(user_id: str, pages: int) -> dict | None:
         left -= take_free
         take_plan = min(left, max(0, row["plan_pages"]))
         left -= take_plan
+        take_sub_pack = min(left, sub_pack_pages_available(row))
+        left -= take_sub_pack
         take_pack = left
         cur.execute(
             f"""
             UPDATE user_billing SET
               free_pages = free_pages - %s,
               plan_pages = plan_pages - %s,
+              sub_pack_pages = sub_pack_pages - %s,
               pack_pages = pack_pages - %s,
               updated_at = NOW()
             WHERE user_id = %s
             RETURNING {_BILLING_COLS}
             """,
-            (take_free, take_plan, take_pack, user_id),
+            (take_free, take_plan, take_sub_pack, take_pack, user_id),
         )
         return dict(cur.fetchone())
 
@@ -589,6 +614,19 @@ def set_stripe_ids(user_id: str, stripe_customer_id: str, stripe_subscription_id
               updated_at = NOW()
             """,
             (user_id, stripe_customer_id, stripe_subscription_id),
+        )
+
+
+def clear_subscription(user_id: str, subscription_id: str | None) -> None:
+    """Subscription ended: clear the stored id (only if it is that subscription) and drop the plan allowance.
+    set_stripe_ids can't do this; it COALESCEs a None id back to the old value."""
+    with _cursor() as cur:
+        cur.execute(
+            """
+            UPDATE user_billing SET stripe_subscription_id = NULL, plan_pages = 0, updated_at = NOW()
+            WHERE user_id = %s AND (%s::text IS NULL OR stripe_subscription_id IS NULL OR stripe_subscription_id = %s)
+            """,
+            (user_id, subscription_id, subscription_id),
         )
 
 

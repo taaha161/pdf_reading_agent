@@ -12,7 +12,7 @@ import StickyCta from '../components/StickyCta.astro';
 import { comparePages } from '../comparePages';
 import {
   SITE_URL, SITE_NAME, SITE_TAGLINE, SUPPORT_EMAIL, LEGAL_ENTITY, SAME_AS, canonical,
-  FREE_ANON_PAGES, FREE_SIGNUP_PAGES, FREE_SIGNUP_DAYS, FREE_LABEL, PLAN_PRICE, PLAN_PAGES, PAGE_PACKS, ACCURATE_MULTIPLIER, PRICING_SUMMARY,
+  FREE_ANON_PAGES, FREE_SIGNUP_PAGES, FREE_SIGNUP_DAYS, FREE_LABEL, PLAN_PRICE, PLAN_PAGES, PAGE_PACKS, BULK_PACK, ACCURATE_MULTIPLIER, PRICING_SUMMARY,
 } from '../consts';
 
 // Use-case cards pull from the real blog posts.
@@ -245,16 +245,16 @@ const features = [
           </article>
           <article class="fee fee--plan">
             <h3 class="fee-label">Monthly</h3>
-            <p class="fee-value"><span class="hl">${PLAN_PRICE}</span><span>/mo</span><span class="fee-pencil pencil" aria-hidden="true">= $0.10 a page</span></p>
+            <p class="fee-value"><span class="hl">${PLAN_PRICE}</span><span>/mo</span><span class="fee-pencil pencil" aria-hidden="true">≈ 7¢ a page</span></p>
             <p class="fee-tagline">{PLAN_PAGES} pages every month. What that gets you:</p>
             <dl class="fee-examples">
-              <div><dt>~16</dt><dd>six-page statements</dd></div>
-              <div><dt>~8</dt><dd>six-page statements on High accuracy</dd></div>
-              <div><dt>$0.10</dt><dd>per page</dd></div>
+              <div><dt>~{Math.floor(PLAN_PAGES / 6)}</dt><dd>six-page statements</dd></div>
+              <div><dt>~{Math.floor(PLAN_PAGES / 6 / ACCURATE_MULTIPLIER)}</dt><dd>six-page statements on High accuracy</dd></div>
+              <div><dt>≈7¢</dt><dd>per page</dd></div>
             </dl>
             <ul class="fee-list tick-list" role="list">
               <li>{PLAN_PAGES} pages each billing cycle</li>
-              <li>Add page packs whenever you need more</li>
+              <li>Add page packs from ${PAGE_PACKS[0].price} whenever you need more</li>
               <li>Larger uploads, up to 50 MB</li>
               <li>Monthly billing, cancel anytime</li>
             </ul>
@@ -262,12 +262,13 @@ const features = [
             <p class="fee-fine">Pay securely with Stripe, then set your password.</p>
           </article>
           <article class="fee">
-            <h3 class="fee-label">Page packs</h3>
-            <p class="fee-value">from ${PAGE_PACKS[0].price}</p>
-            <p class="fee-tagline">Busy month? Add pages anytime, with or without the plan.</p>
+            <h3 class="fee-label">Pay once</h3>
+            <p class="fee-value">${BULK_PACK.price}<span>/{BULK_PACK.pages} pages</span></p>
+            <p class="fee-tagline">No subscription. Buy {BULK_PACK.pages} pages once and use them whenever you like.</p>
             <ul class="fee-list tick-list" role="list">
-              {PAGE_PACKS.map((p) => <li>{p.pages} pages for ${p.price}</li>)}
-              <li>Pack pages never expire</li>
+              <li>{BULK_PACK.pages} pages, about {Math.floor(BULK_PACK.pages / 6)} six-page statements</li>
+              <li>Pages never expire</li>
+              <li>Subscribers get smaller packs: {PAGE_PACKS.map((p) => `${p.pages} for $${p.price}`).join(', ')}</li>
               <li>High accuracy mode uses {ACCURATE_MULTIPLIER} pages per PDF page</li>
             </ul>
             <a class="line-btn fee-btn" href="/scanner" data-cta="pricing_topup">Convert a statement free</a>

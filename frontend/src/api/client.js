@@ -257,7 +257,7 @@ export async function getUsage() {
   return res.json();
 }
 
-/** `pack` (topup only): a PAGE_PACKS id from lib/pricing ("10" | "30" | "100"). */
+/** `pack` (topup only): a PAGE_PACKS id (subscribers) or BULK_PACK.id from lib/pricing. */
 export async function createCheckoutSession(mode, email = null, offer = null, token = undefined, pack = null) {
   const body = { mode, ...getGaIds() };
   if (pack) body.pack = pack;

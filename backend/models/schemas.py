@@ -188,6 +188,7 @@ class BillingBalanceResponse(BaseModel):
     free_expires_at: Optional[datetime] = None
     plan_pages: int = 0  # monthly plan pages left this cycle
     pack_pages: int = 0  # purchased pages (never expire)
+    frozen_pages: int = 0  # subscriber pack pages paused until they subscribe again
 
 
 class UsageResponse(BaseModel):
@@ -202,6 +203,7 @@ class UsageResponse(BaseModel):
     free_expires_at: Optional[datetime] = None
     plan_pages: Optional[int] = None
     pack_pages: Optional[int] = None
+    frozen_pages: Optional[int] = None
     subscription_active: bool = False
     max_file_bytes: int = 20 * 1024 * 1024  # upload limit for this caller's tier
     review_claim: Optional[str] = None  # authenticated only: None | pending | granted | rejected
@@ -212,7 +214,7 @@ class CheckoutSessionRequest(BaseModel):
     mode: str  # "subscription" | "topup"
     email: Optional[str] = None  # optional, for Stripe Customer
     offer: Optional[str] = None  # ad-campaign offer code (see billing.OFFERS); validated server-side
-    pack: Optional[str] = None  # topup only: page pack id (see billing.PAGE_PACKS): "10" | "30" | "100"
+    pack: Optional[str] = None  # topup only: page pack id (see billing.PAGE_PACKS): "10" | "30" | "100" (subscribers) | "450"
     ga_client_id: Optional[str] = Field(default=None, max_length=64)  # GA4 ids for server-side subscribe/purchase events
     ga_session_id: Optional[str] = Field(default=None, max_length=64)
     ad_opt_out: bool = False  # browser sent Global Privacy Control: no ad-platform conversions

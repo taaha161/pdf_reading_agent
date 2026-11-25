@@ -10,7 +10,7 @@ from services.affiliates import discounted_cents, user_discount
 from services.affiliates import record_payment as record_affiliate_payment
 from services.ga4_mp import ga_ids_from_metadata, track_event
 from services.linkedin_capi import track_subscription_purchase
-from store import add_pack_pages, set_affiliate_coupon, get_billing, get_user_id_by_stripe_customer_id, set_plan_pages, set_stripe_ids
+from store import add_pack_pages, clear_subscription, set_affiliate_coupon, get_billing, get_user_id_by_stripe_customer_id, set_plan_pages, set_stripe_ids
 
 logger = logging.getLogger("pdf_processor_app.billing")
 
@@ -19,15 +19,20 @@ logger = logging.getLogger("pdf_processor_app.billing")
 FREE_ANON_PAGES = 10  # without an account, per client IP (lifetime)
 FREE_SIGNUP_PAGES = 100  # one-time grant on signup...
 FREE_SIGNUP_DAYS = 30  # ...valid for the first 30 days
-PLAN_PAGES = 100  # $10/month plan: pages per billing cycle (reset, no rollover)
+PLAN_PAGES = 150  # $10/month plan: pages per billing cycle (reset, no rollover)
 PLAN_PRICE_CENTS = 1000
-# Page packs: id -> (pages, price in cents). Never expire. Any signed-in user can buy.
-PAGE_PACKS: dict[str, tuple[int, int]] = {
+# Page packs: id -> (pages, price in cents). Pack pages never expire.
+# Small add-on packs are for active subscribers only.
+SUBSCRIBER_PACKS: dict[str, tuple[int, int]] = {
     "10": (10, 200),
     "30": (30, 500),
     "100": (100, 1000),
 }
-DEFAULT_PACK = "30"
+# Without a subscription, pages are only sold as this bulk pack.
+BULK_PACK_ID = "450"
+BULK_PACK: tuple[int, int] = (450, 4999)
+PAGE_PACKS: dict[str, tuple[int, int]] = {**SUBSCRIBER_PACKS, BULK_PACK_ID: BULK_PACK}
+DEFAULT_PACK = "30"  # subscribers; everyone else gets BULK_PACK_ID
 # Pages charged per PDF page, by conversion mode.
 MODE_PAGE_MULTIPLIER = {"fast": 1, "balanced": 1, "accurate": 2}
 # Old $-credit top-ups still in flight at launch convert at $0.10/page.
@@ -138,6 +143,24 @@ def get_or_create_stripe_customer(user_id: str, email: str | None) -> str | None
         return None
 
 
+class PackNotAllowed(Exception):
+    """A subscriber-only pack was requested by a user without an active subscription."""
+
+
+def resolve_pack(pack: str | None, subscribed: bool) -> str:
+    """Pack id this user may buy. Raises PackNotAllowed for a subscriber pack without a subscription."""
+    if subscribed:
+        return pack if pack in PAGE_PACKS else DEFAULT_PACK
+    if pack in SUBSCRIBER_PACKS:
+        raise PackNotAllowed(pack)
+    return BULK_PACK_ID
+
+
+def _is_subscribed(user_id: str) -> bool:
+    billing = get_billing(user_id)
+    return bool(billing and billing.get("stripe_subscription_id"))
+
+
 def create_checkout_session(
     user_id: str,
     mode: Literal["subscription", "topup"],
@@ -156,7 +179,9 @@ def create_checkout_session(
     when the customer has never subscribed before; silently ignored otherwise.
     `ga_client_id`/`ga_session_id`: the browser's GA4 ids, stored in Stripe metadata
     so webhook events (subscribe, purchase) attribute to the visitor's ad session.
-    `pack` (topup only): a key of PAGE_PACKS; unknown values fall back to DEFAULT_PACK.
+    `pack` (topup only): a key of PAGE_PACKS. Subscribers may buy any pack (unknown
+    values fall back to DEFAULT_PACK). Everyone else may only buy BULK_PACK_ID;
+    asking for a subscriber pack raises PackNotAllowed.
     Referred users get their affiliate's discount (services.affiliates.user_discount):
     a coupon on a first subscription, a lower price on page packs. Stripe allows
     either a discount or promotion codes on a session, so a discounted checkout
@@ -201,7 +226,7 @@ def create_checkout_session(
                 **promo,
             )
         else:
-            pack_id = pack if pack in PAGE_PACKS else DEFAULT_PACK
+            pack_id = resolve_pack(pack, _is_subscribed(user_id))
             pages, price_cents = PAGE_PACKS[pack_id]
             promo = {"allow_promotion_codes": True}
             discount_meta: dict = {}
@@ -216,7 +241,10 @@ def create_checkout_session(
                     "price_data": {
                         "currency": "usd",
                         "unit_amount": price_cents,
-                        "product_data": {"name": f"{pages} extra pages", "description": "Bank Statement Scanner page pack. Never expires."},
+                        "product_data": {"name": f"{pages} extra pages", "description": (
+                            "Bank Statement Scanner subscriber page pack. Never expires; paused if you cancel your plan."
+                            if pack_id in SUBSCRIBER_PACKS else "Bank Statement Scanner page pack. Never expires."
+                        )},
                     },
                     "quantity": 1,
                 }],
@@ -336,8 +364,8 @@ def _handle_subscription_deleted(event) -> tuple[bool, str]:
     customer_id = sub.get("customer")
     user_id = _user_id_from_customer(customer_id, sub.get("id"), None)
     if user_id:
-        set_stripe_ids(user_id, customer_id, None)
-        set_plan_pages(user_id, 0)  # the monthly allowance ends with the plan; packs are kept
+        # Plan allowance ends; subscriber packs stay but freeze until they subscribe again.
+        clear_subscription(user_id, sub.get("id"))
     return True, "OK"
 
 
@@ -462,7 +490,12 @@ def _handle_checkout_completed(event) -> tuple[bool, str]:
         return False, str(e)  # before crediting anything, so the retry is clean
 
     try:
-        add_pack_pages(user_id, pages + bonus)  # one write: a retry can't double-credit just the bonus
+        # Subscriber packs freeze if the plan ends; bulk packs and promo bonuses never do.
+        # One write: a retry can't double-credit just the bonus.
+        if str(metadata.get("pack", "")).strip() in SUBSCRIBER_PACKS:
+            add_pack_pages(user_id, bonus, sub_pages=pages)
+        else:
+            add_pack_pages(user_id, pages + bonus)
     except Exception as e:
         logger.exception("add_pack_pages failed on checkout.session.completed: %s", e)
         return False, str(e)

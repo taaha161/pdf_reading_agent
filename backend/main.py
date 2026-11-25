@@ -72,6 +72,7 @@ from services.billing import (
     FREE_ANON_PAGES,
     FREE_SIGNUP_DAYS,
     FREE_SIGNUP_PAGES,
+    PackNotAllowed,
     create_checkout_session,
     handle_webhook,
     scan_cost_pages,
@@ -118,9 +119,11 @@ from store import (
     delete_user_data,
     ensure_free_grant,
     free_pages_available,
+    frozen_pages,
     get_billing,
     get_referral_with_affiliate,
     pages_available,
+    sub_pack_pages_available,
     get_job,
     insert_usage_log,
     list_jobs,
@@ -602,14 +605,16 @@ def _load_billing(user_id: str) -> dict:
 def _billing_fields(billing: dict | None) -> dict:
     """Page balance fields shared by /api/usage, /api/billing/balance and scan responses."""
     if not billing:
-        return {"pages_remaining": 0, "free_pages": 0, "free_expires_at": None, "plan_pages": 0, "pack_pages": 0}
+        return {"pages_remaining": 0, "free_pages": 0, "free_expires_at": None, "plan_pages": 0, "pack_pages": 0, "frozen_pages": 0}
     free = free_pages_available(billing)
     return {
         "pages_remaining": pages_available(billing),
         "free_pages": free,
         "free_expires_at": billing.get("free_expires_at") if free else None,
         "plan_pages": max(0, int(billing.get("plan_pages") or 0)),
-        "pack_pages": max(0, int(billing.get("pack_pages") or 0)),
+        # Usable pack pages (bulk + subscriber packs while subscribed).
+        "pack_pages": max(0, int(billing.get("pack_pages") or 0)) + sub_pack_pages_available(billing),
+        "frozen_pages": frozen_pages(billing),
     }
 
 
@@ -619,7 +624,7 @@ def _insufficient_pages(required: int, remaining: int) -> HTTPException:
         detail={
             "detail": (
                 f"This scan needs {required:,} page{'s' if required != 1 else ''} and you have "
-                f"{remaining:,} left. Subscribe or add a page pack to continue."
+                f"{remaining:,} left. Subscribe to the monthly plan or buy a page pack to continue."
             ),
             "code": INSUFFICIENT_CREDITS_CODE,
             "pages_required": required,
@@ -1435,16 +1440,19 @@ def create_billing_checkout_session(body: CheckoutSessionRequest, user_id: str =
     """Create Stripe Checkout session for subscription or top-up. Returns URL to redirect user."""
     if body.mode not in ("subscription", "topup"):
         raise HTTPException(400, "mode must be 'subscription' or 'topup'")
-    result = create_checkout_session(
-        user_id,
-        body.mode,
-        email=body.email,
-        offer=body.offer,
-        ga_client_id=body.ga_client_id,
-        ga_session_id=body.ga_session_id,
-        ad_opt_out=body.ad_opt_out,
-        pack=body.pack,
-    )
+    try:
+        result = create_checkout_session(
+            user_id,
+            body.mode,
+            email=body.email,
+            offer=body.offer,
+            ga_client_id=body.ga_client_id,
+            ga_session_id=body.ga_session_id,
+            ad_opt_out=body.ad_opt_out,
+            pack=body.pack,
+        )
+    except PackNotAllowed:
+        raise HTTPException(403, "Page packs are for monthly subscribers. Subscribe, or buy the 450-page pack.")
     if not result or not result.get("url"):
         raise HTTPException(502, "Could not create checkout session. Please try again.")
     return CheckoutSessionResponse(url=result["url"], sessionId=result.get("sessionId"))

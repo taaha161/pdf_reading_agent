@@ -142,7 +142,7 @@ Once you know **how to download capital one statements**, converting those recor
 
 The tool converts one PDF bank or credit card statement at a time into clean CSV or Excel files. It handles digital PDFs, scanned documents, and password-protected files, parsing transaction lines into date, description, amount, credit/debit indicators, and automated categories. If data confidentiality is a priority, an incognito mode allows you to process statements without storing transaction data on the platform.
 
-You can process your first 10 pages for free without creating an account. Signing up provides 100 free pages for your first month with no credit card required. Following the introductory period, standard plans are $10 per month for 100 pages, with non-expiring page add-ons available (10 pages for $2, 30 for $5, or 100 for $10). For complex or degraded document layouts, an optional Accurate Mode is available, utilizing 2 page credits per PDF page to deliver maximum parsing precision.
+You can process your first 10 pages for free without creating an account. Signing up provides 100 free pages for your first month with no credit card required. Following the introductory period, the plan is $10 per month for 150 pages, and subscribers can add page packs (10 pages for $2, 30 for $5, or 100 for $10). Without a subscription, you can buy 450 pages for $49.99 that never expire. For complex or degraded document layouts, an optional Accurate Mode is available, utilizing 2 page credits per PDF page to deliver maximum parsing precision.
 
 ## Frequently Asked Questions
 

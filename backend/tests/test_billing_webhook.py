@@ -70,13 +70,22 @@ def test_subscription_id_helper_shapes():
 
 
 @pytest.mark.parametrize("pack,pages", [("10", 10), ("30", 30), ("100", 100)])
-def test_topup_checkout_credits_pack_pages(pack, pages):
+def test_subscriber_pack_credits_freezable_bucket(pack, pages):
     session = {"id": "cs_1", "mode": "payment", "amount_total": billing.PAGE_PACKS[pack][1], "currency": "usd",
                "metadata": {"user_id": "user-1", "topup": "1", "pack": pack}}
     with patch.object(billing, "add_pack_pages") as add_pack, patch.object(billing, "_track_ga4"):
         ok, _ = billing._handle_checkout_completed({"data": {"object": session}})
     assert ok
-    add_pack.assert_called_once_with("user-1", pages)
+    add_pack.assert_called_once_with("user-1", 0, sub_pages=pages)
+
+
+def test_bulk_pack_credits_never_frozen_bucket():
+    session = {"id": "cs_1", "mode": "payment", "amount_total": 4999, "currency": "usd",
+               "metadata": {"user_id": "user-1", "topup": "1", "pack": "450"}}
+    with patch.object(billing, "add_pack_pages") as add_pack, patch.object(billing, "_track_ga4"):
+        ok, _ = billing._handle_checkout_completed({"data": {"object": session}})
+    assert ok
+    add_pack.assert_called_once_with("user-1", 450)
 
 
 def test_legacy_topup_checkout_converts_cents_to_pages():
@@ -97,13 +106,13 @@ def test_non_subscription_invoice_never_credits_pages():
     set_plan.assert_not_called()
 
 
-def test_subscription_deleted_clears_plan_pages_only():
+def test_subscription_deleted_clears_subscription_and_plan_pages():
     event = {"data": {"object": {"id": "sub_1", "customer": "cus_1"}}}
     with patch.object(billing, "_user_id_from_customer", return_value="user-1"), \
-         patch.object(billing, "set_stripe_ids"), patch.object(billing, "set_plan_pages") as set_plan, \
+         patch.object(billing, "clear_subscription") as clear, \
          patch.object(billing, "add_pack_pages") as add_pack:
         billing._handle_subscription_deleted(event)
-    set_plan.assert_called_once_with("user-1", 0)
+    clear.assert_called_once_with("user-1", "sub_1")
     add_pack.assert_not_called()
 
 
@@ -114,7 +123,7 @@ def test_scan_cost_pages(pages, mode, cost):
 
 # --- promo-code bonus pages (e.g. REDDIT200: promotion code metadata bonus_pages=200) ---
 
-def _pack_session(discounts, pack="10"):
+def _pack_session(discounts, pack="450"):
     return {"id": "cs_1", "mode": "payment", "amount_total": 0, "currency": "usd", "customer": "cus_1",
             "metadata": {"user_id": "user-1", "topup": "1", "pack": pack}, "discounts": discounts}
 
@@ -135,32 +144,32 @@ def test_promo_code_bonus_added_to_pack_pages():
     (ok, msg), add_pack, retrieve = _checkout(_pack_session([{"coupon": "c1", "promotion_code": "promo_1"}]), promo)
     assert ok and "200 promo bonus" in msg
     retrieve.assert_called_once_with("promo_1")
-    add_pack.assert_called_once_with("user-1", 210)
+    add_pack.assert_called_once_with("user-1", 650)
 
 
 def test_coupon_metadata_bonus_when_promo_has_none():
     promo = {"id": "promo_1", "metadata": {}, "coupon": {"id": "c1", "metadata": {"bonus_pages": "50"}}}
     (ok, _), add_pack, _ = _checkout(_pack_session([{"coupon": "c1", "promotion_code": "promo_1"}]), promo)
-    add_pack.assert_called_once_with("user-1", 60)
+    add_pack.assert_called_once_with("user-1", 500)
 
 
 def test_ordinary_discount_gives_no_bonus():
     promo = {"id": "promo_2", "metadata": {}, "coupon": {"id": "c2", "metadata": {}}}
     (ok, _), add_pack, _ = _checkout(_pack_session([{"coupon": "c2", "promotion_code": "promo_2"}]), promo)
-    add_pack.assert_called_once_with("user-1", 10)
+    add_pack.assert_called_once_with("user-1", 450)
 
 
 def test_no_discounts_skips_stripe_lookup():
     (ok, _), add_pack, retrieve = _checkout(_pack_session(None))
     retrieve.assert_not_called()
-    add_pack.assert_called_once_with("user-1", 10)
+    add_pack.assert_called_once_with("user-1", 450)
 
 
 def test_bonus_is_capped_and_bad_metadata_ignored():
     assert billing._metadata_bonus({"metadata": {"bonus_pages": "lots"}}) == 0
     promo = {"id": "p", "metadata": {"bonus_pages": "999999"}, "coupon": None}
     (ok, _), add_pack, _ = _checkout(_pack_session([{"promotion_code": "p"}]), promo)
-    add_pack.assert_called_once_with("user-1", 10 + billing._MAX_BONUS_PAGES)
+    add_pack.assert_called_once_with("user-1", 450 + billing._MAX_BONUS_PAGES)
 
 
 def test_stripe_error_fails_webhook_before_crediting():
@@ -169,6 +178,13 @@ def test_stripe_error_fails_webhook_before_crediting():
         ok, _ = billing._handle_checkout_completed({"data": {"object": _pack_session([{"promotion_code": "p"}])}})
     assert not ok
     add_pack.assert_not_called()
+
+
+def test_promo_bonus_on_subscriber_pack_never_freezes():
+    promo = {"id": "promo_1", "metadata": {"bonus_pages": "200"}, "coupon": None}
+    (ok, _), add_pack, _ = _checkout(_pack_session([{"promotion_code": "promo_1"}], pack="10"), promo)
+    assert ok
+    add_pack.assert_called_once_with("user-1", 200, sub_pages=10)
 
 
 def test_promo_bonus_on_subscription_checkout():
@@ -184,9 +200,9 @@ def test_bonus_only_once_per_customer_but_retry_still_credits():
     promo = {"id": "promo_1", "metadata": {"bonus_pages": "200"}, "coupon": None}
     session = _pack_session([{"promotion_code": "promo_1"}])
     (_, _), add_pack, _ = _checkout(session, promo, customer_meta={"bonus_promo_1": "cs_other"})
-    add_pack.assert_called_once_with("user-1", 10)  # second use: no bonus
+    add_pack.assert_called_once_with("user-1", 450)  # second use: no bonus
     (_, _), add_pack, _ = _checkout(session, promo, customer_meta={"bonus_promo_1": "cs_1"})
-    add_pack.assert_called_once_with("user-1", 210)  # webhook retry of the first use
+    add_pack.assert_called_once_with("user-1", 650)  # webhook retry of the first use
 
 
 def test_first_use_records_session_on_customer():
