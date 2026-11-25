@@ -240,3 +240,136 @@
     padding: 1.1rem 1rem 1.25rem;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Pricing cards (billing, not subscribed). The monthly plan is the recommended
+   choice: heavier ink border, highlighter badge, filled CTA.
+   --------------------------------------------------------------------------- */
+.billing-plans {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 0.9rem;
+  margin-top: 0.85rem;
+  align-items: stretch;
+}
+.billing-plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.1rem 1.1rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+}
+.billing-plan--recommended {
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  padding-top: 1.6rem;
+}
+.billing-plan-badge {
+  position: absolute;
+  top: -0.75rem;
+  left: 1rem;
+  padding: 0.2rem 0.55rem;
+  background: var(--hi);
+  border: 1px solid var(--ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.billing-plan-name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.billing-plan-price {
+  margin: 0.4rem 0 0;
+  font-family: var(--font-heading);
+  font-stretch: 112%;
+  font-weight: 800;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+.billing-plan-price span {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-left: 0.15rem;
+}
+.billing-plan-rate {
+  margin: 0.3rem 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.billing-plan--recommended .billing-plan-rate {
+  color: var(--ink);
+}
+.billing-plan-list {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  flex: 1;
+}
+.billing-plan-list li {
+  position: relative;
+  padding-left: 1.2rem;
+}
+.billing-plan-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+.billing-plan-note {
+  margin: 0 0 0.75rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--hi-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.billing-plan-cta {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.billing-plan-cta:hover:not(:disabled) {
+  background: var(--color-primary-subtle);
+}
+.billing-plan-cta--primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+.billing-plan-cta--primary:hover:not(:disabled) {
+  background: #000;
+}
+.billing-plan-cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.billing-plan-cta:focus-visible {
+  outline: 3px solid var(--hi);
+  outline-offset: 2px;
+}
+.billing-plans-fine {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+@media (max-width: 560px) {
+  .billing-plans {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+}
