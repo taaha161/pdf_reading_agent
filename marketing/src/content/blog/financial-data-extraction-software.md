@@ -128,6 +128,20 @@ Manual transcription of financial statements is an inefficient use of skilled ac
 
 [Bank Statement Scanner](/) provides high-accuracy financial data extraction designed specifically for the complexities of bank and credit card statements. By combining smart table detection, optical character recognition, and arithmetic validation, it transforms locked PDFs and images into structured, audit-ready spreadsheets in seconds. Upload your files today and eliminate manual data entry from your accounting pipeline.
 
+## Frequently asked questions
+
+### What is financial data extraction software?
+
+Software that reads financial documents such as bank and card statements and turns their contents into structured data for spreadsheets or accounting systems.
+
+### Why do generic PDF converters struggle with bank statements?
+
+Statements mix tables, running balances, multi-line descriptions, and summary boxes. Generic converters copy layout; statement tools understand which number is a debit, credit, or balance.
+
+### How do I verify extracted financial data?
+
+Recompute the statement: opening balance plus credits minus debits should equal the closing balance. Bank Statement Scanner runs this check and flags rows to review.
+
 ## Sources
 
 - [Wikipedia: Intelligent document processing](https://en.wikipedia.org/wiki/Intelligent_document_processing)

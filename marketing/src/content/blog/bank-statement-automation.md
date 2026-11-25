@@ -182,6 +182,20 @@ Whether you need to parse a single year-end credit card statement or process tho
 
 Ready to transform static PDFs into clean, analysis-ready spreadsheets in seconds? Use [Bank Statement Scanner](/) to automatically convert your bank and credit card statement PDFs into formatted CSV or Excel files today.
 
+## Frequently asked questions
+
+### What is bank statement automation?
+
+It is the process of turning statement documents into structured data without manual typing: extracting dates, descriptions, and amounts, categorizing them, and exporting them to a spreadsheet or accounting system.
+
+### Is bank statement automation the same as a bank feed?
+
+No. A bank feed pulls recent transactions directly from the bank. Statement automation works from the PDF, which helps for older periods, closed accounts, or accounts the feed can't reach.
+
+### How do I know automated extraction didn't miss anything?
+
+Check that the extracted rows reproduce the statement's own numbers: opening balance plus credits minus debits should equal the closing balance. Bank Statement Scanner does this check for you and flags where the difference may come from.
+
 ## Sources
 
 - [Wikipedia: Bookkeeping](https://en.wikipedia.org/wiki/Bookkeeping)

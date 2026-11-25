@@ -66,6 +66,20 @@ That *Statement* column is what keeps accounts separate: filter on it, or work f
 
 Feeding a GL specifically? See [converting statements for QuickBooks and Xero](/blog/convert-bank-statement-pdf-to-quickbooks) for format and column-mapping details.
 
+## Frequently asked questions
+
+### How many statements can I convert at once?
+
+Bank Statement Scanner's bulk upload takes up to 50 PDFs per batch with a free account. For more, start another batch when the first finishes.
+
+### Can I mix different banks in one batch?
+
+Yes. Each row in the combined file has a Statement column with the source file name, and each statement also gets its own sheet in the Excel download.
+
+### Does bulk conversion cost more?
+
+No. Pricing is per PDF page, the same as converting statements one at a time.
+
 ## Sources
 
 - [CFPB: What is a checking account statement?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-checking-account-statement-en-1035/)

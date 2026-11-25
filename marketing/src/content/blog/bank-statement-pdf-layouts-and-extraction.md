@@ -34,6 +34,20 @@ Consistent does not mean every bank uses the same PDF—it means **your exports 
 
 Whether your statement comes from a national bank, a regional credit union, or a major card network, the workflow stays the same in Bank Statement Scanner: upload PDF, review extracted lines and smart categories, export to CSV or Excel. That consistency is what lets individuals, small businesses, and firms standardize training and quality checks instead of maintaining one-off hacks per institution.
 
+## Frequently asked questions
+
+### Why do bank statement PDFs from different banks look so different?
+
+Each bank designs its own layout: column order, how debits and credits are shown, where balances appear, and how multi-line descriptions wrap. The meaning is the same even when the layout isn't.
+
+### Why does copying a table out of a PDF break the columns?
+
+PDFs store text by position, not as a table. Copying often merges columns, splits descriptions across lines, or drops signs, which is why dedicated extraction works better.
+
+### Do scanned statements convert as well as digital ones?
+
+They can, but quality matters. Clear, straight scans read best. Bank Statement Scanner offers an accurate mode for difficult scans, which uses 2 pages of credit per PDF page.
+
 ## Sources
 
 - [Wikipedia: Intelligent document processing](https://en.wikipedia.org/wiki/Intelligent_document_processing)

@@ -34,6 +34,20 @@ Institutions change layouts all the time; that should not break your workflow. O
 
 After each statement cycle, download PDFs from your bank, run them through Bank Statement Scanner, and save one master spreadsheet (or folder of CSVs) by year. Small, repeatable beats heroic once-a-year budgeting. Start with last month's statement and see how fast you get a useful category breakdown—no blank spreadsheet required.
 
+## Frequently asked questions
+
+### How can bank statements help with a personal budget?
+
+Converting them to a spreadsheet lets you total spending by category and month, spot recurring subscriptions, and see where money actually goes.
+
+### Is it free to convert my own statements?
+
+You can convert 10 pages without an account. A free account gives 100 pages for the first month with no credit card.
+
+### Can I ask questions about my statement?
+
+Yes. After converting a statement, ask it in plain English, such as every subscription charge in March, and download just the matching rows.
+
 ## Sources
 
 - [Wikipedia: Optical character recognition](https://en.wikipedia.org/wiki/Optical_character_recognition)

@@ -647,8 +647,36 @@ def unsourced_claims(body: str) -> list[str]:
     return [s.strip() for s in sentences if _UNSOURCED.search(s)]
 
 
-class UnsourcedClaimsError(ValueError):
+_FAQ_H2 = re.compile(r"^##\s+(frequently asked questions|faqs?)\b", re.I)
+MIN_FAQ_QUESTIONS = 3
+
+
+def faq_questions(body: str) -> list[str]:
+    """The ### questions under the post's "## Frequently asked questions" heading (up to the next ##).
+    Same rules as marketing/src/lib/postFaqs.ts, which turns them into FAQPage JSON-LD."""
+    lines = (body or "").splitlines()
+    start = next((i for i, line in enumerate(lines) if _FAQ_H2.match(line)), None)
+    if start is None:
+        return []
+    questions = []
+    for line in lines[start + 1:]:
+        if re.match(r"^##\s", line):
+            break
+        if line.startswith("### "):
+            questions.append(line[4:].strip())
+    return questions
+
+
+class DraftRejectedError(ValueError):
+    """The draft still failed a must-have check after retries; the topic is retried next run."""
+
+
+class UnsourcedClaimsError(DraftRejectedError):
     """The model kept unsupported statistics after being asked to remove them."""
+
+
+class MissingFaqError(DraftRejectedError):
+    """The model never produced a usable FAQ section."""
 
 
 def _generate_post(topic: dict, posts: dict[str, dict], model: str) -> dict:
@@ -700,12 +728,17 @@ def _generate_post(topic: dict, posts: dict[str, dict], model: str) -> dict:
         filler = filler_phrases(data["body_markdown"])
         if filler:
             problems.append("It used banned filler phrases; rewrite those sentences plainly: " + ", ".join(filler))
-        if "frequently asked questions" not in data["body_markdown"].lower():
-            problems.append('It had no "## Frequently asked questions" section; add one with 3-5 ### questions.')
+        if len(faq_questions(data["body_markdown"])) < MIN_FAQ_QUESTIONS:
+            problems.append(
+                'It needs a "## Frequently asked questions" section (an H2 with exactly that text) containing '
+                "3-5 questions, each as a ### heading followed by a direct 2-4 sentence answer."
+            )
         if not problems:
             return data
     if unsourced_claims(data["body_markdown"] + "\n" + data["excerpt"]):
         raise UnsourcedClaimsError("draft still contains unsourced statistics after retries")
+    if len(faq_questions(data["body_markdown"])) < MIN_FAQ_QUESTIONS:
+        raise MissingFaqError("draft still has no FAQ section with 3+ questions after retries")
     return data  # Short but clean: same tolerance as before.
 
 
@@ -787,7 +820,7 @@ def generate_and_publish() -> dict:
     slug = topic["slug"]
     try:
         data = _generate_post(topic, posts, model)
-    except UnsourcedClaimsError as e:
+    except DraftRejectedError as e:
         logger.warning("Not publishing '%s': %s", slug, e)
         return {"status": "skipped", "reason": str(e), "slug": slug}
 

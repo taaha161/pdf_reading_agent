@@ -160,6 +160,20 @@ Organizing your bank statements shouldn't mean spending weekends renaming PDF fi
 
 **Bank Statement Scanner** eliminates the friction of managing financial PDFs. Simply upload your native or scanned bank and credit card statements, and receive accurately parsed, clean CSV or Excel files ready for immediate import into your accounting software. Stop fighting messy financial files—structure your statements, extract your data, and take control of your financial records today.
 
+## Frequently asked questions
+
+### What is the best way to organize bank statements?
+
+Keep one folder per account and name files consistently, such as account_YYYY-MM.pdf. Then convert them to spreadsheets so the transactions can be searched, sorted, and totaled.
+
+### Should I keep the PDF after converting it?
+
+Yes. The PDF is the official record from your bank; the spreadsheet is a working copy. Keep both, stored securely.
+
+### How do I spot a missing month in my statements?
+
+List the statement periods in order and check that each closing balance equals the next opening balance. A break in that chain points to a missing or misread period.
+
 ## Sources
 
 - [Wikipedia: Bookkeeping](https://en.wikipedia.org/wiki/Bookkeeping)

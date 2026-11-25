@@ -154,6 +154,20 @@ Manual copy-pasting is slow and prone to human error, while barebones PDF extrac
 
 If you are tired of fixing broken columns, scrambling to assemble records at tax season, or struggling with unreliable free converters, try Bank Statement Scanner to streamline your bookkeeping workflow in seconds.
 
+## Frequently asked questions
+
+### Is Bank Statement Scanner free?
+
+You can convert 10 pages without an account. New accounts get 100 pages free for the first month with no credit card. After that it's $10 a month for 150 pages, or a one-time 450-page pack for $49.99.
+
+### What are the risks of free online converters?
+
+Some don't explain what they store or who can see it. Check for encrypted uploads, a clear privacy policy, and a way to delete your data before uploading statements.
+
+### Do free converters handle scanned PDFs?
+
+Many don't. Test one of your scanned statements and check the totals before relying on a tool.
+
 ## Sources
 
 - [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)

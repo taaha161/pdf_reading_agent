@@ -77,5 +77,8 @@ export const FOUNDER: null | {
   story: string;
 } = null;
 
+/** Byline on every blog post (visible and in BlogPosting JSON-LD). */
+export const AUTHOR = { name: 'Taaha Rauf', url: 'https://carclabs.com', org: 'CARC Labs' } as const;
+
 /** Hero product video. Leave src empty to show the static demo only. */
 export const HERO_VIDEO = { src: '', poster: '' };

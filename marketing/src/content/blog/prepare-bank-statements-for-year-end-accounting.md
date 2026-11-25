@@ -138,6 +138,20 @@ Powered by advanced AI models built specifically for financial document structur
 
 *This article is for informational purposes only and does not constitute professional tax, financial, or accounting advice.*
 
+## Frequently asked questions
+
+### What bank documents do I need for year-end accounting?
+
+All twelve monthly statements for every bank and credit card account, plus statements for any account opened or closed during the year.
+
+### How do I check that no month is missing?
+
+Line the statements up in date order and confirm each closing balance equals the next opening balance.
+
+### What's the fastest way to get a year of statements into a spreadsheet?
+
+Bulk upload all of them at once. Bank Statement Scanner converts up to 50 PDFs in a batch and gives you one workbook with a sheet per statement.
+
 ## Sources
 
 - [IRS: How long should I keep records?](https://www.irs.gov/businesses/small-businesses-self-employed/how-long-should-i-keep-records)

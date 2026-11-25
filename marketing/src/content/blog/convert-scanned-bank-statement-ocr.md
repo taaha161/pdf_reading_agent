@@ -166,6 +166,20 @@ When selecting a tool to scan bank statements, evaluate the options based on you
 
 Stop wasting hours manually typing rows of transactions from paper copies and static PDF files. Upload your documents to [Bank Statement Scanner](/) today to convert your bank statements into accurate, editable spreadsheets within seconds.
 
+## Frequently asked questions
+
+### What is the best way to scan a paper bank statement?
+
+Scan flat and straight at a readable resolution, one statement per PDF, with every page in order. Avoid photos taken at an angle or with shadows.
+
+### How accurate is OCR on bank statements?
+
+It depends on scan quality. Clean scans read well; faded or skewed pages cause more errors. Always check that the totals match the statement after converting.
+
+### Which mode should I use for a poor scan?
+
+Use accurate mode in Bank Statement Scanner. It is built for complex or low-quality documents and uses 2 pages of credit per PDF page.
+
 ## Sources
 
 - [Wikipedia: Optical character recognition](https://en.wikipedia.org/wiki/Optical_character_recognition)

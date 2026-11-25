@@ -149,6 +149,20 @@ Manual data entry from bank and credit card statements is slow, error-prone, and
 
 With **Bank Statement Scanner**, you can upload native or scanned PDF statements and extract clean, structured Excel or CSV files in seconds. Try [Bank Statement Scanner](/) today to automate your financial document workflows with speed, accuracy, and security.
 
+## Frequently asked questions
+
+### What does a bank statement converter do?
+
+It reads a statement PDF and turns its transaction table into rows you can open in Excel or import as CSV: date, description, amounts, and often a balance and category.
+
+### Can a converter handle scanned statements?
+
+Good ones can. Scanned PDFs need OCR to read the text first. Bank Statement Scanner handles digital, scanned, and password-protected PDFs, with an accurate mode for poor scans.
+
+### Is there a free bank statement converter?
+
+Bank Statement Scanner lets you convert 10 pages without an account, and new accounts get 100 pages free for the first month with no credit card.
+
 ## Sources
 
 - [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)

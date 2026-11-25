@@ -36,6 +36,20 @@ Ask for **full statement PDFs** for the period you are closing, not screenshots 
 
 Ready to shrink statement grunt work on your next close? Upload a real client file to Bank Statement Scanner, walk through review and export, and compare the time to your old PDF workflow—you can be running in minutes.
 
+## Frequently asked questions
+
+### Can accountants use Bank Statement Scanner for client statements?
+
+Yes. Upload client statement PDFs from any bank, including scanned and password-protected files, and export categorized rows to CSV or Excel for your workpapers or accounting software.
+
+### Does it export directly to QuickBooks or Xero?
+
+Not directly. Download a CSV and use the bank statement import in QuickBooks or Xero. QBO and OFX files and direct sync are not offered.
+
+### Can I process a client's whole year in one go?
+
+Yes. Bulk upload takes up to 50 PDFs at once and gives you one workbook: an All statements sheet with a Statement column, plus a sheet for each statement.
+
 ## Sources
 
 - [Wikipedia: Optical character recognition](https://en.wikipedia.org/wiki/Optical_character_recognition)

@@ -145,6 +145,20 @@ When evaluating the best bank statement analysis software, you do not need overp
 
 Upload your challenging bank statement PDFs today to see how quickly you can convert raw financial records into clean, dependable data.
 
+## Frequently asked questions
+
+### What does bank statement analysis software do?
+
+It extracts transactions from statements and helps you summarize them: totals by category, recurring payments, income patterns, and balance checks.
+
+### Do I need dedicated analysis software, or is Excel enough?
+
+For many uses, a clean export plus Excel pivot tables is enough. Dedicated platforms add value for high-volume lending or underwriting workflows.
+
+### How do I check the extracted data before analyzing it?
+
+Make sure the rows reproduce the statement's opening balance, total credits, total debits, and closing balance. Bank Statement Scanner checks this on every statement.
+
 ## Sources
 
 - [Wikipedia: Intelligent document processing](https://en.wikipedia.org/wiki/Intelligent_document_processing)

@@ -55,6 +55,20 @@ Good habits help regardless of the tool: download statements straight from your 
 
 Bank Statement Scanner is built for the accuracy checks above: extraction rebuilds the transaction table so balances tie out, descriptions stay whole, and amounts carry the right signs—then you review before exporting to **CSV or Excel**. On security, uploads are encrypted in transit and you stay in control of your data through your account. The honest bottom line: always run the balance tie-out on your first export from *any* converter—it is the fastest proof that the numbers you are about to trust are right.
 
+## Frequently asked questions
+
+### How can I tell if a converted bank statement is accurate?
+
+Compare the totals. The opening balance plus credits minus debits should equal the closing balance printed on the statement, and the transaction count should match the PDF. Bank Statement Scanner runs this check on every statement and points to rows that may be missing, doubled, or on the wrong side.
+
+### Is it safe to upload bank statements to an online converter?
+
+It can be, if the tool encrypts uploads, explains what it stores and for how long, and lets you delete your data. Avoid tools that ask for your online-banking login: a converter only needs the PDF.
+
+### Can I convert a statement without the data being saved?
+
+Yes. Bank Statement Scanner has an incognito mode that converts a statement without storing its transaction data. Saved jobs can also be deleted at any time.
+
 ## Sources
 
 - [NIST Privacy Framework](https://www.nist.gov/privacy-framework)

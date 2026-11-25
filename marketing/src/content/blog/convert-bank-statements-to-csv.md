@@ -143,6 +143,20 @@ Standardizing your conversion workflow also eliminates friction when working wit
 
 Stop wasting valuable hours copying, pasting, and manually editing financial PDF records. [Bank Statement Scanner](/) provides a fast, accurate, and completely secure solution to convert bank statements to CSV, Excel, and accounting-ready formats. Whether you are dealing with clean digital PDFs or messy scanned paper records, our specialized financial parsing engine extracts every transaction, validates the running math, and delivers a pristine spreadsheet in seconds. Upload your first statement today and experience automated financial data extraction firsthand.
 
+## Frequently asked questions
+
+### How do I convert a bank statement PDF to CSV?
+
+Upload the PDF to a bank statement converter, review the extracted transactions, and download the CSV. Bank Statement Scanner lets you try 10 pages without an account.
+
+### Why not just download a CSV from my bank?
+
+Bank CSV exports often cover only recent activity and vary by bank. Statement PDFs go back further and include the printed balances you can check against.
+
+### Can I convert several statements to CSV at once?
+
+Yes. With a free account, bulk upload up to 50 PDFs and download one CSV with a Statement column naming the source file on every row.
+
 ## Sources
 
 - [Microsoft Support: Import or export text (.txt or .csv) files](https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba)

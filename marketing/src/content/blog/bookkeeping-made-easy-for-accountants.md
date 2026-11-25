@@ -130,6 +130,20 @@ Adopting modern automation isn't about replacing the judgment and expertise of p
 
 Instead of wasting unbillable hours typing figures from stubborn PDF statements, streamline your document intake using [Bank Statement Scanner](/). With rapid optical recognition, AI categorization, and instant export to clean CSV or Excel, Bank Statement Scanner turns client document chaos into pristine, import-ready financial data so your firm can focus on high-impact advisory services.
 
+## Frequently asked questions
+
+### Where do accountants lose the most time in bookkeeping?
+
+Usually in collecting documents and retyping transactions from statements that aren't available through a bank feed. Converting PDFs to spreadsheets removes most of that typing.
+
+### Should we rely on bank feeds or statement PDFs?
+
+Use both. Feeds are convenient for current activity; PDFs cover historical periods, closed accounts, and gaps where a feed disconnected.
+
+### How can a firm handle a stack of client statements faster?
+
+Batch them. Bank Statement Scanner's bulk upload converts up to 50 PDFs at once and gives one combined workbook, with a Statement column so each client's account stays separate.
+
 ## Sources
 
 - [Wikipedia: Bookkeeping](https://en.wikipedia.org/wiki/Bookkeeping)
