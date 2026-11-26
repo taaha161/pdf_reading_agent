@@ -13,6 +13,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 from services.csv_export import transactions_to_csv
+from services.text_clean import clean_description
 from services.field_crypto import decrypt_text, encrypt_text
 
 
@@ -266,6 +267,11 @@ def get_job(job_id: str, user_id: str) -> dict | None:
         payload_row = cur.fetchone()
     if payload_row:
         transactions = payload_row["transactions"] if isinstance(payload_row["transactions"], list) else json.loads(payload_row["transactions"] or "[]")
+        # Scans saved before descriptions were cleaned can still hold statement icons.
+        transactions = [
+            {**t, "description": clean_description(t.get("description"))} if isinstance(t, dict) else t
+            for t in transactions
+        ]
         csv_content = transactions_to_csv(transactions)
         return {
             "id": job_row["id"],
