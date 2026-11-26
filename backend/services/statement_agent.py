@@ -12,6 +12,7 @@ from google.genai.types import FinishReason, GenerateContentConfig, ThinkingConf
 
 from services.balances import fill_running_balances, parse_money
 from services.number_format import normalize_amounts
+from services.text_clean import clean_description
 
 logger = logging.getLogger("statement_agent")
 
@@ -528,7 +529,7 @@ def extract_and_categorize(
             )
         normalized.append({
             "date": str(t.get("date", "")),
-            "description": str(t.get("description", "")),
+            "description": clean_description(t.get("description", "")),
             "amount": str(t.get("amount", "")),
             "type": "credit"
             if str(t.get("type", "")).lower() in ("credit", "cr")

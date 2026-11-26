@@ -110,6 +110,7 @@ from services.datalab_client import start_file_sweeper
 from services.scan_jobs import create_scan, fail_scan, finish_scan, get_scan, set_stage as set_scan_stage
 from services.recaptcha import verify_recaptcha
 from services.statement_agent import extract_and_categorize
+from services.text_clean import clean_description
 from services.reconciliation import account_continuity, reconcile
 from services.statement_meta import extract_statement_meta, normalize_meta
 from store import (
@@ -1092,6 +1093,8 @@ def _sanitize_rows(rows: list[dict]) -> list[dict]:
         clean = {}
         for field in _CSV_FIELDS:
             value = str(row.get(field) or "").strip()
+            if field == "description":
+                value = clean_description(value)
             if field in _NUMERIC_FIELDS and _AMOUNT_RE.match(value):
                 clean[field] = value
             elif value[:1] in ("=", "+", "-", "@", "\t", "\r"):
