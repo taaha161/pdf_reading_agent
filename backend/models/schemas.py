@@ -2,7 +2,9 @@ from datetime import datetime
 import uuid
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from services.text_clean import clean_description
 
 
 class Transaction(BaseModel):
@@ -257,6 +259,12 @@ class ExportTransaction(BaseModel):
     balance: Optional[str] = ""
     # Chat downloads grouped by person/merchant ("John", "Alice"); adds a Group column and group totals.
     group: Optional[str] = Field("", max_length=200)
+
+    @field_validator("description")
+    @classmethod
+    def _clean_description(cls, v):
+        # Every download path builds files from these rows, so statement icons are dropped here.
+        return clean_description(v)
 
 
 class ExportRequest(BaseModel):

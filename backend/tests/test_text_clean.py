@@ -14,3 +14,10 @@ def test_folds_accents_and_keeps_merchant_punctuation():
 def test_handles_empty_and_non_string():
     assert clean_description(None) == ""
     assert clean_description(12.5) == "12.5"
+
+
+def test_export_rows_are_cleaned():
+    from models.schemas import ExportRequest
+
+    req = ExportRequest(transactions=[{"description": "✈ A&W #4830 MISSISSAUGA ON"}])
+    assert req.transactions[0].description == "A&W #4830 MISSISSAUGA ON"
