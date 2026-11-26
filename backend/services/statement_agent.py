@@ -13,6 +13,7 @@ from google.genai.types import FinishReason, GenerateContentConfig, ThinkingConf
 from services.balances import fill_running_balances, parse_money
 from services.number_format import normalize_amounts
 from services.text_clean import clean_description
+from services.currency_hint import correct_dollar_currency
 
 logger = logging.getLogger("statement_agent")
 
@@ -397,7 +398,8 @@ def extract_and_categorize(
         "EXCLUDE: Opening Balance, Closing Balance, summary/footer tables (Total Deposit, End Of Statement), header rows. "
         "\"Carried forward\" and \"Brought forward\" rows are page breaks, not transactions: skip them. A description cut off by a page break continues on the next page; join the two parts into ONE transaction. "
         "Output format: First, a valid JSON array of objects. Each object must have: \"date\", \"description\", \"amount\", \"type\" (\"credit\" or \"debit\"), \"balance\", \"category\" (one of the list above). "
-        "Output the complete array—no truncation. Then on the next line write exactly: CURRENCY: <currency code e.g. USD PKR GBP or UNKNOWN if not found in the statement>. "
+        "Output the complete array—no truncation. Then on the next line write exactly: CURRENCY: <currency code e.g. USD CAD PKR GBP or UNKNOWN if not found in the statement>. "
+        "A bare \"$\" is not proof of USD: use the issuing bank's country (CIBC, RBC, TD Canada Trust, BMO, Scotiabank and other Canadian banks mean CAD unless the statement says US$ or USD). "
         "If no transactions are found, output [] then CURRENCY: UNKNOWN."
     )
     user_template = "Extract and categorize all transactions from this bank statement markdown. Output the JSON array then a line CURRENCY: ...\n\n{text}"
@@ -516,6 +518,8 @@ def extract_and_categorize(
                 pass
             if not currency:
                 currency = _infer_currency_fallback(text_trimmed, client)
+    # "$" alone reads as USD to the model; Canadian banks never write "CAD".
+    currency = correct_dollar_currency(currency, text_trimmed)
 
     # Normalize: ensure category in CATEGORIES, type is credit/debit
     normalized = []
