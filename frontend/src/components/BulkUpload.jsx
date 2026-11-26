@@ -158,7 +158,7 @@ export default function BulkUpload({ files, options, maxBytes, onScanned, onOpen
     try {
       await exportStatements(
         done.map((i) => ({ name: i.file.name, transactions: i.result.transactions || [] })),
-        { format },
+        { format, currency: done.find((i) => i.result?.currency)?.result.currency },
       );
       trackEvent("bulk_download", { format, files: done.length });
     } catch (e) {
@@ -189,6 +189,12 @@ export default function BulkUpload({ files, options, maxBytes, onScanned, onOpen
           </button>
           <button type="button" className="bulk-btn" onClick={() => download("csv")} disabled={!done.length || !!downloading}>
             {downloading === "csv" ? "Preparing…" : "CSV"}
+          </button>
+          <button type="button" className="bulk-btn" onClick={() => download("quickbooks")} disabled={!done.length || !!downloading} title="Import-ready CSV for QuickBooks Online">
+            {downloading === "quickbooks" ? "Preparing…" : "QuickBooks"}
+          </button>
+          <button type="button" className="bulk-btn" onClick={() => download("xero")} disabled={!done.length || !!downloading} title="Import-ready CSV for Xero">
+            {downloading === "xero" ? "Preparing…" : "Xero"}
           </button>
         </div>
       </header>

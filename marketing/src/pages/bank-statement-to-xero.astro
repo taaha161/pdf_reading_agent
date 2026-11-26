@@ -1,0 +1,55 @@
+---
+import AccountingExportPage from '../components/AccountingExportPage.astro';
+---
+
+<AccountingExportPage
+  path="/bank-statement-to-xero"
+  app="Xero"
+  short="Xero"
+  ctaKey="xero"
+  seoTitle="Convert Bank Statement PDF to Xero CSV"
+  description="Turn bank and credit card statement PDFs into a Xero-ready CSV: signed amounts, payee filled in, dates in your region's format, checked against balances."
+  h1="Import bank statement PDFs into Xero"
+  highlight="into Xero"
+  lede="Missing months in your bank feed? Upload the statement PDF and download a CSV laid out for Xero’s Import a statement: one signed Amount column, the payee filled in, and every date in your region’s format. Each statement is checked against its own balances first."
+  header={['Date', 'Amount', 'Payee', 'Description', 'Reference']}
+  rows={[
+    ['03/01/2026', '3200.00', 'BACS ACME LTD SALARY', '', ''],
+    ['05/01/2026', '-450.00', 'DD BRITISH GAS', '', ''],
+    ['07/01/2026', '-58.12', 'CARD PAYMENT STAPLES', '', ''],
+    ['09/01/2026', '-12.00', 'ACCOUNT FEE', '', ''],
+  ]}
+  numericCols={[1]}
+  fileNote="Illustrative rows from a UK statement (DD/MM/YYYY). Money in is positive, money out is negative. The statement’s description goes in Payee, which Xero’s bank rules match on."
+  importSteps={[
+    'In Xero, go to Accounting → Bank accounts and open the account the statement belongs to.',
+    'Click Manage account, then Import a statement.',
+    'Browse to the CSV and click Import.',
+    'Check the column mapping: Date → Transaction Date, Amount → Transaction Amount, Payee → Payee. Save and complete the import.',
+    'The lines appear on the Reconcile tab, ready to match with bank rules or existing transactions.',
+  ]}
+  features={[
+    { title: 'Xero’s statement columns', body: 'Date, Amount, Payee, Description, Reference: the columns Xero’s statement import maps, with one signed Amount column so nothing needs splitting.' },
+    { title: 'Your region’s date format', body: 'Xero reads dates by your organisation’s region. The file uses DD/MM/YYYY for UK, Australian, New Zealand and most non-US statements and MM/DD/YYYY for US ones, with missing years filled in.' },
+    { title: 'Payee ready for bank rules', body: 'The statement description goes into Payee, so bank rules you already have in Xero match the imported lines.' },
+    { title: 'Only transactions', body: 'No balance rows, page totals or carried-forward lines, so Xero’s statement balance isn’t thrown off by rows that were never transactions.' },
+    { title: 'Checked against the statement', body: 'Rows are checked against the printed running balances and summary box before you download, so reconciling in Xero doesn’t surface a missing line weeks later.' },
+    { title: 'Backfill a year at once', body: 'Bulk upload converts up to 50 statements together, and the Xero download puts every line in one file, in order.' },
+  ]}
+  faqs={[
+    { q: 'Can Xero import a PDF bank statement?', a: 'No. Xero’s Import a statement takes CSV, OFX and QIF files. Convert the PDF to the Xero CSV here, then import that.' },
+    { q: 'Which columns does the Xero file have?', a: 'Date, Amount, Payee, Description and Reference. Amount is signed: money in positive, money out negative. Payee holds the statement description; Description and Reference are left blank for you.' },
+    { q: 'What date format does it use?', a: 'DD/MM/YYYY for statements in pounds, euros, Australian or New Zealand dollars and most other currencies, and MM/DD/YYYY for US dollar statements. That matches the regional setting most Xero organisations use with those banks.' },
+    { q: 'When should I import a statement instead of using the bank feed?', a: 'When the feed starts after the period you need, a bank has no feed, the feed dropped some days, or you’re catching up a new client’s history. Import only dates the feed doesn’t already cover.' },
+    { q: 'Does it work for credit card statements?', a: 'Yes. Purchases and fees are negative and payments or refunds are positive. Import it into the credit card bank account in Xero.' },
+    { q: 'Are categories or account codes included?', a: 'No. Xero codes statement lines when you reconcile them, using bank rules or your choices. Our categories are in the Excel download if you want them for review.' },
+    { q: 'Is there a direct Xero connection?', a: 'No. You download the CSV and import it in Xero. Nothing is posted to your Xero organisation automatically.' },
+    { q: 'Does the Xero export cost extra?', a: 'No. You pay per PDF page converted, the same as Excel or CSV, and the first pages are free.' },
+  ]}
+  related={[
+    { href: '/blog/import-bank-statement-pdf-into-xero', label: 'Guide: import a bank statement PDF into Xero' },
+    { href: '/bank-statement-to-quickbooks', label: 'QuickBooks export' },
+    { href: '/bulk-bank-statement-converter', label: 'Bulk upload' },
+    { href: '/for/accountants', label: 'For accountants' },
+  ]}
+/>

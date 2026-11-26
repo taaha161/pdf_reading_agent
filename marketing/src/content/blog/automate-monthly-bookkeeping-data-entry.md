@@ -84,7 +84,7 @@ Standardizing transaction naming upfront prevents ledger pollution, ensuring ven
 
 Once your transactions are cleaned, categorized, and formatted into clean columns (Date, Payee, Description, Category, Amount), you can import the data directly into your primary general ledger software.
 
-For practitioners who regularly [import pdf bank statement into quickbooks](https://bankstatementscanner.com/blog/bank-statement-scanner-for-accountants), Xero, or other accounting platforms, the automated CSV workflow bypasses problematic manual bank feeds. Direct file uploads give you complete control over how transactions enter the staging screen, eliminating accidental duplicate entries caused by broken third-party bank sync connections.
+For practitioners who regularly [import a PDF bank statement into QuickBooks](/bank-statement-to-quickbooks), [Xero](/bank-statement-to-xero), or other accounting platforms, the automated CSV workflow bypasses problematic manual bank feeds. Direct file uploads give you complete control over how transactions enter the staging screen, eliminating accidental duplicate entries caused by broken third-party bank sync connections.
 
 This structured workflow is the [fastest way to reconcile bank statements](https://bankstatementscanner.com/blog/bank-statement-scanner-for-accountants). Because the ingested rows match the cleared statement balance mathematically, you can auto-match entries against issued invoices and purchase orders without spending time hunting for missing transactions.
 

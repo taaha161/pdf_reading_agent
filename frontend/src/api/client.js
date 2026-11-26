@@ -409,14 +409,16 @@ function exportRows(transactions) {
 /**
  * Download the current transactions as CSV or Excel, with or without the category column.
  * kind "summary" downloads the category totals table (built server-side from the same rows).
- * @param {"csv"|"xlsx"} format
+ * "quickbooks" / "xero" download an import-ready CSV for that app (signed amounts, one date format).
+ * @param {"csv"|"xlsx"|"quickbooks"|"xero"} format
+ * @param {string} [currency] statement currency; QuickBooks/Xero use it to read 05/01 dates
  * @param {"transactions"|"summary"} kind
  * @param {string} [filenameBase] name for the file without extension (defaults to the server's name)
  * @param {boolean} [includeTotals] add count / money in / money out / net under the rows
  */
 export async function exportTransactions(
   transactions,
-  { format = "csv", includeCategories = true, kind = "transactions", filenameBase, includeTotals = false, reconciliation = null } = {},
+  { format = "csv", includeCategories = true, kind = "transactions", filenameBase, includeTotals = false, reconciliation = null, currency = null } = {},
 ) {
   const res = await fetch(`${API_BASE}/api/export`, {
     method: "POST",
@@ -429,6 +431,7 @@ export async function exportTransactions(
       include_totals: includeTotals,
       // Excel only: adds a "Reconciliation" sheet; the rows sheet stays import-ready.
       reconciliation: format === "xlsx" ? reconciliation : null,
+      currency: currency || null,
     }),
   });
   if (!res.ok) {
@@ -436,9 +439,10 @@ export async function exportTransactions(
     throw new Error("Failed to download file");
   }
   const disposition = res.headers.get("Content-Disposition") || "";
-  const filename = (filenameBase && `${filenameBase}.${format}`)
+  const ext = format === "xlsx" ? "xlsx" : "csv";
+  const filename = (filenameBase && `${filenameBase}.${ext}`)
     || /filename="([^"]+)"/.exec(disposition)?.[1]
-    || (kind === "summary" ? `statement-summary.${format}` : `statement${includeCategories ? "" : "-uncategorized"}.${format}`);
+    || (kind === "summary" ? `statement-summary.${ext}` : `statement${includeCategories ? "" : "-uncategorized"}.${ext}`);
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -462,7 +466,7 @@ function saveBlob(blob, filename) {
  * Statement column; Excel has an "All statements" sheet plus a sheet per statement.
  * @param {Array<{name: string, transactions: object[]}>} statements
  */
-export async function exportStatements(statements, { format = "xlsx", includeCategories = true } = {}) {
+export async function exportStatements(statements, { format = "xlsx", includeCategories = true, currency = null } = {}) {
   const res = await fetch(`${API_BASE}/api/export/bulk`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -470,6 +474,7 @@ export async function exportStatements(statements, { format = "xlsx", includeCat
       statements: statements.map(({ name, transactions }) => ({ name, transactions: exportRows(transactions) })),
       format,
       include_categories: includeCategories,
+      currency: currency || null,
     }),
   });
   if (!res.ok) {
@@ -477,7 +482,8 @@ export async function exportStatements(statements, { format = "xlsx", includeCat
     throw new Error("Failed to download file");
   }
   const disposition = res.headers.get("Content-Disposition") || "";
-  saveBlob(await res.blob(), /filename="([^"]+)"/.exec(disposition)?.[1] || `statements-combined.${format}`);
+  const fallback = format === "xlsx" ? "statements-combined.xlsx" : `statements-combined${format === "csv" ? "" : `-${format}`}.csv`;
+  saveBlob(await res.blob(), /filename="([^"]+)"/.exec(disposition)?.[1] || fallback);
 }
 
 /**

@@ -39,7 +39,7 @@ export const PERSONAS: Persona[] = [
       },
       {
         q: 'Does the export work with QuickBooks or Xero?',
-        a: 'Yes. Download a CSV to import into QuickBooks, Xero or other accounting tools, or an Excel file for review and workpapers.',
+        a: 'Yes. Pick QuickBooks Online or Xero in the download menu for a CSV laid out for that app’s bank-statement import, or download Excel for review and workpapers.',
       },
       {
         q: 'How do I keep client data private?',
@@ -143,7 +143,7 @@ export const PERSONAS: Persona[] = [
     faqs: [
       {
         q: 'Can I import the export into QuickBooks or Xero?',
-        a: 'Yes. Download a CSV and use the bank-file import in QuickBooks Online or Xero. Export is CSV or Excel; there is no direct sync.',
+        a: 'Yes. Pick QuickBooks Online or Xero in the download menu and upload that CSV in the bank-statement import. There is no direct sync.',
       },
       {
         q: 'Does it work for business statements with many pages?',

@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { exportTransactions } from "../api/client";
+import { trackEvent } from "../lib/analytics";
 
 const OPTIONS = [
   { format: "xlsx", group: "Excel (.xlsx)" },
   { format: "csv", group: "CSV" },
+];
+
+// Import-ready CSVs: signed amounts, one date format, rows only (the app assigns accounts).
+const ACCOUNTING_OPTIONS = [
+  { format: "quickbooks", label: "QuickBooks Online" },
+  { format: "xero", label: "Xero" },
 ];
 
 function ChevronIcon() {
@@ -18,7 +25,7 @@ function ChevronIcon() {
  * "Download" button with CSV / Excel, with or without categories.
  * kind="summary" downloads the category totals table instead (no category toggle).
  */
-export default function DownloadMenu({ transactions, onError, kind = "transactions", reconciliation = null }) {
+export default function DownloadMenu({ transactions, onError, kind = "transactions", reconciliation = null, currency = null }) {
   const isSummary = kind === "summary";
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(null);
@@ -44,7 +51,8 @@ export default function DownloadMenu({ transactions, onError, kind = "transactio
     const key = `${format}-${includeCategories}`;
     setBusy(key);
     try {
-      await exportTransactions(transactions, { format, includeCategories, kind, reconciliation });
+      await exportTransactions(transactions, { format, includeCategories, kind, reconciliation, currency });
+      if (format === "quickbooks" || format === "xero") trackEvent("accounting_export", { format });
       setOpen(false);
     } catch (e) {
       onError?.(e.message);
@@ -104,6 +112,27 @@ export default function DownloadMenu({ transactions, onError, kind = "transactio
               })}
             </div>
           ))}
+          {!isSummary && (
+            <div className="download-menu-group" role="group" aria-label="Accounting import">
+              <p className="download-menu-heading">Accounting import (.csv)</p>
+              {ACCOUNTING_OPTIONS.map(({ format, label }) => {
+                const key = `${format}-false`;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    role="menuitem"
+                    className="download-menu-item"
+                    onClick={() => download(format, false)}
+                    disabled={busy !== null}
+                  >
+                    <span>{label}</span>
+                    {busy === key && <span className="download-menu-spinner" aria-label="Downloading" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
