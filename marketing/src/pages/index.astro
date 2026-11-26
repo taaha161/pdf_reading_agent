@@ -37,7 +37,7 @@ const faqs = [
   },
   {
     q: 'What export formats are available?',
-    a: 'You can export your extracted, categorized transactions as CSV (ideal for importing into QuickBooks, Xero, or other tools) or Excel (XLSX) for review, annotation, and analysis.',
+    a: 'Excel (XLSX) for review and analysis, CSV for any tool, and import-ready CSVs for QuickBooks Online and Xero: signed amounts, one clean date format and no extra rows, so the bank-statement import maps on the first try.',
   },
   {
     q: 'Can I convert multiple bank statements at once?',
@@ -119,12 +119,13 @@ const steps = [
 
 const features = [
   { title: 'Bulk upload', body: 'Drop up to 50 statement PDFs at once and download one Excel workbook: every transaction on one sheet with the statement it came from, plus a sheet per statement.', isNew: true, link: { href: '/bulk-bank-statement-converter', label: 'How bulk upload works' } },
+  { title: 'QuickBooks & Xero export', body: 'One click gives you a CSV laid out the way QuickBooks Online and Xero import bank statements: signed amounts, one date format, no balance rows to delete.', isNew: true, link: { href: '/bank-statement-to-quickbooks', label: 'QuickBooks guide' }, link2: { href: '/bank-statement-to-xero', label: 'Xero guide' } },
   { title: 'Checked against your statement', body: 'Every statement is checked against its printed balances and summary box. If a row is missing, doubled or on the wrong side, we point you to it. Saved statements are linked month to month, so a missing month stands out.' },
   { title: 'Ask your statement', body: 'Ask for “all transactions from John” or “every ATM withdrawal” and download just those rows as Excel or CSV.' },
   { title: 'AI-powered extraction', body: 'Instantly pull line-item data from any computer-generated or scanned PDF with high accuracy.' },
   { title: 'Smart categorization', body: 'Automatically group transactions by merchant, type, and description using custom rules and AI categorization.' },
   { title: 'Secure & private', body: 'Encrypted over HTTPS. Use incognito mode to process statements without saving them.', link: { href: '/security', label: 'Read about security' } },
-  { title: 'Export to any format', body: 'Download your structured, categorized data as CSV or Excel, ready for QuickBooks, Xero, or a spreadsheet.' },
+  { title: 'Export to any format', body: 'Download your structured, categorized data as CSV or Excel for review, workpapers, or a spreadsheet.' },
 ];
 ---
 
@@ -203,6 +204,7 @@ const features = [
               <dd>
                 {f.body}
                 {f.link && <> <a href={f.link.href}>{f.link.label}</a></>}
+                {f.link2 && <> · <a href={f.link2.href}>{f.link2.label}</a></>}
               </dd>
             </div>
           ))}

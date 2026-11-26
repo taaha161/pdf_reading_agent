@@ -243,7 +243,8 @@ class PurgeJobsDataRequest(BaseModel):
     job_ids: list[str]
 
 
-ExportFormat = Literal["csv", "xlsx"]
+# "quickbooks" / "xero": import-ready CSVs for those apps (see services/accounting_export.py).
+ExportFormat = Literal["csv", "xlsx", "quickbooks", "xero"]
 # "summary" exports the category totals table instead of the transaction rows.
 ExportKind = Literal["transactions", "summary"]
 MAX_EXPORT_TRANSACTIONS = 20_000
@@ -277,6 +278,8 @@ class ExportRequest(BaseModel):
     include_totals: bool = False
     # Excel only: the scan's reconciliation, written to a separate "Reconciliation" sheet.
     reconciliation: Optional[Reconciliation] = None
+    # QuickBooks/Xero only: the statement's currency, used to tell 05/01 (5 Jan) from 05/01 (May 1).
+    currency: Optional[str] = Field(None, max_length=8)
 
 
 MAX_BULK_STATEMENTS = 50
@@ -294,6 +297,7 @@ class BulkExportRequest(BaseModel):
     statements: list[BulkExportStatement] = Field(..., min_length=1, max_length=MAX_BULK_STATEMENTS)
     format: ExportFormat = "xlsx"
     include_categories: bool = True
+    currency: Optional[str] = Field(None, max_length=8)  # QuickBooks/Xero only, see ExportRequest
 
     @model_validator(mode="after")
     def _total_rows(self):
@@ -312,6 +316,7 @@ class EmailSpreadsheetRequest(BaseModel):
     include_categories: bool = True
     marketing_opt_in: bool = False
     reconciliation: Optional[Reconciliation] = None  # Excel only, see ExportRequest
+    currency: Optional[str] = Field(None, max_length=8)  # QuickBooks/Xero only, see ExportRequest
 
 
 class FeedbackRequest(BaseModel):

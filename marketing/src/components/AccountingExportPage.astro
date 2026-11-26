@@ -1,0 +1,173 @@
+---
+/**
+ * Landing page for one accounting-app export (QuickBooks Online, Xero). Each page passes its own
+ * copy, import steps, sample rows and FAQs so the two pages stay distinct, not a name swap.
+ * The file layouts here must match backend/services/accounting_export.py.
+ */
+import Base from '../layouts/Base.astro';
+import { SITE_NAME, FREE_SIGNUP_PAGES, FREE_ANON_PAGES, canonical } from '../consts';
+
+interface Item { title: string; body: string }
+interface Faq { q: string; a: string }
+interface Props {
+  path: string;
+  app: string; // "QuickBooks Online"
+  short: string; // "QuickBooks"
+  seoTitle: string;
+  description: string;
+  h1: string;
+  highlight: string; // part of the h1 wrapped in the highlighter
+  lede: string;
+  header: string[];
+  rows: string[][];
+  numericCols: number[];
+  fileNote: string;
+  importSteps: string[];
+  features: Item[];
+  faqs: Faq[];
+  related: { href: string; label: string }[];
+  ctaKey: string;
+}
+
+const p = Astro.props;
+const steps: Item[] = [
+  { title: 'Upload the statement PDF', body: 'Digital, scanned or password-protected. Or drop up to 50 at once with bulk upload.' },
+  { title: 'Check the rows', body: 'Every statement is checked against its printed balances and summary box, so you fix a missed row here, not after it’s in your books.' },
+  { title: `Download → ${p.app}`, body: `Pick ${p.app} in the download menu. You get a CSV in the layout ${p.short} imports, ready to upload.` },
+];
+
+const jsonLd = [
+  { '@context': 'https://schema.org', '@type': 'WebPage', name: p.seoTitle, url: canonical(p.path), isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: canonical('/') } },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: `How to import a bank statement PDF into ${p.app}`,
+    step: [...steps.map((s) => s.title + '. ' + s.body), ...p.importSteps].map((text, i) => ({ '@type': 'HowToStep', position: i + 1, text })),
+  },
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: p.faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+  { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: canonical('/') },
+    { '@type': 'ListItem', position: 2, name: `${p.short} export`, item: canonical(p.path) },
+  ] },
+];
+const [before, after] = p.h1.split(p.highlight);
+---
+
+<Base title={p.seoTitle} description={p.description} path={p.path} jsonLd={jsonLd}>
+  <section class="container ax-hero">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / {p.short} export</nav>
+    <p class="eyebrow">{p.app} export</p>
+    <h1>{before}<span class="hl">{p.highlight}</span>{after}</h1>
+    <p class="lede">{p.lede}</p>
+    <div class="actions">
+      <a class="ink-btn" href="/scanner" data-cta={`${p.ctaKey}_scanner`}>Convert a statement free</a>
+      <a class="line-btn" href="/signup" data-cta={`${p.ctaKey}_signup`}>Create a free account</a>
+    </div>
+    <p class="note">{FREE_ANON_PAGES} pages free without an account · {FREE_SIGNUP_PAGES} more when you sign up · No credit card</p>
+  </section>
+
+  <section class="container block" aria-labelledby="steps-h">
+    <h2 id="steps-h">PDF to {p.short} in three steps</h2>
+    <ol class="steps" role="list">
+      {steps.map((s, i) => (
+        <li class="sheet step">
+          <span class="step-n" aria-hidden="true">{i + 1}</span>
+          <h3>{s.title}</h3>
+          <p>{s.body}</p>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <section class="container block" aria-labelledby="file-h">
+    <div class="sheet file">
+      <h2 id="file-h">What the {p.short} file looks like</h2>
+      <div class="mini-wrap"><table class="mini">
+        <caption class="sr-only">Example rows from the {p.app} CSV (illustrative)</caption>
+        <thead><tr>{p.header.map((h, i) => <th class={p.numericCols.includes(i) ? 'num' : ''}>{h}</th>)}</tr></thead>
+        <tbody>
+          {p.rows.map((r) => <tr>{r.map((c, i) => <td class={p.numericCols.includes(i) ? 'num' : ''}>{c}</td>)}</tr>)}
+        </tbody>
+      </table></div>
+      <p class="fine">{p.fileNote}</p>
+    </div>
+  </section>
+
+  <section class="container block" aria-labelledby="import-h">
+    <h2 id="import-h">Importing the file into {p.app}</h2>
+    <ol class="import sheet">
+      {p.importSteps.map((s) => <li>{s}</li>)}
+    </ol>
+  </section>
+
+  <section class="container block" aria-labelledby="feat-h">
+    <h2 id="feat-h">Why the import works the first time</h2>
+    <div class="grid">
+      {p.features.map((f) => <article class="card"><h3>{f.title}</h3><p>{f.body}</p></article>)}
+    </div>
+    <p class="more">
+      Related: {p.related.map((r, i) => <>{i > 0 && ' · '}<a href={r.href}>{r.label}</a></>)}
+    </p>
+  </section>
+
+  <section class="container block" aria-labelledby="faq-h">
+    <h2 id="faq-h">{p.short} export questions</h2>
+    <div class="sheet faq">
+      {p.faqs.map((f) => <details><summary>{f.q}</summary><p>{f.a}</p></details>)}
+    </div>
+  </section>
+
+  <section class="container block close">
+    <h2>Stop retyping statements into {p.short}.</h2>
+    <div class="actions">
+      <a class="ink-btn" href="/scanner" data-cta={`${p.ctaKey}_close`}>Convert your first statement</a>
+      <a class="line-btn" href="/#pricing">See pricing</a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .ax-hero { max-width: 1040px; padding-block: 40px 16px; }
+  .crumbs { font-size: 14px; margin-bottom: 20px; color: var(--color-text-muted); }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 13px; font-weight: 600; margin: 0 0 10px; }
+  h1 { font-size: clamp(32px, 5.5vw, 54px); line-height: 1.05; margin: 0; max-width: 20ch; }
+  .lede { font-size: 19px; color: var(--color-text-muted); max-width: 62ch; margin: 18px 0 24px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .note { font-size: 14px; color: var(--color-text-muted); margin-top: 12px; }
+
+  .block { max-width: 1040px; padding-block: 36px; }
+  .block > h2, .file h2 { font-size: clamp(24px, 3.5vw, 32px); margin: 0 0 18px; }
+
+  .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .step { padding: 22px; }
+  .step-n { font-family: var(--font-heading, inherit); font-weight: 800; font-size: 28px; }
+  .step h3 { margin: 6px 0 8px; font-size: 19px; }
+  .step p { margin: 0; color: var(--color-text-muted); line-height: 1.6; }
+
+  .file { padding: 24px; }
+  .mini-wrap { overflow-x: auto; }
+  .mini { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .mini th, .mini td { padding: 8px 10px; border-bottom: 1px solid var(--color-border); text-align: left; white-space: nowrap; }
+  .mini th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .mini .num { text-align: right; }
+  .fine { font-size: 13px; color: var(--color-text-muted); margin: 10px 0 0; }
+
+  .import { padding: 22px 22px 22px 44px; margin: 0; line-height: 1.7; }
+  .import li + li { margin-top: 6px; }
+
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 22px; }
+  .card h3 { margin: 0 0 8px; font-size: 18px; }
+  .card p { margin: 0; color: var(--color-text-muted); line-height: 1.6; font-size: 15px; }
+  .more { margin-top: 20px; color: var(--color-text-muted); }
+
+  .faq { padding: 8px 22px; }
+  .faq details { border-bottom: 1px solid var(--color-border); padding: 14px 0; }
+  .faq details:last-child { border-bottom: none; }
+  .faq summary { cursor: pointer; font-weight: 600; }
+  .faq p { margin: 10px 0 0; color: var(--color-text-muted); line-height: 1.6; }
+
+  .close { text-align: center; padding-bottom: 64px; }
+  .close .actions { justify-content: center; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>

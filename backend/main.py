@@ -83,6 +83,7 @@ from services import paid_signup
 from services.chat_service import get_reply
 from services.summary import _parse_amount, _summary_by_category  # noqa: F401
 from services.remote_pdf import RemotePdfError, RemotePdfTooLarge, fetch_pdf
+from services.accounting_export import ACCOUNTING_FORMATS, accounting_csv, accounting_filename
 from services.csv_export import bulk_to_csv, summary_to_csv, transactions_to_csv
 from services.xlsx_export import XLSX_MIME, bulk_to_xlsx, summary_to_xlsx, transactions_to_xlsx
 from services.notifications import (
@@ -1121,13 +1122,17 @@ def _build_export(
     kind: str = "transactions",
     include_totals: bool = False,
     reconciliation: dict | None = None,
+    currency: str | None = None,
 ) -> tuple[bytes, str, str]:
-    """Return (file bytes, filename, media type) for a CSV or Excel export."""
+    """Return (file bytes, filename, media type) for a CSV, Excel, QuickBooks or Xero export."""
     if kind == "summary":
         summary = _summary_by_category(rows)
         if fmt == "xlsx":
             return summary_to_xlsx(summary), "statement-summary.xlsx", XLSX_MIME
         return summary_to_csv(summary).encode("utf-8"), "statement-summary.csv", "text/csv; charset=utf-8"
+    if fmt in ACCOUNTING_FORMATS:  # rows only, no categories (the accounting app assigns accounts)
+        content = accounting_csv(rows, fmt, currency).encode("utf-8")
+        return content, accounting_filename(fmt), "text/csv; charset=utf-8"
     suffix = "" if include_categories else "-uncategorized"
     if fmt == "xlsx":
         content = transactions_to_xlsx(rows, include_categories, include_totals, reconciliation)
@@ -1152,6 +1157,7 @@ def export_transactions(request: Request, body: ExportRequest):
         body.kind,
         body.include_totals,
         body.reconciliation.model_dump() if body.reconciliation else None,
+        body.currency,
     )
     return Response(
         content=content,
@@ -1170,11 +1176,17 @@ def export_bulk(request: Request, body: BulkExportRequest):
     """
     statements = [(s.name, [t.model_dump() for t in s.transactions]) for s in body.statements]
     suffix = "" if body.include_categories else "-uncategorized"
-    if body.format == "xlsx":
+    if body.format in ACCOUNTING_FORMATS:
+        # One account's statements imported in one go: every row in upload order, no Statement column.
+        every = [t for _, transactions in statements for t in transactions]
+        content = accounting_csv(every, body.format, body.currency).encode("utf-8")
+        media_type, filename = "text/csv; charset=utf-8", accounting_filename(body.format, combined=True)
+    elif body.format == "xlsx":
         content, media_type = bulk_to_xlsx(statements, body.include_categories), XLSX_MIME
+        filename = f"statements-combined{suffix}.xlsx"
     else:
         content, media_type = bulk_to_csv(statements, body.include_categories).encode("utf-8"), "text/csv; charset=utf-8"
-    filename = f"statements-combined{suffix}.{body.format}"
+        filename = f"statements-combined{suffix}.csv"
     return Response(
         content=content,
         media_type=media_type,
@@ -1215,6 +1227,7 @@ def email_spreadsheet(request: Request, body: EmailSpreadsheetRequest):
         body.format,
         body.include_categories,
         reconciliation=body.reconciliation.model_dump() if body.reconciliation else None,
+        currency=body.currency,
     )
     if not send_spreadsheet_email(email, content, filename):
         raise HTTPException(502, "Couldn't send the email right now. Please download the file instead.")

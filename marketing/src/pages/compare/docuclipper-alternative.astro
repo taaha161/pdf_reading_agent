@@ -19,7 +19,7 @@ import ComparePage from '../../components/ComparePage.astro';
     { label: 'How you pay', us: 'Per page: 150 plan pages a month, plus add-on page packs for subscribers (10 for $2, 30 for $5, 100 for $10), or 450 pages for $49.99 without a plan. Pack pages never expire', them: 'A monthly page allowance; unused pages don’t carry over to the next cycle' },
     { label: 'Commitment', us: 'Monthly only. Cancel anytime', them: 'Monthly or annual billing' },
     { label: 'Free trial', us: '100 pages free for your first month, no card', them: '14 days, no card, up to 120 pages' },
-    { label: 'Export formats', us: 'CSV, Excel (XLSX)', them: 'Excel, CSV, QuickBooks, Xero' },
+    { label: 'Export formats', us: 'CSV, Excel (XLSX), QuickBooks Online CSV, Xero CSV', them: 'Excel, CSV, QuickBooks, Xero' },
     { label: 'Balance check', us: 'Every statement checked against its printed balances and summary, with the rows to look at when it doesn’t add up', them: 'Checks each statement against its printed balances' },
     { label: 'Security', us: 'HTTPS, incognito mode that stores no transaction data, Stripe payments', them: 'SOC 2 Type II audited' },
     { label: 'Scanned statements', us: 'Yes, with an accurate mode for poor scans', them: 'Yes' },
@@ -53,14 +53,14 @@ import ComparePage from '../../components/ComparePage.astro';
     ],
     them: [
       'Your firm needs a SOC 2 Type II report from vendors',
-      'You want direct QuickBooks or Xero export',
+      'You want direct QuickBooks or Xero sync, or QuickBooks Desktop files',
       'You process hundreds of pages a month, where its larger plans get cheaper per page',
       'You want unlimited team members on one plan',
     ],
   }}
   faqs={[
     { q: 'Is Bank Statement Scanner cheaper than DocuClipper?', a: 'For occasional use, usually yes: there is no annual plan, the first month is free, and pages cost about 7¢ each on the $10 plan. At high volume, DocuClipper’s larger page plans can work out cheaper per page.' },
-    { q: 'Can I export to QuickBooks or Xero?', a: 'Export to CSV and use the bank-statement import in QuickBooks or Xero. Direct QBO and Xero export isn’t available yet. DocuClipper offers it.' },
+    { q: 'Can I export to QuickBooks or Xero?', a: 'Yes. Download the QuickBooks Online or Xero CSV and upload it in the bank-statement import. There’s no direct sync and no .QBO file for QuickBooks Desktop; DocuClipper offers those.' },
     { q: 'Is there a contract?', a: 'No. The subscription is monthly and you can cancel anytime. There is no annual plan.' },
     { q: 'Can I try it before paying?', a: 'Yes. Your first month includes 100 pages free, and you don’t need a credit card.' },
     { q: 'Does it work with my bank?', a: 'It works with statement PDFs from 100+ banks and card issuers, including scanned and password-protected files. See the supported banks page for bank-specific guides.' },

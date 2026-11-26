@@ -30,7 +30,7 @@ Every system has quirks. Before you import, know these four things:
 
 1. **Convert the statement.** Upload the PDF and extract dates, descriptions, amounts, and balances into a table.
 2. **Review before export.** Confirm the statement period, spot-check large transactions against the PDF, and remove duplicates if you merged multiple files.
-3. **Export to CSV.** For most modern GLs (QuickBooks Online, Xero), a clean, correctly formatted CSV is the most reliable path.
+3. **Export to CSV.** For most modern GLs (QuickBooks Online, Xero), a clean, correctly formatted CSV is the most reliable path. QuickBooks Online's bank upload takes a 3-column file (Date, Description, Amount, with money out negative) or a 4-column one with separate Credit and Debit columns.
 4. **Map columns once.** Set up the mapping in your GL's import wizard the first time, then reuse it.
 5. **Verify the import.** Check that the opening and closing balances tie out and that the transaction count matches the statement.
 
@@ -47,7 +47,7 @@ The point of converting isn't just to get rows in—it is to reconcile without s
 
 ## How Bank Statement Scanner fits
 
-Upload a bank or credit card statement PDF, review the extracted transactions and smart categories in the app, then export a clean **CSV** ready for QuickBooks, Xero, NetSuite, or any GL that accepts structured imports. Because the data starts structured—not scraped from a PDF zoomed to 200%—the checks above go fast and the import works the first time. Same tool for a single account or a firm's full client roster.
+Upload a bank or credit card statement PDF, review the extracted transactions, then choose **QuickBooks Online** or **Xero** in the download menu. You get a CSV in that app's import layout: signed amounts, every date in one full format with the year filled in, and no balance or totals rows to delete. For NetSuite or anything else, the plain CSV and Excel downloads keep separate Debit and Credit columns and categories. See the [QuickBooks export](/bank-statement-to-quickbooks) and [Xero export](/bank-statement-to-xero) pages for the exact file layouts, or the step-by-step guide to [importing a statement PDF into Xero](/blog/import-bank-statement-pdf-into-xero). Because the data starts structured—not scraped from a PDF zoomed to 200%—the checks above go fast and the import works the first time. Same tool for a single account or a firm's full client roster.
 
 Onboarding a client with months of history? See [how to convert multiple statements in bulk](/blog/convert-multiple-bank-statements-in-bulk) without losing accuracy.
 
@@ -55,18 +55,23 @@ Onboarding a client with months of history? See [how to convert multiple stateme
 
 ### Can QuickBooks import a PDF bank statement?
 
-Not as a PDF. Convert the statement to CSV first, then use the bank statement upload in QuickBooks and map the date, description, and amount columns.
+QuickBooks Online can read some PDF statements itself, but results vary by bank and scanned statements are harder. The dependable route is to convert the statement to a CSV in QuickBooks' 3-column layout, check it against the statement's balances, then use Upload from file and map Date, Description and Amount.
 
 ### What causes a CSV import to fail in QuickBooks or Xero?
 
 Common causes are a date format the software doesn't expect, amounts with currency symbols or the wrong sign, extra summary rows, and blank lines. Clean these before importing.
 
-### Does Bank Statement Scanner export QBO or OFX files?
+### Does Bank Statement Scanner have a QuickBooks or Xero export?
 
-No. It exports CSV and Excel. CSV works with the bank statement import in QuickBooks, Xero, and most accounting tools.
+Yes. Pick QuickBooks Online or Xero in the download menu for a CSV laid out for that app's bank-statement import. It doesn't make .QBO, OFX or IIF files, so QuickBooks Desktop isn't covered, and there's no direct sync.
+
+### What date format should a QuickBooks CSV use?
+
+One format for every row, with a four-digit year. MM/DD/YYYY suits US company files; Intuit's guidance for other regions recommends DD/MM/YYYY. Choose the same format on the QuickBooks mapping screen.
 
 ## Sources
 
+- [Intuit: Format CSV files in Excel to get bank transactions into QuickBooks](https://quickbooks.intuit.com/learn-support/en-us/help-article/bank-transactions/format-csv-files-excel-bank-transactions-quickbooks/L4BjLWckq_US_en_US)
 - [Wikipedia: Open Financial Exchange (OFX)](https://en.wikipedia.org/wiki/Open_Financial_Exchange)
 - [Wikipedia: QuickBooks](https://en.wikipedia.org/wiki/QuickBooks)
 - [Wikipedia: Accounting software](https://en.wikipedia.org/wiki/Accounting_software)

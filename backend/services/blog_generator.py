@@ -130,6 +130,23 @@ TOPICS: list[dict] = [
      "secondary": ["multiple bank accounts excel template"],
      "angle": "one sheet for every account with an account column, transfers between accounts, and a monthly roll-up",
      "feature": "bulk"},
+    # QuickBooks / Xero export launched Nov 25 2026: supporting posts queued after the bulk ones.
+    {"slug": "quickbooks-csv-import-format", "keyword": "quickbooks csv import format",
+     "secondary": ["quickbooks 3 column csv", "quickbooks bank upload csv template"],
+     "angle": "QuickBooks Online's 3-column vs 4-column bank upload layouts, date formats, signs, and fixing the errors a bad file causes",
+     "feature": "quickbooks"},
+    {"slug": "xero-bank-feed-missing-transactions", "keyword": "xero bank feed missing transactions",
+     "secondary": ["xero missing bank transactions", "xero bank feed gap"],
+     "angle": "why Xero feeds miss days or start late, how to find the gap, and filling it with an imported statement without duplicates",
+     "feature": "xero"},
+    {"slug": "import-credit-card-statement-into-quickbooks", "keyword": "import credit card statement into quickbooks online",
+     "secondary": ["upload credit card transactions to quickbooks"],
+     "angle": "credit card accounts in QuickBooks Online: charge vs payment signs, picking the right account, and matching the card's closing balance",
+     "feature": "quickbooks"},
+    {"slug": "import-historical-bank-statements-into-xero", "keyword": "import historical bank statements into xero",
+     "secondary": ["xero conversion date bank statements", "backfill xero bank account"],
+     "angle": "bringing a new client's prior months into Xero: conversion balances, statement imports before the feed start date, and checking the statement balance",
+     "feature": "xero"},
     {"slug": "bank-statements-for-mortgage-application", "keyword": "bank statements for mortgage application",
      "secondary": [], "angle": "what lenders check and how to prepare statements"},
     {"slug": "desktop-vs-online-bank-statement-converter", "keyword": "desktop vs online bank statement converter",
@@ -212,6 +229,8 @@ STATIC_PAGES: dict[str, str] = {
     "/": "Bank Statement Scanner: upload a PDF, export CSV or Excel",
     "/convert": "Supported banks",
     "/bulk-bank-statement-converter": "Bulk bank statement converter: many PDFs to Excel at once",
+    "/bank-statement-to-quickbooks": "Convert bank statement PDFs to a QuickBooks Online CSV",
+    "/bank-statement-to-xero": "Convert bank statement PDFs to a Xero statement CSV",
     "/convert/chase-bank-statement-to-excel": "Convert Chase bank statements to Excel",
     "/convert/bank-of-america-statement-to-excel": "Convert Bank of America statements to Excel",
     "/convert/wells-fargo-statement-to-excel": "Convert Wells Fargo statements to Excel",
@@ -517,6 +536,24 @@ when Bank Statement Scanner is not the right choice.
 
 # Topics written to support a product feature: the post must link the feature's page.
 BULK_PAGE = "/bulk-bank-statement-converter"
+QUICKBOOKS_PAGE = "/bank-statement-to-quickbooks"
+XERO_PAGE = "/bank-statement-to-xero"
+# feature -> (page the post must link, sentence appended when the model didn't link it)
+_FEATURE_LINKS = {
+    "bulk": (BULK_PAGE, "Have a stack of statements? [Convert multiple bank statements to Excel at once]"
+             f"({BULK_PAGE}) and download one combined workbook."),
+    "quickbooks": (QUICKBOOKS_PAGE, "Working from PDFs? [Convert a bank statement PDF to a QuickBooks Online CSV]"
+                   f"({QUICKBOOKS_PAGE}) that's ready to upload."),
+    "xero": (XERO_PAGE, "Working from PDFs? [Convert a bank statement PDF to a Xero-ready CSV]"
+             f"({XERO_PAGE}) and import it as a statement."),
+}
+_ACCOUNTING_RULE = """
+This post supports Bank Statement Scanner's {app} export. Teach the general {app} method
+first (it must be useful without the product), then show where the export helps, using
+only the {app} facts below. You MUST link {page} once, with anchor text about converting a
+bank statement PDF for {app}. Describe {app} menus and screens only in general terms you
+are sure of; never invent exact error messages or limits.
+"""
 _FEATURE_RULES = {
     "bulk": f"""
 This post supports Bank Statement Scanner's bulk upload. Teach the general method first
@@ -524,6 +561,8 @@ This post supports Bank Statement Scanner's bulk upload. Teach the general metho
 the bulk facts below. You MUST link {BULK_PAGE} once, with anchor text about converting
 multiple bank statements at once.
 """,
+    "quickbooks": _ACCOUNTING_RULE.format(app="QuickBooks Online", page=QUICKBOOKS_PAGE),
+    "xero": _ACCOUNTING_RULE.format(app="Xero", page=XERO_PAGE),
 }
 
 
@@ -578,9 +617,16 @@ they are converted two at a time, and one combined download is offered (Excel: a
 "All statements" sheet with a Statement column naming the source PDF, plus one sheet
 per statement; or one CSV with a Statement column). Bulk costs the same per page.
 Users can ask one converted statement at a time questions in plain English and export
-just the matching rows (chat does not search across a whole batch). It has an incognito mode that stores no transaction data. It does NOT
-export QBO/OFX/Xero files, does NOT sync to accounting software, and does NOT
-reconcile statements against a ledger or books.
+just the matching rows (chat does not search across a whole batch). It has an incognito mode that stores no transaction data.
+QuickBooks and Xero export: the download menu offers "QuickBooks Online" and "Xero" CSVs.
+QuickBooks file: Date, Description, Amount (3-column layout; money in positive, money out
+negative). Xero file: Date, Amount, Payee, Description, Reference (signed Amount; the
+statement description goes in Payee). Both rewrite every date to one full format
+(MM/DD/YYYY for US statements, DD/MM/YYYY for most other currencies, missing years filled
+in), and contain transactions only (no balance, opening/closing or totals rows, no
+categories). A bulk batch can be downloaded as one QuickBooks or Xero file. It does NOT
+make .QBO/OFX/QFX/IIF files (no QuickBooks Desktop or Quicken), does NOT sync or post to
+accounting software, and does NOT reconcile statements against a ledger or books.
 Pricing (only if relevant, state exactly): priced per PDF page. 10 pages free
 without an account; 100 pages free for the first month after signup, no credit
 card; then $10/month for 150 pages; subscribers can add page packs of 10 for $2,
@@ -774,14 +820,11 @@ def _build_markdown(data: dict, image_path: str, today: date, keyword: str) -> s
 # --- Public entrypoint --------------------------------------------------------
 
 def _ensure_feature_link(topic: dict, data: dict) -> None:
-    """Bulk-upload posts must point at the bulk converter page; add it if the model didn't."""
-    if topic.get("feature") != "bulk" or f"]({BULK_PAGE})" in data["body_markdown"]:
+    """Feature posts must point at the feature's page (see _FEATURE_LINKS); add it if the model didn't."""
+    found = _FEATURE_LINKS.get(topic.get("feature", ""))
+    if not found or f"]({found[0]})" in data["body_markdown"]:
         return
-    data["body_markdown"] = (
-        data["body_markdown"].rstrip()
-        + "\n\nHave a stack of statements? [Convert multiple bank statements to Excel at once]"
-        + f"({BULK_PAGE}) and download one combined workbook.\n"
-    )
+    data["body_markdown"] = data["body_markdown"].rstrip() + "\n\n" + found[1] + "\n"
 
 
 def _ensure_bank_link(topic: dict, data: dict) -> None:

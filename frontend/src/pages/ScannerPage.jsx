@@ -951,6 +951,7 @@ export default function ScannerPage() {
                   highlightNote={answerHighlight?.note}
                   // Edited trial rows no longer match the check, so don't export a stale one.
                   reconciliation={reconciliationStale ? null : reconciliation}
+                  currency={currency}
                   onClearHighlight={() => setAnswerHighlight(null)}
                 />
               </div>

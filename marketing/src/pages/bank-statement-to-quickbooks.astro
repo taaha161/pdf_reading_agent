@@ -1,0 +1,55 @@
+---
+import AccountingExportPage from '../components/AccountingExportPage.astro';
+---
+
+<AccountingExportPage
+  path="/bank-statement-to-quickbooks"
+  app="QuickBooks Online"
+  short="QuickBooks"
+  ctaKey="qbo"
+  seoTitle="Convert Bank Statement PDF to QuickBooks CSV"
+  description="Convert bank and credit card statement PDFs into an import-ready QuickBooks Online CSV: Date, Description, Amount, one date format, balance-checked."
+  h1="Convert bank statement PDFs to QuickBooks Online"
+  highlight="QuickBooks Online"
+  lede="Upload a bank or credit card statement and download a CSV in the exact 3-column layout QuickBooks Online’s bank upload expects: signed amounts, one date format, and nothing extra to delete. Every statement is checked against its own balances first."
+  header={['Date', 'Description', 'Amount']}
+  rows={[
+    ['01/03/2026', 'PAYROLL DEPOSIT ACME INC', '3200.00'],
+    ['01/05/2026', 'ZELLE PAYMENT TO J SMITH', '-450.00'],
+    ['01/07/2026', 'STAPLES 01234 CHICAGO IL', '-58.12'],
+    ['01/09/2026', 'MONTHLY SERVICE FEE', '-12.00'],
+  ]}
+  numericCols={[2]}
+  fileNote="Illustrative rows. Money in is positive, money out is negative. No balance column, no opening or closing balance rows, no totals."
+  importSteps={[
+    'In QuickBooks Online, go to Transactions → Bank transactions.',
+    'Open the Link account menu and choose Upload from file.',
+    'Drop in the CSV, then pick the QuickBooks account it belongs to (the credit card account for a card statement).',
+    'Map the columns: Date, Description, and Amount as one column. Choose the date format shown in the file.',
+    'Review the transactions, untick any you don’t want, and confirm. They land in For review, ready to categorize and match.',
+  ]}
+  features={[
+    { title: 'The 3-column layout', body: 'Date, Description, Amount, in that order, with money out as a negative number. It’s one of the two layouts Intuit documents for bank uploads, so mapping takes seconds.' },
+    { title: 'One date format', body: 'Statements print “Jan 5”, “05/01” or “Fri 05 Jan 24”. The file rewrites every date to MM/DD/YYYY (US statements) or DD/MM/YYYY (UK, Canada, Australia and others), with the year filled in.' },
+    { title: 'Nothing to delete', body: 'No balance column, no opening or closing balance rows, no summary table. Every row is a transaction, so nothing imports as a fake deposit.' },
+    { title: 'Checked before it reaches your books', body: 'Rows are checked against the statement’s printed running balances and summary box. If one is missing, doubled or on the wrong side, the app points you to it.' },
+    { title: 'A year in one upload', body: 'Use bulk upload for up to 50 statements, then download one QuickBooks file with every transaction in order.' },
+    { title: 'Scanned and locked PDFs', body: 'Scanned paper statements and password-protected PDFs convert too, so older months don’t have to be keyed in by hand.' },
+  ]}
+  faqs={[
+    { q: 'Can QuickBooks Online import a PDF bank statement directly?', a: 'QuickBooks Online can read some PDF statements itself. Converting first lets you check every row against the statement’s balances before anything is imported, handles scanned and password-protected PDFs, and lets you combine many statements into one upload.' },
+    { q: 'Which CSV format does the QuickBooks export use?', a: 'The 3-column format: Date, Description, Amount. Deposits are positive and payments are negative. It’s a CSV in UTF-8 with a header row and no extra rows.' },
+    { q: 'What date format will the file use?', a: 'MM/DD/YYYY for US statements and DD/MM/YYYY for statements in most other currencies. The order is worked out from the statement’s own dates, and dates printed without a year get the right year added. Choose the matching format on the QuickBooks mapping screen.' },
+    { q: 'Does it work for credit card statements?', a: 'Yes. Charges are negative and payments or refunds are positive. Upload the file to the credit card account in QuickBooks, not a bank account.' },
+    { q: 'Are my categories included?', a: 'No. QuickBooks assigns accounts with its own rules when you review the transactions, and the bank upload has no category column. Download the Excel file if you want our categories for review.' },
+    { q: 'Does it make .QBO files for QuickBooks Desktop?', a: 'Not yet. The export is a CSV for QuickBooks Online. QuickBooks Desktop bank imports need a .QBO Web Connect file, which we don’t create.' },
+    { q: 'Will I get duplicate transactions?', a: 'Only if you import dates QuickBooks already has. If the account has a bank feed, import only the months the feed doesn’t cover, and review the For review list before accepting.' },
+    { q: 'Is the QuickBooks export free?', a: 'It costs nothing extra. You pay per PDF page converted, the same as Excel or CSV, and the first pages are free.' },
+  ]}
+  related={[
+    { href: '/blog/convert-bank-statement-pdf-to-quickbooks', label: 'Guide: bank statement PDF to QuickBooks' },
+    { href: '/bank-statement-to-xero', label: 'Xero export' },
+    { href: '/bulk-bank-statement-converter', label: 'Bulk upload' },
+    { href: '/for/bookkeepers', label: 'For bookkeepers' },
+  ]}
+/>

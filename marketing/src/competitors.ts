@@ -42,7 +42,7 @@ const US = {
   price: '$10/month for 150 pages; subscriber page packs from $2',
   perStatement: 'Per page: 150 pages on the $10 plan, then subscriber packs of 10 for $2, 30 for $5, or 100 for $10, or 450 pages for $49.99 without a plan; pack pages never expire (accurate mode uses 2 pages per page)',
   free: '100 pages free your first month, plus 10 without an account; no card',
-  exports: 'CSV, Excel (XLSX)',
+  exports: 'CSV, Excel (XLSX), QuickBooks Online CSV, Xero CSV',
   scanned: 'Yes, with an accurate mode for poor scans',
   balance: 'Automatic on every statement: rows checked against its printed balances and summary, with the rows to look at when they don’t add up',
   data: 'Incognito mode stores no transaction data; payments through Stripe',
@@ -51,7 +51,7 @@ const US = {
 
 const QB_FAQ = {
   q: 'Can I get my transactions into QuickBooks or Xero?',
-  a: 'Export to CSV and use the bank-statement import in QuickBooks or Xero. Direct QBO and Xero export isn’t available yet.',
+  a: 'Yes. Download the QuickBooks Online or Xero CSV (signed amounts, one date format) and upload it in the bank-statement import. There’s no direct sync and no .QBO file for QuickBooks Desktop.',
 };
 const TRIAL_FAQ = {
   q: 'Can I try Bank Statement Scanner before paying?',
@@ -135,13 +135,13 @@ export const competitors: Competitor[] = [
         heading: 'Pages vs statements',
         paras: [
           'A busy business account can run 10 to 20 pages a month. On a page plan, a year of statements for one account can use a few hundred pages. On Bank Statement Scanner, $10 covers 150 pages a month, and a pack from $2 tops up a busy month without changing plans.',
-          'If your statements are short and you need QBO or Xero files, Bankstatemently’s page plans may suit you better.',
+          'If your statements are short and you need .QBO files or an API, Bankstatemently’s page plans may suit you better.',
         ],
       },
     ],
     fit: {
-      us: ['You want a low monthly price', 'You only need CSV or Excel', 'You want extra pages that never expire', 'You want an incognito mode that saves nothing'],
-      them: ['You need QBO or Xero import files', 'You want a free tier that renews every month', 'You want an API or MCP integration', 'You convert hundreds of pages every month'],
+      us: ['You want a low monthly price', 'You need CSV, Excel, QuickBooks Online or Xero files', 'You want extra pages that never expire', 'You want an incognito mode that saves nothing'],
+      them: ['You need .QBO files for QuickBooks Desktop', 'You want a free tier that renews every month', 'You want an API or MCP integration', 'You convert hundreds of pages every month'],
     },
     faqs: [
       { q: 'Is Bankstatemently free?', a: 'It has a free tier of 10 pages a month, up to 5 a day. Bank Statement Scanner gives you 100 pages free in your first month, plus 10 without an account.' },
@@ -583,7 +583,7 @@ export const competitors: Competitor[] = [
       { label: 'Bank statements', us: 'Every conversion', them: '10 sheets included; add-on from $13/month or from $0.32/document' },
       { label: 'Free use', us: US.free, them: '14-day trial, no card' },
       { label: 'Captures', us: 'Bank and card statements', them: 'Receipts, bills, invoices, and statements' },
-      { label: 'Integrations', us: 'CSV or Excel export', them: 'QuickBooks Online, Xero, Sage, Zoho, and 30+ more' },
+      { label: 'Integrations', us: 'CSV, Excel, and QuickBooks Online / Xero import files (no direct sync)', them: 'QuickBooks Online, Xero, Sage, Zoho, and 30+ more' },
       { label: 'Users', us: 'Single user', them: '5 users on the business plan' },
     ],
     tableNote: 'Dext prices are from its business pricing page in USD, excluding VAT, and may have changed.',
@@ -629,7 +629,7 @@ export const competitors: Competitor[] = [
       { label: 'Bank statements', us: US.perStatement, them: '3 credits per page (about $0.60–0.78 per page)' },
       { label: 'Free use', us: US.free, them: '25 free credits, no card' },
       { label: 'Unused credit', us: 'Plan pages reset monthly; page packs never expire', them: 'Rolls over for 90 days' },
-      { label: 'Integrations', us: 'CSV or Excel export', them: 'Sage, Xero, QuickBooks, FreeAgent, and more' },
+      { label: 'Integrations', us: 'CSV, Excel, and QuickBooks Online / Xero import files (no direct sync)', them: 'Sage, Xero, QuickBooks, FreeAgent, and more' },
       { label: 'Captures', us: 'Bank and card statements', them: 'Invoices, receipts, and bank statements' },
     ],
     tableNote: 'AutoEntry prices are from its pricing page in USD, excluding VAT, and may have changed.',
@@ -737,7 +737,7 @@ export const competitors: Competitor[] = [
       },
     ],
     fit: {
-      us: ['You convert a few statements a month', 'You want CSV or Excel for QuickBooks Online, Xero, or a spreadsheet', 'You don’t want to install software', 'You want each statement checked against its balances'],
+      us: ['You convert a few statements a month', 'You want import-ready files for QuickBooks Online or Xero, or a spreadsheet', 'You don’t want to install software', 'You want each statement checked against its balances'],
       them: ['You need QBO, IIF, QFX, or QIF files', 'You use QuickBooks Desktop or Quicken', 'Files must never leave your computer', 'You convert hundreds of statements a month'],
     },
     faqs: [
