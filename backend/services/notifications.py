@@ -244,6 +244,7 @@ def send_paid_welcome_email(to: str, link: str, pages: int = 100) -> None:
 
 CHECKIN_AFTER_SCANS = 3
 _G2_REVIEW_URL = "https://www.g2.com/products/bank-statement-scanner/take_survey"
+_TRUSTPILOT_REVIEW_URL = "https://www.trustpilot.com/evaluate/bankstatementscanner.com"
 _SUPPORT_PHONE = "+1 (847) 834-4295"
 
 _CHECKIN_TEXT = """Hi {first},
@@ -256,7 +257,8 @@ If it's been useful, a short G2 review helps a lot. We'll add 100 pages to your 
 Write a G2 review: {g2}
 Then click "Already reviewed us on G2?" in the app, or reply with the link.
 
-You may also get a short email from Trustpilot asking about your experience.
+Prefer Trustpilot? We'd love a review there too: {trustpilot}
+(Trustpilot doesn't allow rewards for reviews, so that one doesn't earn pages. You may also get a short invite email from Trustpilot.)
 
 {support}
 {phone}
@@ -275,7 +277,11 @@ _CHECKIN_HTML = """<!doctype html><html><body style="margin:0;padding:0;backgrou
   <tr><td style="padding:32px 32px 8px;">{body}</td></tr>
   <tr><td align="center" style="padding:4px 32px 24px;"><a href="{g2}" style="display:inline-block;background:#1e3a8a;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 24px;border-radius:8px;">Write a G2 review</a></td></tr>
   <tr><td style="padding:0 32px 8px;">
-    <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#374151;">Then click &ldquo;Already reviewed us on G2?&rdquo; in the app, or reply with the link. You may also get a short email from Trustpilot asking about your experience.</p>
+    <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#374151;">Then click &ldquo;Already reviewed us on G2?&rdquo; in the app, or reply with the link.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf6;border-left:4px solid #00b67a;border-radius:8px;margin:0 0 20px;"><tr><td style="padding:14px 18px;font-size:14px;line-height:1.6;color:#374151;">
+      <strong style="color:#065f46;">Prefer Trustpilot?</strong> We&rsquo;d love a review there too: <a href="{trustpilot}" style="color:#047857;font-weight:600;">Review us on Trustpilot &rarr;</a><br>
+      <span style="font-size:12px;color:#6b7280;">Trustpilot doesn&rsquo;t allow rewards for reviews, so that one doesn&rsquo;t earn pages. You may also get a short invite email from Trustpilot.</span>
+    </td></tr></table>
     <p style="margin:0 0 6px;font-size:15px;line-height:1.6;">&#9993;&nbsp; <a href="mailto:{support}" style="color:#1e3a8a;text-decoration:none;font-weight:600;">{support}</a></p>
     <p style="margin:0 0 20px;font-size:15px;line-height:1.6;">&#9742;&nbsp; <a href="tel:+18478344295" style="color:#1e3a8a;text-decoration:none;font-weight:600;">{phone}</a></p>
     <p style="margin:16px 0 28px;font-size:16px;line-height:1.6;">Best regards,<br><strong>The Bank Statement Scanner Team</strong></p>
@@ -316,8 +322,8 @@ def send_checkin_email(to: str, name: str | None, scans: int) -> None:
                     "reply_to": support,
                     **_bcc_field(),
                     "subject": "How's Bank Statement Scanner working for you?",
-                    "text": _CHECKIN_TEXT.format(first=first, scans=scans, g2=_G2_REVIEW_URL, support=support, phone=_SUPPORT_PHONE),
-                    "html": _CHECKIN_HTML.format(body=body, g2=_G2_REVIEW_URL, support=support, phone=_SUPPORT_PHONE),
+                    "text": _CHECKIN_TEXT.format(first=first, scans=scans, g2=_G2_REVIEW_URL, trustpilot=_TRUSTPILOT_REVIEW_URL, support=support, phone=_SUPPORT_PHONE),
+                    "html": _CHECKIN_HTML.format(body=body, g2=_G2_REVIEW_URL, trustpilot=_TRUSTPILOT_REVIEW_URL, support=support, phone=_SUPPORT_PHONE),
                     "tags": [{"name": "category", "value": "checkin"}],
                 },
                 timeout=10.0,
