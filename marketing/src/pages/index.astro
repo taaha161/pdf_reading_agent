@@ -71,7 +71,7 @@ const jsonLd = [
     '@type': 'WebApplication',
     name: SITE_NAME,
     description:
-      'Turn messy bank statements into structured data in seconds. Upload a PDF and export clean, categorized transactions to CSV or Excel.',
+      'Bank Statement Scanner is a web app that converts bank and credit card statement PDFs, including scanned ones, into clean, categorized transactions for Excel, CSV, QuickBooks, or Xero, and checks every row against the balances printed on the statement.',
     applicationCategory: 'FinanceApplication',
     operatingSystem: 'Web',
     url: `${SITE_URL}/`,
@@ -136,10 +136,10 @@ const features = [
       <div class="hero-copy">
         <h1 class="hero-title" set:html={HEADLINE} />
         <p class="hero-sub">
-          Upload a bank, credit card, or scanned statement. Get every transaction back in clean,
-          categorized columns, ready for Excel, CSV,
-          QuickBooks, or Xero. Then ask for exactly what you need, like every payment from John, and
-          download just those rows.
+          {SITE_NAME} converts bank, credit card, and scanned statement PDFs into clean, categorized
+          transactions for Excel, CSV, QuickBooks, or Xero, and checks every row against the
+          statement's own balances. Then ask for exactly what you need, like every payment from John,
+          and download just those rows.
         </p>
         <div class="hero-upload">
           <HeroDropzone />
