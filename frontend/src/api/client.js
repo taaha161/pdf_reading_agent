@@ -262,6 +262,26 @@ export async function getUsage() {
 }
 
 /** `pack` (topup only): a PAGE_PACKS id (subscribers) or BULK_PACK.id from lib/pricing. */
+/** Subscription status for the Account page: { status, cancel_at_period_end, current_period_end (unix s) }. */
+async function subscriptionRequest(path, method) {
+  const res = await fetch(`${API_BASE}/api/billing/subscription${path}`, {
+    method,
+    headers: authHeaders(),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Too many requests. Please try again in a minute.");
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Billing request failed");
+  }
+  return res.json();
+}
+export const getSubscription = () => subscriptionRequest("", "GET");
+/** Cancel at the end of the paid period (plan pages stay usable until then). */
+export const cancelSubscription = () => subscriptionRequest("/cancel", "POST");
+/** Undo a pending cancellation. */
+export const resumeSubscription = () => subscriptionRequest("/resume", "POST");
+
 export async function createCheckoutSession(mode, email = null, offer = null, token = undefined, pack = null) {
   const body = { mode, ...getGaIds() };
   if (pack) body.pack = pack;

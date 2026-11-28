@@ -882,3 +882,8 @@
   border-color: var(--ink);
   color: var(--ink);
 }
+
+/* Page-limit redirect: why they landed here, above the signup form */
+.su-alert--limit {
+  margin: 0 0 1rem;
+}

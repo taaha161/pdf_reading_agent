@@ -161,6 +161,58 @@ def _is_subscribed(user_id: str) -> bool:
     return bool(billing and billing.get("stripe_subscription_id"))
 
 
+class NoSubscription(Exception):
+    """The user has no subscription on record to cancel or resume."""
+
+
+def _subscription_view(sub) -> dict:
+    """What the Account page needs: whether it's set to end, and when the paid period ends."""
+    period_end = sub.get("current_period_end")
+    if period_end is None:  # newer Stripe API versions keep the period on the item
+        items = (sub.get("items") or {}).get("data") or []
+        period_end = items[0].get("current_period_end") if items else None
+    cancel_at = sub.get("cancel_at")
+    return {
+        "status": sub.get("status"),
+        "cancel_at_period_end": bool(sub.get("cancel_at_period_end") or cancel_at),
+        "current_period_end": int(cancel_at or period_end) if (cancel_at or period_end) else None,
+    }
+
+
+def _user_subscription_id(user_id: str) -> str:
+    billing = get_billing(user_id)
+    sub_id = billing.get("stripe_subscription_id") if billing else None
+    if not sub_id or not _STRIPE_KEY:
+        raise NoSubscription(user_id)
+    stripe.api_key = _STRIPE_KEY
+    return sub_id
+
+
+def get_subscription_status(user_id: str) -> dict:
+    """Live status of the user's subscription from Stripe. Raises NoSubscription / StripeError."""
+    return _subscription_view(stripe.Subscription.retrieve(_user_subscription_id(user_id)))
+
+
+def set_subscription_canceling(user_id: str, cancel: bool) -> dict:
+    """Cancel at the end of the paid period (cancel=True) or undo that (False).
+    The plan stays active until then; customer.subscription.deleted clears it."""
+    sub_id = _user_subscription_id(user_id)
+    if cancel:
+        params = {"cancel_at_period_end": True}
+    else:
+        # Undo whichever end is set; Stripe rejects both params in one call.
+        current = stripe.Subscription.retrieve(sub_id)
+        if current.get("cancel_at_period_end"):
+            params = {"cancel_at_period_end": False}
+        elif current.get("cancel_at"):
+            params = {"cancel_at": ""}  # an end date set in the Stripe dashboard
+        else:
+            return _subscription_view(current)
+    sub = stripe.Subscription.modify(sub_id, **params)
+    logger.info("subscription %s for user %s: cancel_at_period_end=%s", sub_id, user_id, cancel)
+    return _subscription_view(sub)
+
+
 def create_checkout_session(
     user_id: str,
     mode: Literal["subscription", "topup"],

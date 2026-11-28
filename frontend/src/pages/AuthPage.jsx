@@ -17,6 +17,7 @@ import { getAttribution } from "../lib/attribution";
 import { setPendingReferral } from "../lib/referral";
 import { PASSWORD_MIN_LENGTH, passwordOk } from "../lib/password";
 import { FREE_ANON_PAGES, FREE_SIGNUP_DAYS, FREE_SIGNUP_PAGES, PLAN_PAGES, PLAN_PRICE } from "../lib/pricing";
+import { GUEST_TRIAL_USED_NOTICE, guestPagesExceededNotice } from "../lib/pageLimit";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_COOLDOWN_S = 30;
@@ -29,8 +30,28 @@ function MailIcon() {
   );
 }
 
-/** Left panel for /signup: normal, or after the anonymous free pages ran out. */
-function SignupAside({ trialExhausted }) {
+/** Left panel for /signup: normal, after the anonymous free pages ran out, or for a PDF bigger than them. */
+function SignupAside({ trialExhausted, pagesExceeded }) {
+  if (pagesExceeded) {
+    const { required, remaining } = pagesExceeded;
+    return (
+      <ValuePanel
+        eyebrow={`This statement is ${required} pages`}
+        title={`Scan it free with ${FREE_SIGNUP_PAGES} pages`}
+        lead={
+          `Without an account you can scan ${FREE_ANON_PAGES} pages free` +
+          (remaining > 0 ? ` (${remaining} left)` : "") +
+          `. Create a free account and your next ${FREE_SIGNUP_PAGES} pages are on us for ${FREE_SIGNUP_DAYS} days. No credit card.`
+        }
+      >
+        <ol className="su-meter" aria-label="Your free pages">
+          <li><strong>{required} pages</strong><span>This statement</span></li>
+          <li className="is-free"><strong>+{FREE_SIGNUP_PAGES} pages</strong><span>Free with an account</span></li>
+        </ol>
+        <SecurityList />
+      </ValuePanel>
+    );
+  }
   if (trialExhausted) {
     return (
       <ValuePanel
@@ -72,8 +93,19 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   const fromLoc = location.state?.from;
   const from = fromLoc?.pathname ? `${fromLoc.pathname}${fromLoc.search || ""}` : "/dashboard";
   const notice = location.state?.notice;
-  // Redirected from the scanner after the anonymous free pages ran out.
-  const trialExhausted = location.state?.reason === "trial-exhausted";
+  // Redirected from the scanner: the anonymous free pages ran out, or the PDF needs more pages than are left.
+  const reason = location.state?.reason;
+  const trialExhausted = reason === "trial-exhausted";
+  const pagesExceeded =
+    reason === "pages-exceeded" && location.state?.pagesRequired > 0
+      ? { required: location.state.pagesRequired, remaining: location.state.pagesRemaining ?? 0 }
+      : null;
+  // Page-limit redirects always explain why at the top of the form (signup and login).
+  const limitNotice = pagesExceeded
+    ? guestPagesExceededNotice(pagesExceeded.required, pagesExceeded.remaining)
+    : trialExhausted
+      ? GUEST_TRIAL_USED_NOTICE
+      : null;
   const modeFromQuery = searchParams.get("mode"); // e.g. /login?mode=signup
   const mode = modeFromQuery === "signup" || modeFromQuery === "login" || modeFromQuery === "forgot" ? modeFromQuery : initialMode;
 
@@ -96,12 +128,11 @@ export default function AuthPage({ mode: initialMode = "login" }) {
 
   useEffect(() => {
     setView(mode);
-    // e.g. redirected here from the scanner after using the free pages
-    // (the trial-exhausted signup view has its own panel instead)
-    setMessage(notice && !trialExhausted ? { type: "success", text: notice } : { type: "", text: "" });
+    // e.g. redirected here from the scanner for chat (page-limit redirects use limitNotice instead)
+    setMessage(notice && !limitNotice ? { type: "success", text: notice } : { type: "", text: "" });
     setSignupSuccess(false);
     setSubmitted(false);
-  }, [mode, notice, trialExhausted]);
+  }, [mode, notice, limitNotice]);
 
   // Redirect if already logged in (skip on reset-password; that page handles its own logic)
   useEffect(() => {
@@ -284,7 +315,10 @@ export default function AuthPage({ mode: initialMode = "login" }) {
   if (view === "signup") {
     const showErr = (k) => submitted && signupErrors[k];
     return (
-      <SignupLayout aside={<SignupAside trialExhausted={trialExhausted} />}>
+      <SignupLayout
+        aside={<SignupAside trialExhausted={trialExhausted} pagesExceeded={pagesExceeded} />}
+        loginState={location.state}
+      >
         {signupSuccess ? (
           <div className="su-state" role="status">
             <span className="su-state-icon"><MailIcon /></span>
@@ -314,6 +348,9 @@ export default function AuthPage({ mode: initialMode = "login" }) {
             <p className="su-sub">
               <strong>{FREE_SIGNUP_PAGES} pages free</strong> for {FREE_SIGNUP_DAYS} days. No credit card needed.
             </p>
+            {limitNotice && (
+              <p className="su-alert su-alert--info su-alert--limit" role="status">{limitNotice}</p>
+            )}
 
             <button type="button" className="su-btn su-btn-google" onClick={() => handleSocialLogin("google")} disabled={loading}>
               <GoogleLogo />
@@ -419,6 +456,13 @@ export default function AuthPage({ mode: initialMode = "login" }) {
             <p className="auth-description auth-description-left">
               Log in to manage your financial statements.
             </p>
+            {limitNotice && (
+              <p className="auth-message auth-message-success auth-message--limit" role="status">
+                {pagesExceeded
+                  ? `This statement is ${pagesExceeded.required} pages, more than the ${FREE_ANON_PAGES} pages you can scan without an account. Log in to scan it with your account's pages.`
+                  : `You've used your ${FREE_ANON_PAGES} free guest pages. Log in to keep scanning with your account's pages.`}
+              </p>
+            )}
 
             <form onSubmit={handleLogin} className="auth-form">
               <label className="auth-label">Email address</label>
@@ -476,7 +520,7 @@ export default function AuthPage({ mode: initialMode = "login" }) {
 
             <p className="auth-footer auth-footer-left">
               Don&apos;t have an account?{" "}
-              <Link to="/signup">Sign up for free</Link>
+              <Link to="/signup" state={location.state}>Sign up for free</Link>
             </p>
           </div>
 

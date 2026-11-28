@@ -1004,3 +1004,8 @@
   align-items: flex-start;
   margin-top: 2.5rem;
 }
+
+/* Page-limit redirect: why they landed on login */
+.auth-message--limit {
+  margin: 0 0 1rem;
+}
