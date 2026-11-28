@@ -57,7 +57,11 @@ export const PRICING_SUMMARY =
  * Emitted as schema.org `sameAs` on the Organization/WebApplication JSON-LD and linked on /about.
  * Add only URLs that exist and that you control.
  */
-export const SAME_AS: string[] = [];
+export const SAME_AS: string[] = [
+  'https://www.linkedin.com/company/144061258',
+  'https://www.g2.com/products/bank-statement-scanner/reviews',
+  'https://www.trustpilot.com/review/bankstatementscanner.com',
+];
 
 /**
  * Public review profile (Trustpilot/G2). Empty = review links stay hidden.
