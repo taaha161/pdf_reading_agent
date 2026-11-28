@@ -69,13 +69,18 @@ from models.schemas import (
     Transaction,
     UpdateJobTransactionsRequest,
 )
+from stripe import StripeError
+
 from services.billing import (
     FREE_ANON_PAGES,
     FREE_SIGNUP_DAYS,
     FREE_SIGNUP_PAGES,
+    NoSubscription,
     PackNotAllowed,
     create_checkout_session,
+    get_subscription_status,
     handle_webhook,
+    set_subscription_canceling,
     scan_cost_pages,
 )
 from services.affiliates import claim_referral, normalize_code, public_discount, user_discount, valid_code
@@ -1495,6 +1500,36 @@ def create_billing_checkout_session(body: CheckoutSessionRequest, user_id: str =
     if not result or not result.get("url"):
         raise HTTPException(502, "Could not create checkout session. Please try again.")
     return CheckoutSessionResponse(url=result["url"], sessionId=result.get("sessionId"))
+
+
+def _subscription_call(fn, *args) -> dict:
+    try:
+        return fn(*args)
+    except NoSubscription:
+        raise HTTPException(404, "No active subscription.")
+    except StripeError as e:
+        logger.exception("Stripe subscription call failed: %s", e)
+        raise HTTPException(502, "Could not reach billing. Please try again.")
+
+
+@app.get("/api/billing/subscription")
+def get_billing_subscription(user_id: str = Depends(get_current_user)):
+    """Subscription status for the Account page: renewal or end date, and whether it's set to cancel."""
+    return _subscription_call(get_subscription_status, user_id)
+
+
+@app.post("/api/billing/subscription/cancel")
+@limiter.limit("10/minute")
+def cancel_billing_subscription(request: Request, user_id: str = Depends(get_current_user)):
+    """Cancel at the end of the paid period. Plan pages stay usable until then."""
+    return _subscription_call(set_subscription_canceling, user_id, True)
+
+
+@app.post("/api/billing/subscription/resume")
+@limiter.limit("10/minute")
+def resume_billing_subscription(request: Request, user_id: str = Depends(get_current_user)):
+    """Undo a pending cancellation."""
+    return _subscription_call(set_subscription_canceling, user_id, False)
 
 
 # --- Paid signup (pay first, account after; see services/paid_signup.py) ---

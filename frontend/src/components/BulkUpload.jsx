@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { exportStatements, runScan } from "../api/client";
 import { formatMB } from "../lib/fileSize";
 import { trackEvent } from "../lib/analytics";
+import { signedInPagesExceeded } from "../lib/pageLimit";
+import { useUsage } from "../contexts/UsageContext";
 import PasswordInput from "./PasswordInput";
 import "./BulkUpload.css";
 
@@ -55,7 +57,8 @@ function stageLabel(progress) {
 export default function BulkUpload({ files, options, maxBytes, onScanned, onOpen, onClose, openJobId }) {
   const [items, setItems] = useState(() => makeItems(files.slice(0, MAX_BULK_FILES), maxBytes));
   const [dropped] = useState(Math.max(0, files.length - MAX_BULK_FILES));
-  const [outOfPages, setOutOfPages] = useState(false);
+  const [outOfPages, setOutOfPages] = useState(null); // { pages_required, pages_remaining } from the 402
+  const { usage } = useUsage();
   const [downloading, setDownloading] = useState(null);
   const [downloadError, setDownloadError] = useState(null);
   const started = useRef(new Set());
@@ -91,7 +94,7 @@ export default function BulkUpload({ files, options, maxBytes, onScanned, onOpen
               error: e.isPdfPasswordIncorrect ? "Incorrect password. Try again." : null,
             });
           } else if (e.insufficientCredits) {
-            setOutOfPages(true);
+            setOutOfPages(e.insufficientCredits);
             update(item.id, { status: "queued", progress: null, error: null });
             started.current.delete(item.id); // retried on Resume
           } else {
@@ -206,13 +209,16 @@ export default function BulkUpload({ files, options, maxBytes, onScanned, onOpen
       {dropped > 0 && (
         <p className="bulk-note">Only the first {MAX_BULK_FILES} files were added. Upload the other {dropped} in a second batch.</p>
       )}
-      {outOfPages && (
-        <p className="bulk-note bulk-note--warn" role="alert">
-          You&rsquo;re out of pages, so the remaining statements are paused.{" "}
-          <a href="/settings#billing" target="_blank" rel="noopener">Get more pages</a>, then{" "}
-          <button type="button" className="bulk-link" onClick={resume}>resume</button>.
-        </p>
-      )}
+      {outOfPages && (() => {
+        const over = signedInPagesExceeded(outOfPages, usage?.subscription_active);
+        return (
+          <p className="bulk-note bulk-note--warn" role="alert">
+            {over.message} The remaining statements are paused.{" "}
+            <a href="/settings#billing" target="_blank" rel="noopener">{over.cta}</a>, then{" "}
+            <button type="button" className="bulk-link" onClick={resume}>resume</button>.
+          </p>
+        );
+      })()}
       {downloadError && <p className="bulk-note bulk-note--warn" role="alert">{downloadError}</p>}
 
       <ul className="bulk-list">

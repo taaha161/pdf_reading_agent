@@ -16,6 +16,7 @@ import { reviewRewardDue, snoozeReviewReward } from "../lib/reviews";
 import { useAuth } from "../contexts/AuthContext";
 import { useUsage } from "../contexts/UsageContext";
 import { runScan, getJob, updateJobTransactions } from "../api/client";
+import { GUEST_TRIAL_USED_NOTICE, guestPagesExceededNotice, pagesExceededState, signedInPagesExceeded } from "../lib/pageLimit";
 import "./ScannerPage.css";
 import PasswordInput from "../components/PasswordInput";
 import { handOffFile, takeHandedOffFile } from "../lib/fileHandoff";
@@ -123,7 +124,6 @@ function matchRowIndices(transactions, rows) {
   return out;
 }
 
-const TRIAL_LIMIT_NOTICE = `You've used your ${FREE_ANON_PAGES} free pages. Create a free account to get ${FREE_SIGNUP_PAGES} free pages for your first month.`;
 const CHAT_NOTICE = `Create a free account to ask questions about your statement. Your first month includes ${FREE_SIGNUP_PAGES} pages free.`;
 const BULK_NOTICE = `Create a free account to upload many statements at once. Your first month includes ${FREE_SIGNUP_PAGES} pages free.`;
 const FILE_SIZE_NOTICE = `Free accounts can upload PDFs up to ${formatMB(MAX_FILE_BYTES_SIGNED_IN)}.`;
@@ -175,7 +175,7 @@ export default function ScannerPage() {
   const [conversionMode, setConversionMode] = useState("balanced");
   const [dataStatus, setDataStatus] = useState(null);
   const [trialCsvContent, setTrialCsvContent] = useState(null);
-  const [outOfCredits, setOutOfCredits] = useState(false);
+  const [outOfCredits, setOutOfCredits] = useState(false); // false, or the CTA label for /settings#billing
   const [tooLargeUpgrade, setTooLargeUpgrade] = useState(null); // "signup" | "subscribe" | null
   const [chatOpen, setChatOpen] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -258,15 +258,22 @@ export default function ScannerPage() {
   // Out of anonymous free pages: send to signup when they click to upload (not on page load).
   // The server's 401 trial-limit response in handleUpload covers stale usage.
   const trialExhausted = !isLoggedIn && usage?.authenticated === false && usage?.trial_remaining === 0;
+  // `exceeded` = { pages_required, pages_remaining } when the PDF is bigger than the free pages left
+  // (the signup page then says so); otherwise the free pages are used up. Click handlers pass an event.
+  // `file`: the too-big PDF, kept in this browser so it scans right after login (like chat's handoff).
   const goToSignup = useCallback(
-    (notice = TRIAL_LIMIT_NOTICE) =>
+    async (exceeded, file) => {
+      const over = exceeded?.pages_required > 0 ? exceeded : null;
+      const kept = over && file ? await handOffFile(file) : false;
       navigate("/signup", {
         state: {
-          from: { pathname: "/scanner" },
-          notice: typeof notice === "string" ? notice : TRIAL_LIMIT_NOTICE,
-          reason: "trial-exhausted",
+          from: { pathname: "/scanner", search: kept ? "?handoff=1" : "" },
+          ...(over
+            ? { ...pagesExceededState(over), notice: guestPagesExceededNotice(over.pages_required, over.pages_remaining) }
+            : { reason: "trial-exhausted", notice: GUEST_TRIAL_USED_NOTICE }),
         },
-      }),
+      });
+    },
     [navigate]
   );
   // Rows the latest chat answer returned, as indices into `transactions`, highlighted in the table.
@@ -449,12 +456,13 @@ export default function ScannerPage() {
         return;
       }
       if (e.isTrialLimit && !isLoggedIn) {
-        goToSignup(e.freePagesExceeded ? e.message : TRIAL_LIMIT_NOTICE);
+        await goToSignup(e.freePagesExceeded, file);
         return;
       }
       if (e.insufficientCredits) {
-        setOutOfCredits(true);
-        setError(e.message || "You're out of pages. Subscribe to the monthly plan or buy a page pack to keep scanning.");
+        const over = signedInPagesExceeded(e.insufficientCredits, usage?.subscription_active);
+        setOutOfCredits(over.cta);
+        setError(over.message);
       } else {
         setError(e.message || "Upload failed");
       }
@@ -842,7 +850,7 @@ export default function ScannerPage() {
                   <>
                     {" "}
                     <button type="button" className="scanner-alert-link" onClick={() => navigate("/settings#billing")}>
-                      Get more pages
+                      {typeof outOfCredits === "string" ? outOfCredits : "Get more pages"}
                     </button>
                   </>
                 )}

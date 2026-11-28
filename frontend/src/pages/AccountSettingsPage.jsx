@@ -4,7 +4,7 @@ import AppLayout from "../components/AppLayout";
 import { useAuth } from "../contexts/AuthContext";
 import { useUsage } from "../contexts/UsageContext";
 import { supabase } from "../lib/supabase";
-import { createCheckoutSession, deleteAccount, getBillingBalance } from "../api/client";
+import { cancelSubscription, createCheckoutSession, deleteAccount, getBillingBalance, getSubscription, resumeSubscription } from "../api/client";
 import { OFFERS, getOffer } from "../lib/offer";
 import { describeDiscount, discountedPrice, formatPrice } from "../lib/referral";
 import { ACCURATE_MULTIPLIER, BULK_PACK, FREE_SIGNUP_PAGES, PAGE_PACKS, PLAN_PAGES, PLAN_PRICE, formatExpiry } from "../lib/pricing";
@@ -22,6 +22,102 @@ function validatePasswordStrength(password) {
   if (!/[0-9]/.test(password)) return { ok: false, message: "One number" };
   if (!/[^A-Za-z0-9]/.test(password)) return { ok: false, message: "One special character (!@#$%^&* etc.)" };
   return { ok: true };
+}
+
+const formatDate = (unix) =>
+  unix ? new Date(unix * 1000).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" }) : "";
+
+/** Monthly plan: renewal date + cancel (at period end, two-step) or resume. */
+function SubscriptionControls() {
+  const [sub, setSub] = useState(null);
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState({ type: "", text: "" });
+
+  useEffect(() => {
+    let cancelled = false;
+    getSubscription()
+      .then((data) => !cancelled && setSub(data))
+      .catch(() => !cancelled && setSub({ error: true }));
+    return () => { cancelled = true; };
+  }, []);
+
+  const run = async (fn, okText) => {
+    setBusy(true);
+    setMsg({ type: "", text: "" });
+    try {
+      const data = await fn();
+      setSub(data);
+      setConfirming(false);
+      setMsg({ type: "success", text: okText(data) });
+    } catch (err) {
+      setMsg({ type: "error", text: err.message || "Something went wrong. Please try again." });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!sub) return null;
+  const ends = formatDate(sub.current_period_end);
+  return (
+    <div className="account-settings-subscription">
+      <h3 className="account-settings-subtitle">Monthly plan</h3>
+      {sub.error ? (
+        <p className="account-settings-description">
+          Couldn&rsquo;t load your subscription right now. Refresh to manage it, or contact support.
+        </p>
+      ) : sub.cancel_at_period_end ? (
+        <>
+          <p className="account-settings-description">
+            Your plan is canceled and ends{ends ? ` on ${ends}` : " at the end of this billing period"}. You can keep using
+            your plan pages until then. You won&rsquo;t be charged again.
+          </p>
+          <button
+            type="button"
+            className="auth-btn auth-btn-primary"
+            disabled={busy}
+            onClick={() => run(resumeSubscription, (d) => `Your plan is back on. It renews${formatDate(d.current_period_end) ? ` on ${formatDate(d.current_period_end)}` : " next month"}.`)}
+          >
+            {busy ? "Resuming…" : "Resume subscription"}
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="account-settings-description">
+            {PLAN_PAGES} pages a month for ${PLAN_PRICE}.{ends ? ` Renews on ${ends}.` : ""}
+          </p>
+          {confirming ? (
+            <div className="account-settings-cancel-confirm" role="group" aria-label="Confirm cancellation">
+              <p className="account-settings-description">
+                Cancel your plan? It stays active{ends ? ` until ${ends}` : " until the end of this billing period"}, then
+                stops renewing. Unused plan pages end with it, and subscriber page-pack pages pause until you subscribe again.
+              </p>
+              <div className="account-settings-cancel-actions">
+                <button
+                  type="button"
+                  className="auth-btn account-settings-delete-btn"
+                  disabled={busy}
+                  onClick={() => run(cancelSubscription, (d) => `Your plan is canceled. It stays active${formatDate(d.current_period_end) ? ` until ${formatDate(d.current_period_end)}` : " until the end of this period"}.`)}
+                >
+                  {busy ? "Canceling…" : "Yes, cancel my plan"}
+                </button>
+                <button type="button" className="auth-btn auth-btn-secondary" disabled={busy} onClick={() => setConfirming(false)}>
+                  Keep my plan
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" className="auth-btn auth-btn-secondary" onClick={() => { setConfirming(true); setMsg({ type: "", text: "" }); }}>
+              Cancel subscription
+            </button>
+          )}
+        </>
+      )}
+      {msg.text && (
+        <p className={`auth-message auth-message-${msg.type}`} role="status">{msg.text}</p>
+      )}
+    </div>
+  );
 }
 
 export default function AccountSettingsPage() {
@@ -280,6 +376,7 @@ export default function AccountSettingsPage() {
               )}
               {balance.subscription_active ? (
                 <>
+                  <SubscriptionControls />
                   <h3 className="account-settings-subtitle">Page packs</h3>
                   <p className="account-settings-description">
                     One-time add-on for subscribers. Pack pages never expire and are used after your plan pages. If you cancel, they pause until you subscribe again. High accuracy mode uses {ACCURATE_MULTIPLIER} pages per PDF page.

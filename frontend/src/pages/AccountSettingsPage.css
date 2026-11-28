@@ -389,3 +389,13 @@
 @media (prefers-reduced-motion: reduce) {
   .account-settings-billing-skeleton { animation: none; }
 }
+
+/* Monthly plan: cancel / resume */
+.account-settings-subscription {
+  margin: 1.25rem 0 0.5rem;
+}
+.account-settings-cancel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}

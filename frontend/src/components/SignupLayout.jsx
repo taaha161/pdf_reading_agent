@@ -19,7 +19,7 @@ const ICONS = {
  * Split page for signup and the paid-signup welcome: value panel + form card.
  * Desktop: panel left, form right. Mobile: form first, panel below.
  */
-export default function SignupLayout({ aside, children, headerAction }) {
+export default function SignupLayout({ aside, children, headerAction, loginState }) {
   return (
     <div className="su-page">
       <header className="su-header">
@@ -29,7 +29,7 @@ export default function SignupLayout({ aside, children, headerAction }) {
         </a>
         {headerAction !== undefined ? headerAction : (
           <p className="su-header-action">
-            <span className="su-hide-sm">Already have an account?</span> <Link to="/login">Log in</Link>
+            <span className="su-hide-sm">Already have an account?</span> <Link to="/login" state={loginState}>Log in</Link>
           </p>
         )}
       </header>
